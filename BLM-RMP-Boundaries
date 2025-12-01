@@ -1,0 +1,38 @@
+{
+  "id": "blm_rmp_boundaries",
+  "title": "BLM Resource Management Plan Boundaries",
+  "description": "Polygon boundaries of BLM Resource Management Plans.",
+  "owner": "BLM, Division of Planning",
+  "contact_email": "planning@example.gov",
+  "topics": ["planning", "land_status"],
+  "keywords": ["RMP", "land use planning", "BLM"],
+  "spatial_scope": "CONUS",
+  "extent": {
+    "west": -125.0,
+    "south": 31.0,
+    "east": -101.0,
+    "north": 49.0
+  },
+  "projection": "EPSG:4326",
+  "update_frequency": "annual",
+  "status": "authoritative",             // or “draft”, “deprecated”
+  "distribution": [
+    {
+      "type": "feature_service",
+      "url": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
+      "format": "ESRI Feature Service"
+    },
+    {
+      "type": "download",
+      "url": "https://example.com/downloads/rmp.gdb.zip",
+      "format": "File Geodatabase"
+    }
+  ],
+  "metadata": {
+    "standard": "FGDC CSDGM",
+    "xml_url": "https://example.com/metadata/rmp.xml"
+  },
+  "license": "CC-BY-4.0",
+  "last_updated": "2025-11-30",
+  "notes": "Used in NEPA and land use planning program-wide."
+}
