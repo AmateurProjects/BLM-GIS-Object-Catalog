@@ -1,5 +1,10 @@
 const CATALOG_URL = 'data/catalog.json';
 
+// >>>>> CONFIGURE THESE FOR YOUR REPO <<<<<
+const GITHUB_OWNER = 'AmateurProjects';
+const GITHUB_REPO = 'Public-Lands-Data-Catalog';
+// <<<<< CONFIG END <<<<<
+
 let catalog = [];
 let filteredDatasets = [];
 let attributeIndex = {};
@@ -327,9 +332,13 @@ function showDatasetDetail(d) {
     `
     : '<p>No attribute metadata defined for this dataset.</p>';
 
-  datasetDetail.innerHTML = `
+    datasetDetail.innerHTML = `
     <h2>${d.title}</h2>
     <p>${d.description || ''}</p>
+
+    <button type="button" id="datasetSuggestChangeBtn" style="margin-bottom: 1rem;">
+      Suggest change to this dataset
+    </button>
 
     <h3>Dataset details</h3>
     <ul>
@@ -349,6 +358,13 @@ function showDatasetDetail(d) {
     <h3>Attributes</h3>
     ${attributesTable}
   `;
+
+  const suggestBtn = document.getElementById('datasetSuggestChangeBtn');
+  if (suggestBtn) {
+    suggestBtn.addEventListener('click', () => openDatasetChangeRequest(d));
+  }
+
+
 }
 
 /* ========== CROSS-NAV HELPERS ========== */
@@ -478,9 +494,13 @@ function showAttributeDetail(name) {
         </ul>`
       : '<p>No datasets found using this attribute.</p>';
 
-  attributeDetail.innerHTML = `
+    attributeDetail.innerHTML = `
     <h2>${a.name}</h2>
     <p>${a.description || ''}</p>
+
+    <button type="button" id="attributeSuggestChangeBtn" style="margin-bottom: 1rem;">
+      Suggest change to this attribute
+    </button>
 
     <h3>Attribute details</h3>
     <ul>
@@ -497,4 +517,74 @@ function showAttributeDetail(name) {
     <h3>Datasets using this attribute</h3>
     ${datasetsHtml}
   `;
+
+  const attrSuggestBtn = document.getElementById('attributeSuggestChangeBtn');
+  if (attrSuggestBtn) {
+    attrSuggestBtn.addEventListener('click', () =>
+      openAttributeChangeRequest(a.name)
+    );
+  }
+
+
+
+/* ========== GITHUB "SUGGEST CHANGE" HELPERS ========== */
+
+function openDatasetChangeRequest(dataset) {
+  if (!dataset) return;
+
+  const currentUrl = window.location.href;
+  const title = `Change request: dataset ${dataset.id}`;
+  const bodyLines = [
+    `Please describe the requested change for dataset **${dataset.id} (${dataset.title || ''})**.`,
+    '',
+    '- What is wrong or missing?',
+    '- Suggested new values?',
+    '',
+    `Current dataset record (from ${currentUrl}):`,
+    '```json',
+    JSON.stringify(dataset, null, 2),
+    '```'
+  ];
+
+  const url = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
+    `?title=${encodeURIComponent(title)}` +
+    `&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+
+  window.open(url, '_blank', 'noopener');
+}
+
+function openAttributeChangeRequest(attributeName) {
+  const attr = attributeIndex[attributeName];
+  if (!attr) return;
+
+  const currentUrl = window.location.href;
+  const title = `Change request: attribute ${attr.name}`;
+  const bodyLines = [
+    `Please describe the requested change for attribute **${attr.name}**.`,
+    '',
+    '- What is wrong or missing?',
+    '- Suggested new values?',
+    '',
+    `Current attribute record (from ${currentUrl}):`,
+    '```json',
+    JSON.stringify(attr, null, 2),
+    '```'
+  ];
+
+  const url = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
+    `?title=${encodeURIComponent(title)}` +
+    `&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+
+  window.open(url, '_blank', 'noopener');
+}
+
+
+
+
+
+
+
+
+
+
 }
