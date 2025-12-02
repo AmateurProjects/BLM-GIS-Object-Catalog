@@ -1,4 +1,4 @@
-const CATALOG_URL = 'https://amateurprojects.github.io/Public-Lands-Data-Catalog/data/catalog.json'; // adjust if needed
+const CATALOG_URL = 'data/catalog.json'; // adjust if needed
 
 let catalog = [];
 let filteredCatalog = [];
