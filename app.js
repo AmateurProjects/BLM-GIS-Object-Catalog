@@ -232,7 +232,7 @@ function showDatasetDetail(d) {
             .map(
               a => `
             <tr>
-              <td>${a.name}</td>
+              <td><a href="#" onclick="openAttributeFromDataset('${a.name}'); return false;">${a.name}</a></td>
               <td>${a.label || ''}</td>
               <td>${a.type || ''}</td>
               <td>${a.nullable === false ? 'No' : 'Yes'}</td>
@@ -270,6 +270,27 @@ function showDatasetDetail(d) {
     ${attributesTable}
   `;
 }
+
+
+function openAttributeFromDataset(attrName) {
+  console.log('Opening attribute from dataset:', attrName);
+
+  // Switch view
+  switchView('attributes');
+
+  // Ensure attribute list is showing the full set
+  filteredAttributes = Object.values(attributeIndex);
+  renderAttributeList();
+
+  // Open the detail panel for that attribute
+  showAttributeDetail(attrName);
+
+  // Scroll the detail panel to top
+  attributeDetail?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+ 
+
+
 
 /* ========== ATTRIBUTES VIEW ========== */
 
