@@ -120,7 +120,7 @@ function showDetail(d) {
 
 // Make a GitHub issues link with pre-filled title/body
 function openSuggestChange(d) {
-  const owner = 'YOUR_GITHUB_USERNAME';
+  const owner = 'AmateurProjects';
   const repo = 'public-lands-data-catalog';
 
   const title = encodeURIComponent(`Change request: ${d.id}`);
