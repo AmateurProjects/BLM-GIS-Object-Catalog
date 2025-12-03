@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (datasetsTab) {
     datasetsTab.addEventListener('click', () => {
       switchView('datasets');
-      // Clear hash when just switching tabs w/out specific item
       updateHash('');
     });
   } else {
@@ -112,7 +111,7 @@ async function loadCatalog() {
     renderDatasetList();
     renderAttributeList();
 
-    // Now that we have data, apply any incoming #dataset=... or #attribute=...
+    // Apply any incoming #dataset=... or #attribute=...
     applyRouteFromHash();
   } catch (err) {
     console.error('Error loading catalog', err);
@@ -258,7 +257,7 @@ function renderDatasetList() {
     card.innerHTML = `
       <strong>${d.title}</strong>
       <div>${d.description || ''}</div>
-      <div style="font-size: 0.85em; color: #555;">
+      <div style="font-size: 0.85em; color: #a1a1a1;">
         Topics: ${(d.topics || []).join(', ') || 'None'}
       </div>
     `;
@@ -332,7 +331,7 @@ function showDatasetDetail(d) {
     `
     : '<p>No attribute metadata defined for this dataset.</p>';
 
-    datasetDetail.innerHTML = `
+  datasetDetail.innerHTML = `
     <h2>${d.title}</h2>
     <p>${d.description || ''}</p>
 
@@ -363,8 +362,6 @@ function showDatasetDetail(d) {
   if (suggestBtn) {
     suggestBtn.addEventListener('click', () => openDatasetChangeRequest(d));
   }
-
-
 }
 
 /* ========== CROSS-NAV HELPERS ========== */
@@ -425,7 +422,7 @@ function renderAttributeList() {
     card.innerHTML = `
       <strong>${a.name}</strong>
       <div>${a.description || ''}</div>
-      <div style="font-size: 0.85em; color: #555;">
+      <div style="font-size: 0.85em; color: #a1a1a1;">
         Type: ${a.type || 'unknown'}
       </div>
     `;
@@ -494,7 +491,7 @@ function showAttributeDetail(name) {
         </ul>`
       : '<p>No datasets found using this attribute.</p>';
 
-    attributeDetail.innerHTML = `
+  attributeDetail.innerHTML = `
     <h2>${a.name}</h2>
     <p>${a.description || ''}</p>
 
@@ -524,8 +521,7 @@ function showAttributeDetail(name) {
       openAttributeChangeRequest(a.name)
     );
   }
-
-
+}
 
 /* ========== GITHUB "SUGGEST CHANGE" HELPERS ========== */
 
@@ -546,7 +542,8 @@ function openDatasetChangeRequest(dataset) {
     '```'
   ];
 
-  const url = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
+  const url =
+    `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
     `?title=${encodeURIComponent(title)}` +
     `&body=${encodeURIComponent(bodyLines.join('\n'))}`;
 
@@ -571,20 +568,10 @@ function openAttributeChangeRequest(attributeName) {
     '```'
   ];
 
-  const url = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
+  const url =
+    `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
     `?title=${encodeURIComponent(title)}` +
     `&body=${encodeURIComponent(bodyLines.join('\n'))}`;
 
   window.open(url, '_blank', 'noopener');
-}
-
-
-
-
-
-
-
-
-
-
 }
