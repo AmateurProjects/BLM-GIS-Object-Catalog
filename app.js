@@ -197,46 +197,85 @@ function buildAttributeIndex() {
           nullable: attr.nullable,
           examples: new Set(),
           datasets: [],
-          // new: store how each dataset defines this attribute
-          definitions: []
+          definitions: [],      // per-dataset type/description
+          domainValues: []      // aggregated allowed values
         };
       }
 
       const entry = attributeIndex[key];
 
-      // If we don't yet have a canonical type/description, use the first non-empty ones
+      // Canonical type/description/nullable (first non-empty, plus nullable tightening)
       if (!entry.type && attr.type) entry.type = attr.type;
       if (!entry.description && attr.description) entry.description = attr.description;
       if (attr.nullable === false) {
         entry.nullable = false;
       }
 
+      // Example values
       if (attr.example !== undefined && attr.example !== null) {
         entry.examples.add(String(attr.example));
       }
 
       const datasetTitle = dataset.title || dataset.id || '(unnamed dataset)';
 
+      // Datasets using this attribute
       entry.datasets.push({
         id: dataset.id,
         title: datasetTitle
       });
 
+      // Per-dataset definition (for conflict reporting)
       entry.definitions.push({
         datasetId: dataset.id,
         datasetTitle,
         type: attr.type || '',
         description: attr.description || ''
       });
+
+      // Domain values (allowed values)
+      if (Array.isArray(attr.domain)) {
+        attr.domain.forEach(v => {
+          let dv;
+          if (typeof v === 'string' || typeof v === 'number') {
+            dv = {
+              value: String(v),
+              label: String(v),
+              description: ''
+            };
+          } else if (v && typeof v === 'object') {
+            const val = 'value' in v ? v.value : '';
+            dv = {
+              value: val !== undefined && val !== null ? String(val) : '',
+              label: v.label || String(val || ''),
+              description: v.description || ''
+            };
+          } else {
+            return;
+          }
+          entry.domainValues.push(dv);
+        });
+      }
     });
   });
 
+  // Final clean-up: convert sets & dedupe domains
   Object.values(attributeIndex).forEach(a => {
     a.examples = Array.from(a.examples);
+
+    if (a.domainValues && a.domainValues.length) {
+      const seen = new Set();
+      a.domainValues = a.domainValues.filter(v => {
+        const key = `${v.value}|${v.label || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
   });
 
   console.log('Built attribute index:', attributeIndex);
 }
+
 
 
 /* ========== VIEW SWITCHING ========== */
