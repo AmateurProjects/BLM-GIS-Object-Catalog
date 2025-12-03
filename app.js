@@ -196,17 +196,37 @@ function buildAttributeIndex() {
           description: attr.description || '',
           nullable: attr.nullable,
           examples: new Set(),
-          datasets: []
+          datasets: [],
+          // new: store how each dataset defines this attribute
+          definitions: []
         };
       }
 
-      if (attr.example !== undefined && attr.example !== null) {
-        attributeIndex[key].examples.add(String(attr.example));
+      const entry = attributeIndex[key];
+
+      // If we don't yet have a canonical type/description, use the first non-empty ones
+      if (!entry.type && attr.type) entry.type = attr.type;
+      if (!entry.description && attr.description) entry.description = attr.description;
+      if (attr.nullable === false) {
+        entry.nullable = false;
       }
 
-      attributeIndex[key].datasets.push({
+      if (attr.example !== undefined && attr.example !== null) {
+        entry.examples.add(String(attr.example));
+      }
+
+      const datasetTitle = dataset.title || dataset.id || '(unnamed dataset)';
+
+      entry.datasets.push({
         id: dataset.id,
-        title: dataset.title || dataset.id
+        title: datasetTitle
+      });
+
+      entry.definitions.push({
+        datasetId: dataset.id,
+        datasetTitle,
+        type: attr.type || '',
+        description: attr.description || ''
       });
     });
   });
@@ -217,6 +237,7 @@ function buildAttributeIndex() {
 
   console.log('Built attribute index:', attributeIndex);
 }
+
 
 /* ========== VIEW SWITCHING ========== */
 
@@ -462,6 +483,18 @@ function showAttributeDetail(name) {
     return;
   }
 
+  // Build sets of types/descriptions actually used across datasets
+  const defs = a.definitions || [];
+  const typeSet = new Set(defs.map(d => d.type).filter(t => t));
+  const descSet = new Set(defs.map(d => d.description).filter(t => t));
+
+  const hasTypeConflict = typeSet.size > 1;
+  const hasDescConflict = descSet.size > 1;
+
+  // Base type to show in the "details" section
+  const primaryType =
+    typeSet.size === 1 ? Array.from(typeSet)[0] : 'Multiple (conflict – see below)';
+
   // Update URL hash for deep linking
   updateHash('attribute=' + encodeURIComponent(a.name));
 
@@ -491,6 +524,67 @@ function showAttributeDetail(name) {
         </ul>`
       : '<p>No datasets found using this attribute.</p>';
 
+  // Build conflict details if any
+  let conflictHtml = '';
+
+  if (hasTypeConflict || hasDescConflict) {
+    // Group by type
+    const byType = {};
+    defs.forEach(def => {
+      const t = def.type || '(empty)';
+      if (!byType[t]) byType[t] = [];
+      byType[t].push(def.datasetTitle);
+    });
+
+    // Group by description
+    const byDesc = {};
+    defs.forEach(def => {
+      const d = def.description || '(empty)';
+      if (!byDesc[d]) byDesc[d] = [];
+      byDesc[d].push(def.datasetTitle);
+    });
+
+    const typeConflictHtml = hasTypeConflict
+      ? `
+        <h4>Type definitions by dataset</h4>
+        <ul>
+          ${Object.entries(byType)
+            .map(
+              ([t, titles]) =>
+                `<li><code>${t}</code> – used in: ${titles.join(', ')}</li>`
+            )
+            .join('')}
+        </ul>
+      `
+      : '';
+
+    const descConflictHtml = hasDescConflict
+      ? `
+        <h4>Description definitions by dataset</h4>
+        <ul>
+          ${Object.entries(byDesc)
+            .map(
+              ([d, titles]) =>
+                `<li>"${d}" – used in: ${titles.join(', ')}</li>`
+            )
+            .join('')}
+        </ul>
+      `
+      : '';
+
+    conflictHtml = `
+      <div class="conflict-warning">
+        <strong>⚠ Schema inconsistency detected</strong>
+        <p>
+          This attribute is defined differently across datasets.
+          Harmonization is recommended before treating it as a shared, authoritative field.
+        </p>
+        ${typeConflictHtml}
+        ${descConflictHtml}
+      </div>
+    `;
+  }
+
   attributeDetail.innerHTML = `
     <h2>${a.name}</h2>
     <p>${a.description || ''}</p>
@@ -502,11 +596,13 @@ function showAttributeDetail(name) {
     <h3>Attribute details</h3>
     <ul>
       <li><strong>Label:</strong> ${a.label || '—'}</li>
-      <li><strong>Type:</strong> ${a.type || '—'}</li>
+      <li><strong>Type:</strong> ${primaryType || '—'}</li>
       <li><strong>Nullable:</strong> ${
         a.nullable === false ? 'No' : 'Yes/Unknown'
       }</li>
     </ul>
+
+    ${conflictHtml}
 
     <h3>Examples</h3>
     ${examplesHtml}
@@ -522,6 +618,7 @@ function showAttributeDetail(name) {
     );
   }
 }
+
 
 /* ========== GITHUB "SUGGEST CHANGE" HELPERS ========== */
 
