@@ -563,11 +563,10 @@ function showAttributeDetail(name) {
         </ul>`
       : '<p>No datasets found using this attribute.</p>';
 
-  // Build conflict details if any
+  // Conflict details, if any
   let conflictHtml = '';
 
   if (hasTypeConflict || hasDescConflict) {
-    // Group by type
     const byType = {};
     defs.forEach(def => {
       const t = def.type || '(empty)';
@@ -575,7 +574,6 @@ function showAttributeDetail(name) {
       byType[t].push(def.datasetTitle);
     });
 
-    // Group by description
     const byDesc = {};
     defs.forEach(def => {
       const d = def.description || '(empty)';
@@ -624,6 +622,35 @@ function showAttributeDetail(name) {
     `;
   }
 
+  // Allowed values / domain (shows like a dropdown list)
+  const allowedValuesHtml =
+    a.domainValues && a.domainValues.length
+      ? `
+        <table border="1" cellpadding="4" cellspacing="0">
+          <thead>
+            <tr>
+              <th>Value</th>
+              <th>Label</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${a.domainValues
+              .map(
+                v => `
+              <tr>
+                <td><code>${v.value}</code></td>
+                <td>${v.label || ''}</td>
+                <td>${v.description || ''}</td>
+              </tr>
+            `
+              )
+              .join('')}
+          </tbody>
+        </table>
+      `
+      : '';
+
   attributeDetail.innerHTML = `
     <h2>${a.name}</h2>
     <p>${a.description || ''}</p>
@@ -643,6 +670,15 @@ function showAttributeDetail(name) {
 
     ${conflictHtml}
 
+    ${
+      allowedValuesHtml
+        ? `
+      <h3>Allowed values (domain)</h3>
+      ${allowedValuesHtml}
+    `
+        : ''
+    }
+
     <h3>Examples</h3>
     ${examplesHtml}
 
@@ -657,6 +693,7 @@ function showAttributeDetail(name) {
     );
   }
 }
+
 
 
 /* ========== GITHUB "SUGGEST CHANGE" HELPERS ========== */
