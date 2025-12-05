@@ -13,13 +13,21 @@
   --accent: #4ea3ff;              /* Soft blue accent */
   --accent-hover: #77bdff;        /* Accent hover */
   --radius: 6px;
+  --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   margin: 0;
   background: var(--bg-main);
   color: var(--text-main);
+  line-height: 1.5;
 }
 
 /* ============================
@@ -27,7 +35,7 @@ body {
    ============================ */
 
 header {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -36,7 +44,7 @@ header {
 }
 
 h1 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   margin: 0;
   color: var(--text-main);
 }
@@ -53,7 +61,8 @@ nav {
   padding: 0.4rem 0.9rem;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: 0.15s background;
+  transition: 0.15s background, 0.15s border-color, 0.15s transform;
+  font-size: 0.9rem;
 }
 
 .tab-button:hover {
@@ -64,6 +73,7 @@ nav {
   background: var(--accent);
   border-color: var(--accent);
   color: #000;
+  transform: translateY(-1px);
 }
 
 /* ============================
@@ -79,6 +89,7 @@ main {
 section {
   flex: 1;
   display: flex;
+  min-height: 0; /* allow flex children to scroll */
 }
 
 /* ============================
@@ -86,11 +97,26 @@ section {
    ============================ */
 
 .sidebar {
-  width: 330px;
+  width: 340px;
   border-right: 1px solid var(--border-color);
   padding: 0.75rem;
   background: var(--bg-panel);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar .toolbar {
+  margin-bottom: 0;
+}
+
+.sidebar-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem;
+  box-shadow: var(--shadow-soft);
 }
 
 /* ============================
@@ -108,6 +134,7 @@ input[type="search"] {
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-main);
+  font-size: 0.9rem;
 }
 
 input[type="search"]:focus {
@@ -121,4 +148,308 @@ input[type="search"]:focus {
    ============================ */
 
 /* The JS renders <ul><li class="list-item"><button class="list-item-button">… */
+#datasetList,
+#attributeList {
+  margin: 0;
+  padding: 0;
+}
+
 .list-item {
+  margin-bottom: 0.35rem;
+  list-style: none;
+}
+
+.list-item-button {
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-main);
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  font-size: 0.9rem;
+}
+
+.list-item-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-color);
+}
+
+.list-item-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dataset-item .list-item-button,
+.attribute-item .list-item-button {
+  border-radius: var(--radius);
+}
+
+/* Legacy card styles (still usable if you want card layout somewhere else) */
+.dataset-card,
+.attribute-card {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  transition: 0.15s background;
+}
+
+.dataset-card:hover,
+.attribute-card:hover {
+  background: var(--bg-hover);
+}
+
+/* ============================
+   DETAIL PANEL
+   ============================ */
+
+.detail-panel {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+  background: radial-gradient(circle at top left, #1a1a1a 0, #101010 45%, #090909 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-panel-inner {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Make sure everything we render sits in a centered column.
+   If you want, you can wrap content manually; for now we target children. */
+.detail-panel > * {
+  max-width: 980px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.detail-panel h2 {
+  margin: 0.1rem 0 0.25rem;
+  font-size: 1.35rem;
+  color: var(--text-main);
+}
+
+.detail-panel h3 {
+  margin-top: 1.1rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+  color: var(--text-main);
+}
+
+.detail-panel p {
+  margin: 0.25rem 0;
+  font-size: 0.92rem;
+}
+
+.detail-panel ul {
+  padding-left: 1.15rem;
+  color: var(--text-muted);
+  margin: 0.35rem 0 0.1rem;
+}
+
+.detail-panel li {
+  margin-bottom: 0.2rem;
+}
+
+/* Sections within detail panel (meta, attributes, datasets, etc.) */
+.detail-section {
+  margin-top: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Make label/value pairs line up a bit better */
+.detail-section p strong {
+  display: inline-block;
+  min-width: 145px;
+  font-weight: 600;
+}
+
+/* ============================
+   BREADCRUMB
+   ============================ */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.breadcrumb-root {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.breadcrumb-root:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  opacity: 0.7;
+}
+
+.breadcrumb-current {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* ============================
+   LINK-STYLED BUTTONS
+   ============================ */
+
+/* Used for clickable attributes / datasets inside detail panels */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.link-button:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ============================
+   LINKS
+   ============================ */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ============================
+   "Suggest change" button
+   ============================ */
+
+.suggest-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #000;
+  font-weight: 500;
+  border: 1px solid var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.suggest-button:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  text-decoration: none;
+}
+
+/* ============================
+   TABLES
+   ============================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+th,
+td {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+th {
+  background: var(--bg-panel);
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* ============================
+   GENERIC BUTTON
+   ============================ */
+
+button {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 0.95rem;
+}
+
+button:hover {
+  background: var(--bg-hover);
+}
+
+button:active {
+  background: var(--accent);
+  color: #000;
+}
+
+/* ============================
+   UTILITY
+   ============================ */
+
+.hidden {
+  display: none !important;
+}
+
+code {
+  background: var(--bg-panel);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius);
+  color: var(--accent-hover);
+}
+
+.conflict-warning {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid #f39c12;
+  border-radius: var(--radius);
+  background: #221a11; /* works with your dark theme */
+  font-size: 0.9rem;
+}
+
+.conflict-warning h4 {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.95rem;
+}
