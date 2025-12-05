@@ -1,750 +1,387 @@
+// app.js
+
+// ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
 
-// >>>>> CONFIGURE THESE FOR YOUR REPO <<<<<
-const GITHUB_OWNER = 'AmateurProjects';
-const GITHUB_REPO = 'Public-Lands-Data-Catalog';
-// <<<<< CONFIG END <<<<<
+// >>>>> SET THIS to your real GitHub repo's new-issue URL base
+// Example: 'https://github.com/blm-gis/data-catalog/issues/new'
+const GITHUB_NEW_ISSUE_BASE = 'https://github.com/AmateurProjects/Public-Lands-Data-Catalog/issues/new';
 
-let catalog = [];
-let filteredDatasets = [];
-let attributeIndex = {};
-let filteredAttributes = [];
+// ====== CATALOG MODULE (shared loader + indexes) ======
+const Catalog = (function () {
+  let cache = null;
+  let indexesBuilt = false;
+  let attributeById = {};
+  let datasetById = {};
+  let datasetsByAttributeId = {};
 
-let datasetSearchInput;
-let attributeSearchInput;
-let datasetList;
-let datasetDetail;
-let attributeList;
-let attributeDetail;
-let datasetsView;
-let attributesView;
-let datasetsTab;
-let attributesTab;
-
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, wiring up UI...');
-
-  datasetSearchInput = document.getElementById('datasetSearchInput');
-  attributeSearchInput = document.getElementById('attributeSearchInput');
-  datasetList = document.getElementById('datasetList');
-  datasetDetail = document.getElementById('datasetDetail');
-  attributeList = document.getElementById('attributeList');
-  attributeDetail = document.getElementById('attributeDetail');
-  datasetsView = document.getElementById('datasetsView');
-  attributesView = document.getElementById('attributesView');
-  datasetsTab = document.getElementById('datasetsTab');
-  attributesTab = document.getElementById('attributesTab');
-
-  // Search + tab events
-  if (datasetSearchInput) {
-    datasetSearchInput.addEventListener('input', applyDatasetFilters);
-  } else {
-    console.warn('datasetSearchInput element not found');
+  async function loadCatalog() {
+    if (cache) return cache;
+    const resp = await fetch(CATALOG_URL);
+    if (!resp.ok) {
+      throw new Error(`Failed to load catalog.json: ${resp.status}`);
+    }
+    cache = await resp.json();
+    buildIndexes();
+    return cache;
   }
 
-  if (attributeSearchInput) {
-    attributeSearchInput.addEventListener('input', applyAttributeFilters);
-  } else {
-    console.warn('attributeSearchInput element not found');
-  }
+  function buildIndexes() {
+    if (!cache || indexesBuilt) return;
 
-  if (datasetsTab) {
-    datasetsTab.addEventListener('click', () => {
-      switchView('datasets');
-      updateHash('');
+    attributeById = {};
+    datasetById = {};
+    datasetsByAttributeId = {};
+
+    // Index attributes
+    (cache.attributes || []).forEach(attr => {
+      if (attr.id) {
+        attributeById[attr.id] = attr;
+      }
     });
-  } else {
-    console.warn('datasetsTab element not found');
-  }
 
-  if (attributesTab) {
-    attributesTab.addEventListener('click', () => {
-      switchView('attributes');
-      updateHash('');
+    // Index datasets + reverse index of attribute -> datasets
+    (cache.datasets || []).forEach(ds => {
+      if (ds.id) {
+        datasetById[ds.id] = ds;
+      }
+      (ds.attribute_ids || []).forEach(attrId => {
+        if (!datasetsByAttributeId[attrId]) {
+          datasetsByAttributeId[attrId] = [];
+        }
+        datasetsByAttributeId[attrId].push(ds);
+      });
     });
-  } else {
-    console.warn('attributesTab element not found');
+
+    indexesBuilt = true;
   }
 
-  // React to back/forward (hash changes)
-  window.addEventListener('hashchange', () => {
-    if (!catalog.length) return; // wait until data loaded
-    applyRouteFromHash();
-  });
+  function getAttributeById(id) {
+    return attributeById[id] || null;
+  }
 
-  // Default view until we know more
-  switchView('datasets');
+  function getDatasetById(id) {
+    return datasetById[id] || null;
+  }
 
-  loadCatalog();
+  function getAttributesForDataset(dataset) {
+    if (!dataset || !dataset.attribute_ids) return [];
+    return dataset.attribute_ids
+      .map(id => attributeById[id])
+      .filter(Boolean);
+  }
+
+  function getDatasetsForAttribute(attrId) {
+    return datasetsByAttributeId[attrId] || [];
+  }
+
+  function buildDatasetUrl(datasetId) {
+    // Adjust if your dataset page name or query param is different
+    return `dataset.html?dataset=${encodeURIComponent(datasetId)}`;
+  }
+
+  function buildAttributeUrl(attrId) {
+    // Adjust if your attribute page name or query param is different
+    return `attribute.html?attribute=${encodeURIComponent(attrId)}`;
+  }
+
+  function buildGithubIssueUrlForDataset(dataset) {
+    const title = encodeURIComponent(`Dataset change request: ${dataset.id}`);
+    const bodyLines = [
+      `Please describe the requested change for dataset \`${dataset.id}\` (\`${dataset.title || ''}\`).`,
+      '',
+      '---',
+      '',
+      'Current dataset JSON:',
+      '```json',
+      JSON.stringify(dataset, null, 2),
+      '```'
+    ];
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
+
+  function buildGithubIssueUrlForAttribute(attribute) {
+    const title = encodeURIComponent(`Attribute change request: ${attribute.id}`);
+    const bodyLines = [
+      `Please describe the requested change for attribute \`${attribute.id}\` (\`${attribute.label || ''}\`).`,
+      '',
+      '---',
+      '',
+      'Current attribute JSON:',
+      '```json',
+      JSON.stringify(attribute, null, 2),
+      '```'
+    ];
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
+
+  return {
+    loadCatalog,
+    getAttributeById,
+    getDatasetById,
+    getAttributesForDataset,
+    getDatasetsForAttribute,
+    buildDatasetUrl,
+    buildAttributeUrl,
+    buildGithubIssueUrlForDataset,
+    buildGithubIssueUrlForAttribute
+  };
+})();
+
+// ====== PAGE INITIALIZER ======
+document.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const datasetId = params.get('dataset');
+  const attrId = params.get('attribute');
+
+  try {
+    await Catalog.loadCatalog();
+  } catch (err) {
+    console.error('Failed to load catalog.json:', err);
+    return;
+  }
+
+  // Decide which view we are on based on query params + presence of elements
+  if (datasetId && document.getElementById('dataset-title')) {
+    renderDatasetPage(datasetId);
+  } else if (attrId && document.getElementById('attribute-title')) {
+    renderAttributePage(attrId);
+  } else {
+    // Optional: index/home listing view
+    if (document.getElementById('dataset-list')) {
+      renderDatasetList();
+    }
+    if (document.getElementById('attribute-list')) {
+      renderAttributeList();
+    }
+  }
 });
 
-async function loadCatalog() {
-  try {
-    console.log('Fetching catalog from', CATALOG_URL);
-    const res = await fetch(CATALOG_URL);
-    if (!res.ok) {
-      console.error('Failed to fetch catalog.json', res.status, res.statusText);
-      if (datasetList) {
-        datasetList.innerHTML = `<p>Error loading catalog (HTTP ${res.status}).</p>`;
-      }
-      return;
-    }
+// ====== DATASET PAGE RENDERING ======
+async function renderDatasetPage(datasetId) {
+  const dataset = Catalog.getDatasetById(datasetId);
 
-    const raw = await res.json();
-    console.log('Raw catalog JSON:', raw);
-
-    if (!Array.isArray(raw)) {
-      console.error('catalog.json is not an array at the top level');
-      if (datasetList) {
-        datasetList.innerHTML =
-          '<p>catalog.json should be a JSON array: [ { dataset1 }, { dataset2 }, ... ].</p>';
-      }
-      return;
-    }
-
-    catalog = raw;
-    filteredDatasets = catalog;
-
-    buildAttributeIndex();
-    filteredAttributes = Object.values(attributeIndex);
-
-    renderDatasetList();
-    renderAttributeList();
-
-    // Apply any incoming #dataset=... or #attribute=...
-    applyRouteFromHash();
-  } catch (err) {
-    console.error('Error loading catalog', err);
-    if (datasetList) {
-      datasetList.innerHTML = '<p>Error loading catalog (check console).</p>';
-    }
-  }
-}
-
-/* ========== ROUTING / URL HANDLING ========== */
-
-function updateHash(hash) {
-  if (hash === '') {
-    // Clear hash
-    if (window.location.hash) {
-      history.pushState('', document.title, window.location.pathname + window.location.search);
-    }
-  } else {
-    const newHash = '#' + hash;
-    if (window.location.hash !== newHash) {
-      window.location.hash = newHash;
-    }
-  }
-}
-
-// Parse location.hash and drive UI
-function applyRouteFromHash() {
-  const rawHash = window.location.hash || '';
-  const hash = rawHash.startsWith('#') ? rawHash.slice(1) : rawHash;
-
-  if (!hash) {
-    console.log('No hash route, default datasets view');
-    switchView('datasets');
+  if (!dataset) {
+    console.error(`Dataset not found: ${datasetId}`);
+    renderDatasetNotFound(datasetId);
     return;
   }
 
-  const [key, value] = hash.split('=');
-  const decoded = decodeURIComponent(value || '');
-
-  if (key === 'dataset' && decoded) {
-    console.log('Routing to dataset from hash:', decoded);
-    switchView('datasets');
-    filteredDatasets = catalog;
-    renderDatasetList();
-    const d = catalog.find(ds => ds.id === decoded);
-    if (d) {
-      showDatasetDetail(d);
-    } else {
-      console.warn('Dataset not found for hash:', decoded);
-    }
-  } else if (key === 'attribute' && decoded) {
-    console.log('Routing to attribute from hash:', decoded);
-    switchView('attributes');
-    filteredAttributes = Object.values(attributeIndex);
-    renderAttributeList();
-    if (attributeIndex[decoded]) {
-      showAttributeDetail(decoded);
-    } else {
-      console.warn('Attribute not found for hash:', decoded);
-    }
-  } else {
-    console.log('Unrecognized hash route:', hash);
-  }
-}
-
-/* ========== ATTRIBUTE INDEX BUILDING ========== */
-
-function buildAttributeIndex() {
-  attributeIndex = {};
-
-  catalog.forEach(dataset => {
-    const attrs = dataset.attributes || [];
-    attrs.forEach(attr => {
-      const key = attr.name;
-      if (!key) return;
-
-      if (!attributeIndex[key]) {
-        attributeIndex[key] = {
-          name: attr.name,
-          label: attr.label || attr.name,
-          type: attr.type || '',
-          description: attr.description || '',
-          nullable: attr.nullable,
-          examples: new Set(),
-          datasets: [],
-          definitions: [],      // per-dataset type/description
-          domainValues: []      // aggregated allowed values
-        };
-      }
-
-      const entry = attributeIndex[key];
-
-      // Canonical type/description/nullable (first non-empty, plus nullable tightening)
-      if (!entry.type && attr.type) entry.type = attr.type;
-      if (!entry.description && attr.description) entry.description = attr.description;
-      if (attr.nullable === false) {
-        entry.nullable = false;
-      }
-
-      // Example values
-      if (attr.example !== undefined && attr.example !== null) {
-        entry.examples.add(String(attr.example));
-      }
-
-      const datasetTitle = dataset.title || dataset.id || '(unnamed dataset)';
-
-      // Datasets using this attribute
-      entry.datasets.push({
-        id: dataset.id,
-        title: datasetTitle
-      });
-
-      // Per-dataset definition (for conflict reporting)
-      entry.definitions.push({
-        datasetId: dataset.id,
-        datasetTitle,
-        type: attr.type || '',
-        description: attr.description || ''
-      });
-
-      // Domain values (allowed values)
-      if (Array.isArray(attr.domain)) {
-        attr.domain.forEach(v => {
-          let dv;
-          if (typeof v === 'string' || typeof v === 'number') {
-            dv = {
-              value: String(v),
-              label: String(v),
-              description: ''
-            };
-          } else if (v && typeof v === 'object') {
-            const val = 'value' in v ? v.value : '';
-            dv = {
-              value: val !== undefined && val !== null ? String(val) : '',
-              label: v.label || String(val || ''),
-              description: v.description || ''
-            };
-          } else {
-            return;
-          }
-          entry.domainValues.push(dv);
-        });
-      }
-    });
-  });
-
-  // Final clean-up: convert sets & dedupe domains
-  Object.values(attributeIndex).forEach(a => {
-    a.examples = Array.from(a.examples);
-
-    if (a.domainValues && a.domainValues.length) {
-      const seen = new Set();
-      a.domainValues = a.domainValues.filter(v => {
-        const key = `${v.value}|${v.label || ''}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    }
-  });
-
-  console.log('Built attribute index:', attributeIndex);
-}
-
-
-
-/* ========== VIEW SWITCHING ========== */
-
-function switchView(which) {
-  if (!datasetsView || !attributesView || !datasetsTab || !attributesTab) {
-    console.warn('View elements not fully found, switchView skipped');
-    return;
+  // Title
+  const titleEl = document.getElementById('dataset-title');
+  if (titleEl) {
+    titleEl.textContent = dataset.title || dataset.id;
   }
 
-  if (which === 'datasets') {
-    datasetsView.classList.remove('hidden');
-    attributesView.classList.add('hidden');
-    datasetsTab.classList.add('active');
-    attributesTab.classList.remove('active');
-  } else {
-    datasetsView.classList.add('hidden');
-    attributesView.classList.remove('hidden');
-    datasetsTab.classList.remove('active');
-    attributesTab.classList.add('active');
-  }
-}
-
-/* ========== DATASETS VIEW ========== */
-
-function renderDatasetList() {
-  if (!datasetList) return;
-
-  datasetList.innerHTML = '';
-
-  if (!filteredDatasets.length) {
-    datasetList.innerHTML = '<p>No datasets match your search.</p>';
-    return;
+  // Description
+  const descEl = document.getElementById('dataset-description');
+  if (descEl) {
+    descEl.textContent = dataset.description || '';
   }
 
-  filteredDatasets.forEach(d => {
-    const card = document.createElement('div');
-    card.className = 'dataset-card';
-    card.innerHTML = `
-      <strong>${d.title}</strong>
-      <div>${d.description || ''}</div>
-      <div style="font-size: 0.85em; color: #a1a1a1;">
-        Topics: ${(d.topics || []).join(', ') || 'None'}
-      </div>
+  // Meta info (office, email, etc.)
+  const metaEl = document.getElementById('dataset-meta');
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>
+      <p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>
+      <p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>
+      <p><strong>Topics:</strong> ${Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''}</p>
+      <p><strong>Keywords:</strong> ${Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''}</p>
+      <p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>
+      <p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>
+      <p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>
+      <p><strong>Public Web Service:</strong> ${
+        dataset.public_web_service
+          ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
+          : ''
+      }</p>
+      <p><strong>Internal Web Service:</strong> ${
+        dataset.internal_web_service
+          ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
+          : ''
+      }</p>
+      <p><strong>Data Standard:</strong> ${
+        dataset.data_standard
+          ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+          : ''
+      }</p>
+      ${dataset.notes ? `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>` : ''}
     `;
-    card.addEventListener('click', () => showDatasetDetail(d));
-    datasetList.appendChild(card);
-  });
-}
+  }
 
-function applyDatasetFilters() {
-  const q = (datasetSearchInput?.value || '').toLowerCase();
+  // Attributes list (attributes that belong to this dataset)
+  const attrsEl = document.getElementById('dataset-attributes');
+  if (attrsEl) {
+    const attrs = Catalog.getAttributesForDataset(dataset);
 
-  filteredDatasets = catalog.filter(d => {
-    const text = [
-      d.title,
-      d.description,
-      d.id,
-      ...(d.topics || []),
-      ...(d.keywords || [])
-    ]
-      .join(' ')
-      .toLowerCase();
+    if (!attrs.length) {
+      attrsEl.innerHTML = '<p>No attributes defined for this dataset.</p>';
+    } else {
+      const list = document.createElement('ul');
+      attrs.forEach(attr => {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = Catalog.buildAttributeUrl(attr.id);
+        link.textContent = `${attr.id} – ${attr.label || ''}`;
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      attrsEl.innerHTML = '<h2>Attributes</h2>';
+      attrsEl.appendChild(list);
+    }
+  }
 
-    return !q || text.includes(q);
-  });
-
-  renderDatasetList();
-  if (datasetDetail) datasetDetail.classList.add('hidden');
-}
-
-// Show dataset detail & update URL
-function showDatasetDetail(d) {
-  if (!datasetDetail) return;
-
-  // Update URL hash for deep linking
-  updateHash('dataset=' + encodeURIComponent(d.id));
-
-  datasetDetail.classList.remove('hidden');
-
-  const attrs = d.attributes || [];
-
-  const attributesTable = attrs.length
-    ? `
-      <table border="1" cellpadding="4" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Label</th>
-            <th>Type</th>
-            <th>Nullable</th>
-            <th>Description</th>
-            <th>Example</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${attrs
-            .map(
-              a => `
-            <tr>
-              <td><a href="#" onclick="openAttributeFromDataset('${a.name}'); return false;">${a.name}</a></td>
-              <td>${a.label || ''}</td>
-              <td>${a.type || ''}</td>
-              <td>${a.nullable === false ? 'No' : 'Yes'}</td>
-              <td>${a.description || ''}</td>
-              <td>${a.example !== undefined ? a.example : ''}</td>
-            </tr>
-          `
-            )
-            .join('')}
-        </tbody>
-      </table>
-    `
-    : '<p>No attribute metadata defined for this dataset.</p>';
-
-  datasetDetail.innerHTML = `
-    <h2>${d.title}</h2>
-    <p>${d.description || ''}</p>
-
-    <button type="button" id="datasetSuggestChangeBtn" style="margin-bottom: 1rem;">
-      Suggest change to this dataset
-    </button>
-
-    <h3>Dataset details</h3>
-    <ul>
-      <li><strong>ID:</strong> ${d.id}</li>
-      <li><strong>Owner:</strong> ${d.owner || '—'}</li>
-      <li><strong>Contact:</strong> ${
-        d.contact_email
-          ? `<a href="mailto:${d.contact_email}">${d.contact_email}</a>`
-          : '—'
-      }</li>
-      <li><strong>Topics:</strong> ${(d.topics || []).join(', ') || '—'}</li>
-      <li><strong>Keywords:</strong> ${(d.keywords || []).join(', ') || '—'}</li>
-      <li><strong>Status:</strong> ${d.status || '—'}</li>
-      <li><strong>Last updated:</strong> ${d.last_updated || '—'}</li>
-    </ul>
-
-    <h3>Attributes</h3>
-    ${attributesTable}
-  `;
-
-  const suggestBtn = document.getElementById('datasetSuggestChangeBtn');
+  // Suggest change button (dataset)
+  const suggestBtn = document.getElementById('dataset-suggest-change');
   if (suggestBtn) {
-    suggestBtn.addEventListener('click', () => openDatasetChangeRequest(d));
+    suggestBtn.href = Catalog.buildGithubIssueUrlForDataset(dataset);
   }
 }
 
-/* ========== CROSS-NAV HELPERS ========== */
-
-// From dataset detail: click attribute name
-function openAttributeFromDataset(attrName) {
-  console.log('Opening attribute from dataset:', attrName);
-
-  switchView('attributes');
-
-  filteredAttributes = Object.values(attributeIndex);
-  renderAttributeList();
-
-  showAttributeDetail(attrName);
-
-  if (attributeDetail && typeof attributeDetail.scrollTo === 'function') {
-    attributeDetail.scrollTo({ top: 0, behavior: 'smooth' });
+function renderDatasetNotFound(datasetId) {
+  const titleEl = document.getElementById('dataset-title');
+  if (titleEl) {
+    titleEl.textContent = `Dataset not found: ${datasetId}`;
+  }
+  const descEl = document.getElementById('dataset-description');
+  if (descEl) {
+    descEl.textContent = 'The requested dataset ID does not exist in the catalog.';
   }
 }
 
-// From attribute detail: click dataset name
-function openDatasetFromAttribute(datasetId) {
-  console.log('Opening dataset from attribute:', datasetId);
+// ====== ATTRIBUTE PAGE RENDERING ======
+async function renderAttributePage(attrId) {
+  const attribute = Catalog.getAttributeById(attrId);
 
-  switchView('datasets');
-
-  filteredDatasets = catalog;
-  renderDatasetList();
-
-  const d = catalog.find(ds => ds.id === datasetId);
-  if (!d) {
-    console.warn('Dataset not found for id:', datasetId);
+  if (!attribute) {
+    console.error(`Attribute not found: ${attrId}`);
+    renderAttributeNotFound(attrId);
     return;
   }
 
-  showDatasetDetail(d);
-
-  if (datasetDetail && typeof datasetDetail.scrollTo === 'function') {
-    datasetDetail.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-}
-
-/* ========== ATTRIBUTES VIEW ========== */
-
-function renderAttributeList() {
-  if (!attributeList) return;
-
-  attributeList.innerHTML = '';
-
-  if (!filteredAttributes.length) {
-    attributeList.innerHTML = '<p>No attributes match your search.</p>';
-    return;
+  const titleEl = document.getElementById('attribute-title');
+  if (titleEl) {
+    titleEl.textContent = `${attribute.id} – ${attribute.label || ''}`;
   }
 
-  filteredAttributes.forEach(a => {
-    const card = document.createElement('div');
-    card.className = 'attribute-card';
-    card.innerHTML = `
-      <strong>${a.name}</strong>
-      <div>${a.description || ''}</div>
-      <div style="font-size: 0.85em; color: #a1a1a1;">
-        Type: ${a.type || 'unknown'}
-      </div>
-    `;
-    card.addEventListener('click', () => showAttributeDetail(a.name));
-    attributeList.appendChild(card);
-  });
-}
-
-function applyAttributeFilters() {
-  const q = (attributeSearchInput?.value || '').toLowerCase();
-
-  filteredAttributes = Object.values(attributeIndex).filter(a => {
-    const text = [
-      a.name,
-      a.label,
-      a.type,
-      a.description,
-      ...(a.examples || [])
-    ]
-      .join(' ')
-      .toLowerCase();
-
-    return !q || text.includes(q);
-  });
-
-  renderAttributeList();
-  if (attributeDetail) attributeDetail.classList.add('hidden');
-}
-
-// Show attribute detail & update URL
-function showAttributeDetail(name) {
-  if (!attributeDetail) return;
-
-  const a = attributeIndex[name];
-  if (!a) {
-    console.warn('Attribute not found in index:', name);
-    return;
-  }
-
-  // Build sets of types/descriptions actually used across datasets
-  const defs = a.definitions || [];
-  const typeSet = new Set(defs.map(d => d.type).filter(t => t));
-  const descSet = new Set(defs.map(d => d.description).filter(t => t));
-
-  const hasTypeConflict = typeSet.size > 1;
-  const hasDescConflict = descSet.size > 1;
-
-  // Base type to show in the "details" section
-  const primaryType =
-    typeSet.size === 1 ? Array.from(typeSet)[0] : 'Multiple (conflict – see below)';
-
-  // Update URL hash for deep linking
-  updateHash('attribute=' + encodeURIComponent(a.name));
-
-  attributeDetail.classList.remove('hidden');
-
-  const examplesHtml =
-    a.examples && a.examples.length
-      ? `<ul>${a.examples.map(e => `<li>${e}</li>`).join('')}</ul>`
-      : '<p>No examples recorded.</p>';
-
-  const datasetsHtml =
-    a.datasets && a.datasets.length
-      ? `
-        <ul>
-          ${a.datasets
-            .map(
-              d => `
-                <li>
-                  <a href="#" onclick="openDatasetFromAttribute('${d.id}'); return false;">
-                    <strong>${d.title}</strong>
-                  </a>
-                  <code>${d.id}</code>
-                </li>
-              `
-            )
-            .join('')}
-        </ul>`
-      : '<p>No datasets found using this attribute.</p>';
-
-  // Conflict details, if any
-  let conflictHtml = '';
-
-  if (hasTypeConflict || hasDescConflict) {
-    const byType = {};
-    defs.forEach(def => {
-      const t = def.type || '(empty)';
-      if (!byType[t]) byType[t] = [];
-      byType[t].push(def.datasetTitle);
-    });
-
-    const byDesc = {};
-    defs.forEach(def => {
-      const d = def.description || '(empty)';
-      if (!byDesc[d]) byDesc[d] = [];
-      byDesc[d].push(def.datasetTitle);
-    });
-
-    const typeConflictHtml = hasTypeConflict
-      ? `
-        <h4>Type definitions by dataset</h4>
-        <ul>
-          ${Object.entries(byType)
-            .map(
-              ([t, titles]) =>
-                `<li><code>${t}</code> – used in: ${titles.join(', ')}</li>`
-            )
-            .join('')}
-        </ul>
-      `
-      : '';
-
-    const descConflictHtml = hasDescConflict
-      ? `
-        <h4>Description definitions by dataset</h4>
-        <ul>
-          ${Object.entries(byDesc)
-            .map(
-              ([d, titles]) =>
-                `<li>"${d}" – used in: ${titles.join(', ')}</li>`
-            )
-            .join('')}
-        </ul>
-      `
-      : '';
-
-    conflictHtml = `
-      <div class="conflict-warning">
-        <strong>⚠ Schema inconsistency detected</strong>
-        <p>
-          This attribute is defined differently across datasets.
-          Harmonization is recommended before treating it as a shared, authoritative field.
-        </p>
-        ${typeConflictHtml}
-        ${descConflictHtml}
-      </div>
+  const detailsEl = document.getElementById('attribute-details');
+  if (detailsEl) {
+    detailsEl.innerHTML = `
+      <p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>
+      <p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>
+      <p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>
+      <p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>
+      <p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>
+      ${
+        attribute.example !== undefined
+          ? `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`
+          : ''
+      }
     `;
   }
 
-  // Allowed values / domain (shows like a dropdown list)
-  const allowedValuesHtml =
-    a.domainValues && a.domainValues.length
-      ? `
-        <table border="1" cellpadding="4" cellspacing="0">
-          <thead>
-            <tr>
-              <th>Value</th>
-              <th>Label</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${a.domainValues
-              .map(
-                v => `
-              <tr>
-                <td><code>${v.value}</code></td>
-                <td>${v.label || ''}</td>
-                <td>${v.description || ''}</td>
-              </tr>
-            `
-              )
-              .join('')}
-          </tbody>
-        </table>
-      `
-      : '';
+  // Suggest change button (attribute)
+  const suggestBtn = document.getElementById('attribute-suggest-change');
+  if (suggestBtn) {
+    suggestBtn.href = Catalog.buildGithubIssueUrlForAttribute(attribute);
+  }
 
-  attributeDetail.innerHTML = `
-    <h2>${a.name}</h2>
-    <p>${a.description || ''}</p>
+  // List of datasets that use this attribute
+  const datasetsEl = document.getElementById('attribute-datasets');
+  if (datasetsEl) {
+    const datasets = Catalog.getDatasetsForAttribute(attrId);
 
-    <button type="button" id="attributeSuggestChangeBtn" style="margin-bottom: 1rem;">
-      Suggest change to this attribute
-    </button>
-
-    <h3>Attribute details</h3>
-    <ul>
-      <li><strong>Label:</strong> ${a.label || '—'}</li>
-      <li><strong>Type:</strong> ${primaryType || '—'}</li>
-      <li><strong>Nullable:</strong> ${
-        a.nullable === false ? 'No' : 'Yes/Unknown'
-      }</li>
-    </ul>
-
-    ${conflictHtml}
-
-    ${
-      allowedValuesHtml
-        ? `
-      <h3>Allowed values (domain)</h3>
-      ${allowedValuesHtml}
-    `
-        : ''
+    if (!datasets.length) {
+      datasetsEl.innerHTML = '<p>No datasets currently reference this attribute.</p>';
+    } else {
+      const list = document.createElement('ul');
+      datasets.forEach(ds => {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = Catalog.buildDatasetUrl(ds.id);
+        link.textContent = ds.title || ds.id;
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+      datasetsEl.innerHTML = '<h2>Datasets using this attribute</h2>';
+      datasetsEl.appendChild(list);
     }
-
-    <h3>Examples</h3>
-    ${examplesHtml}
-
-    <h3>Datasets using this attribute</h3>
-    ${datasetsHtml}
-  `;
-
-  const attrSuggestBtn = document.getElementById('attributeSuggestChangeBtn');
-  if (attrSuggestBtn) {
-    attrSuggestBtn.addEventListener('click', () =>
-      openAttributeChangeRequest(a.name)
-    );
   }
 }
 
-
-
-/* ========== GITHUB "SUGGEST CHANGE" HELPERS ========== */
-
-function openDatasetChangeRequest(dataset) {
-  if (!dataset) return;
-
-  const currentUrl = window.location.href;
-  const title = `Change request: dataset ${dataset.id}`;
-  const bodyLines = [
-    `Please describe the requested change for dataset **${dataset.id} (${dataset.title || ''})**.`,
-    '',
-    '- What is wrong or missing?',
-    '- Suggested new values?',
-    '',
-    `Current dataset record (from ${currentUrl}):`,
-    '```json',
-    JSON.stringify(dataset, null, 2),
-    '```'
-  ];
-
-  const url =
-    `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
-    `?title=${encodeURIComponent(title)}` +
-    `&body=${encodeURIComponent(bodyLines.join('\n'))}`;
-
-  window.open(url, '_blank', 'noopener');
+function renderAttributeNotFound(attrId) {
+  const titleEl = document.getElementById('attribute-title');
+  if (titleEl) {
+    titleEl.textContent = `Attribute not found: ${attrId}`;
+  }
+  const detailsEl = document.getElementById('attribute-details');
+  if (detailsEl) {
+    detailsEl.textContent = 'The requested attribute ID does not exist in the catalog.';
+  }
 }
 
-function openAttributeChangeRequest(attributeName) {
-  const attr = attributeIndex[attributeName];
-  if (!attr) return;
+// ====== OPTIONAL: INDEX PAGE LISTS ======
+async function renderDatasetList() {
+  const listEl = document.getElementById('dataset-list');
+  if (!listEl) return;
 
-  const currentUrl = window.location.href;
-  const title = `Change request: attribute ${attr.name}`;
-  const bodyLines = [
-    `Please describe the requested change for attribute **${attr.name}**.`,
-    '',
-    '- What is wrong or missing?',
-    '- Suggested new values?',
-    '',
-    `Current attribute record (from ${currentUrl}):`,
-    '```json',
-    JSON.stringify(attr, null, 2),
-    '```'
-  ];
+  const catalog = await Catalog.loadCatalog();
+  const datasets = catalog.datasets || [];
 
-  const url =
-    `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/issues/new` +
-    `?title=${encodeURIComponent(title)}` +
-    `&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+  if (!datasets.length) {
+    listEl.innerHTML = '<p>No datasets found in the catalog.</p>';
+    return;
+  }
 
-  window.open(url, '_blank', 'noopener');
+  const list = document.createElement('ul');
+  datasets.forEach(ds => {
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = Catalog.buildDatasetUrl(ds.id);
+    link.textContent = ds.title || ds.id;
+    li.appendChild(link);
+    list.appendChild(li);
+  });
+
+  listEl.innerHTML = '<h2>Datasets</h2>';
+  listEl.appendChild(list);
+}
+
+async function renderAttributeList() {
+  const listEl = document.getElementById('attribute-list');
+  if (!listEl) return;
+
+  const catalog = await Catalog.loadCatalog();
+  const attributes = catalog.attributes || [];
+
+  if (!attributes.length) {
+    listEl.innerHTML = '<p>No attributes found in the catalog.</p>';
+    return;
+  }
+
+  const list = document.createElement('ul');
+  attributes.forEach(attr => {
+    const li = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = Catalog.buildAttributeUrl(attr.id);
+    link.textContent = `${attr.id} – ${attr.label || ''}`;
+    li.appendChild(link);
+    list.appendChild(li);
+  });
+
+  listEl.innerHTML = '<h2>Attributes</h2>';
+  listEl.appendChild(list);
+}
+
+// ====== UTILS ======
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
