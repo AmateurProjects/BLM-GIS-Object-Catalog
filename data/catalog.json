@@ -1,169 +1,207 @@
-[
 {
-    "id": "This is a hidden unique ID for the dataset used for the Catalog UI."
-    "objname": "Object name is the editable database oject such as a feature class in the database.",
-    "title": "Data Catalog Field Explanations",
-    "description": "Plain language description of what this data catalog item is.",
-    "office_owner": "The branch, division, or office responsible for updating and maintaining the dataset.",
-    "contact_email": "Email address of the best point of contant for this dataset.",
-    "topics": ["Topics can be added to help group datasets by theme. Example: planning", "fluid minerals", "fire"],
-    "keywords": ["Keywords help with search. Example: RMP", "land use planning", "ACEC"],
-    "extent": {
-      "_comment": "extent is OPTIONAL - this may be used for a future feature of the site.",
-      "west": -125.0,
-      "south": 31.0,
-      "east": -101.0,
-      "north": 49.0
-    },
-    "projection": "EPSG:4326",
-    "_comment": "projection is OPTIONAL - this may be used for a future feature of the site.",
-    "update_frequency": "How often the dataset updates: monthly, daily, etc.",
-    "status": "Dataset status: authoritative, planned, depreciated, etc.",
-    "public_web_service": "This is the URL to the public web servive for the dataset.",
-    "internal_web_service": "The URL of the internal web service for the dataset.",
-    "data_standard": "URL to the data standard for the dataset.",
-    "access_level": "Controlled Unclassified Information (CUI) category or \"PUBLIC\" if none.",
-    "notes": "OPTIONAL field to use in the rare case that there is a need to share additional information here about this dataset to the user."
-  
+  "attributes": [
     {
-    "attributes": [
-      {
-        "name": "RMP_ID",
-        "label": "RMP Identifier",
-        "type": "string",
-        "nullable": false,
-        "description": "Unique identifier for the RMP area.",
-        "example": "RMP-UT-001"
-      },
-      {
-        "name": "STATE",
-        "label": "State",
-        "type": "string",
-        "nullable": false,
-        "description": "Two-letter state or territory code.",
-        "example": "UT"
-      },
-      {
-        "name": "EFFECTIVE_DATE",
-        "label": "Effective Date",
-        "type": "date",
-        "nullable": false,
-        "description": "Date the plan became effective.",
-        "example": "2016-09-01"
-      }
-    ]
-  },
-
-
-  
-  {
-    "id": "blm_rmp_boundaries",
-    "title": "BLM Resource Management Plan Boundaries",
-    "description": "Polygon boundaries of BLM Resource Management Plans.",
-    "owner": "BLM, Division of Planning",
-    "contact_email": "planning@example.gov",
-    "topics": ["planning", "land_status"],
-    "keywords": ["RMP", "land use planning", "BLM"],
-    "spatial_scope": "CONUS",
-    "extent": {
-      "west": -125.0,
-      "south": 31.0,
-      "east": -101.0,
-      "north": 49.0
+      "id": "RMP_ID",
+      "label": "RMP Identifier",
+      "type": "string",
+      "nullable": false,
+      "description": "Unique identifier for the RMP area.",
+      "example": "RMP-UT-001"
     },
-    "projection": "EPSG:4326",
-    "update_frequency": "annual",
-    "status": "authoritative",
-    "distribution": [
-      {
-        "type": "feature_service",
-        "url": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
-        "format": "ESRI Feature Service"
-      }
-    ],
-    "metadata": {
-      "standard": "FGDC CSDGM",
-      "xml_url": "https://example.com/metadata/rmp.xml"
+    {
+      "id": "STATE",
+      "label": "State",
+      "type": "string",
+      "nullable": false,
+      "description": "Two-letter state or territory code.",
+      "example": "UT"
     },
-    "license": "CC-BY-4.0",
-    "last_updated": "2025-11-30",
-    "notes": "Used in NEPA and land use planning program-wide.",
-    "attributes": [
-      {
-        "name": "RMP_ID",
-        "label": "RMP Identifier",
-        "type": "string",
-        "nullable": false,
-        "description": "Unique identifier for the RMP area.",
-        "example": "RMP-UT-001"
+    {
+      "id": "EFFECTIVE_DATE",
+      "label": "Effective Date",
+      "type": "date",
+      "nullable": false,
+      "description": "Date the plan or designation became effective.",
+      "example": "2016-09-01"
+    },
+    {
+      "id": "FIRE_ID",
+      "label": "Fire Identifier",
+      "type": "string",
+      "nullable": false,
+      "description": "Unique identifier for the fire event.",
+      "example": "2024-UT-BLM-00123"
+    },
+    {
+      "id": "FIRE_NAME",
+      "label": "Fire Name",
+      "type": "string",
+      "nullable": true,
+      "description": "Common name of the fire, if assigned.",
+      "example": "Cottonwood Ridge"
+    },
+    {
+      "id": "ACRES_BURNED",
+      "label": "Acres Burned",
+      "type": "float",
+      "nullable": false,
+      "description": "Total acres burned within the fire perimeter.",
+      "example": 12789.4
+    },
+    {
+      "id": "DISCOVERY_DATE",
+      "label": "Discovery Date",
+      "type": "date",
+      "nullable": false,
+      "description": "Date the fire was first discovered.",
+      "example": "2024-07-15"
+    },
+    {
+      "id": "ACEC_ID",
+      "label": "ACEC Identifier",
+      "type": "string",
+      "nullable": false,
+      "description": "Unique identifier for the ACEC.",
+      "example": "ACEC-UT-001"
+    },
+    {
+      "id": "ACEC_NAME",
+      "label": "ACEC Name",
+      "type": "string",
+      "nullable": false,
+      "description": "Official name of the ACEC.",
+      "example": "Sand Dunes ACEC"
+    }
+  ],
+  "datasets": [
+    {
+      "id": "This is a hidden unique ID for the dataset used for the Catalog UI.",
+      "objname": "Object name is the editable database oject such as a feature class in the database.",
+      "title": "Data Catalog Field Explanations",
+      "description": "Plain language description of what this data catalog item is.",
+      "office_owner": "The branch, division, or office responsible for updating and maintaining the dataset.",
+      "contact_email": "Email address of the best point of contant for this dataset.",
+      "topics": [
+        "Topics can be added to help group datasets by theme. Example: planning",
+        "fluid minerals",
+        "fire"
+      ],
+      "keywords": [
+        "Keywords help with search. Example: RMP",
+        "land use planning",
+        "ACEC"
+      ],
+      "extent": {
+        "_comment": "extent is OPTIONAL - this may be used for a future feature of the site.",
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
       },
-      {
-        "name": "STATE",
-        "label": "State",
-        "type": "string",
-        "nullable": false,
-        "description": "Two-letter state or territory code.",
-        "example": "UT"
+      "projection": "EPSG:4326",
+      "_comment": "projection is OPTIONAL - this may be used for a future feature of the site.",
+      "update_frequency": "How often the dataset updates: monthly, daily, etc.",
+      "status": "Dataset status: authoritative, planned, depreciated, etc.",
+      "public_web_service": "This is the URL to the public web servive for the dataset.",
+      "internal_web_service": "The URL of the internal web service for the dataset.",
+      "data_standard": "URL to the data standard for the dataset.",
+      "access_level": "Controlled Unclassified Information (CUI) category or \"PUBLIC\" if none.",
+      "notes": "OPTIONAL field to use in the rare case that there is a need to share additional information here about this dataset to the user.",
+      "attribute_ids": [
+        "RMP_ID",
+        "STATE",
+        "EFFECTIVE_DATE"
+      ]
+    },
+    {
+      "id": "blm_rmp_boundaries",
+      "objname": "BLM_RMP_Boundaries",
+      "title": "BLM Resource Management Plan Boundaries",
+      "description": "Polygon boundaries of BLM Resource Management Plan decision areas.",
+      "office_owner": "BLM Division of Planning",
+      "contact_email": "planning@example.gov",
+      "topics": ["planning", "land_status"],
+      "keywords": ["RMP", "land use planning", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
       },
-      {
-        "name": "EFFECTIVE_DATE",
-        "label": "Effective Date",
-        "type": "date",
-        "nullable": false,
-        "description": "Date the plan became effective.",
-        "example": "2016-09-01"
-      }
-    ]
-  },
-  
-  
-  
-  
-  {
-    "id": "blm_wildfire_perimeters",
-    "title": "BLM Wildfire Perimeters",
-    "description": "Perimeters of wildfires intersecting BLM-managed lands.",
-    "owner": "BLM, Fire and Aviation",
-    "contact_email": "fire@example.gov",
-    "topics": ["wildfire", "risk"],
-    "keywords": ["fire", "perimeter", "burned area"],
-    "spatial_scope": "CONUS",
-    "projection": "EPSG:4326",
-    "status": "authoritative",
-    "last_updated": "2025-12-02",
-    "attributes": [
-      {
-        "name": "FIRE_ID",
-        "label": "Fire Identifier",
-        "type": "string",
-        "nullable": false,
-        "description": "Unique identifier for the fire event.",
-        "example": "2024-UT-BLM-00123"
+      "projection": "EPSG:4326",
+      "update_frequency": "annual",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/RMP/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_rmp_boundaries",
+      "access_level": "PUBLIC",
+      "notes": "Used in NEPA and land use planning program-wide.",
+      "attribute_ids": [
+        "RMP_ID",
+        "STATE",
+        "EFFECTIVE_DATE"
+      ]
+    },
+    {
+      "id": "blm_wildfire_perimeters",
+      "objname": "BLM_Wildfire_Perimeters",
+      "title": "BLM Wildfire Perimeters",
+      "description": "Perimeters of wildfires intersecting BLM-managed lands.",
+      "office_owner": "BLM Fire and Aviation",
+      "contact_email": "fire@example.gov",
+      "topics": ["wildfire", "risk"],
+      "keywords": ["fire", "perimeter", "burned area", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
       },
-      {
-        "name": "FIRE_NAME",
-        "label": "Fire Name",
-        "type": "string",
-        "nullable": true,
-        "description": "Common name of the fire, if assigned.",
-        "example": "Cottonwood Ridge"
+      "projection": "EPSG:4326",
+      "update_frequency": "daily during fire season",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Fire/Perimeters/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Fire/Perimeters/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_wildfire_perimeters",
+      "access_level": "PUBLIC",
+      "notes": "Includes only perimeters that intersect BLM-administered lands.",
+      "attribute_ids": [
+        "FIRE_ID",
+        "FIRE_NAME",
+        "ACRES_BURNED",
+        "DISCOVERY_DATE",
+        "STATE"
+      ]
+    },
+    {
+      "id": "blm_acecs",
+      "objname": "BLM_ACEC_Boundaries",
+      "title": "BLM Areas of Critical Environmental Concern (ACECs)",
+      "description": "Polygon boundaries of designated Areas of Critical Environmental Concern (ACECs) on BLM-administered lands.",
+      "office_owner": "BLM Division of Planning",
+      "contact_email": "planning@example.gov",
+      "topics": ["planning", "resource_protection"],
+      "keywords": ["ACEC", "land use planning", "special management area", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
       },
-      {
-        "name": "ACRES_BURNED",
-        "label": "Acres Burned",
-        "type": "float",
-        "nullable": false,
-        "description": "Total acres burned within the fire perimeter.",
-        "example": 12789.4
-      },
-      {
-        "name": "DISCOVERY_DATE",
-        "label": "Discovery Date",
-        "type": "date",
-        "nullable": false,
-        "description": "Date the fire was first discovered.",
-        "example": "2024-07-15"
-      }
-    ]
-  }
-]
+      "projection": "EPSG:4326",
+      "update_frequency": "as needed",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Planning/ACEC/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Planning/ACEC/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_acec_boundaries",
+      "access_level": "PUBLIC",
+      "notes": "Includes currently designated ACECs; proposed ACECs are maintained separately.",
+      "attribute_ids": [
+        "ACEC_ID",
+        "ACEC_NAME",
+        "STATE",
+        "EFFECTIVE_DATE"
+      ]
+    }
+  ]
+}
