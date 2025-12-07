@@ -273,254 +273,246 @@ document.addEventListener('DOMContentLoaded', async () => {
   const datasetDetailEl = document.getElementById('datasetDetail');
   const attributeDetailEl = document.getElementById('attributeDetail');
 
-function renderDatasetDetail(datasetId) {
-  if (!datasetDetailEl) return;
+  function renderDatasetDetail(datasetId) {
+    if (!datasetDetailEl) return;
 
-  const dataset = Catalog.getDatasetById(datasetId);
-  if (!dataset) {
-    datasetDetailEl.classList.remove('hidden');
-    datasetDetailEl.innerHTML = `<p>Dataset not found: ${escapeHtml(datasetId)}</p>`;
-    return;
-  }
+    const dataset = Catalog.getDatasetById(datasetId);
+    if (!dataset) {
+      datasetDetailEl.classList.remove('hidden');
+      datasetDetailEl.innerHTML = `<p>Dataset not found: ${escapeHtml(datasetId)}</p>`;
+      return;
+    }
 
-  const attrs = Catalog.getAttributesForDataset(dataset);
+    const attrs = Catalog.getAttributesForDataset(dataset);
 
-  let html = '';
+    let html = '';
 
-  // Breadcrumb
-  html += `
-    <nav class="breadcrumb">
-      <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
-      <span class="breadcrumb-separator">/</span>
-      <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
-    </nav>
-  `;
-
-  // Heading + description
-  html += `<h2>${escapeHtml(dataset.title || dataset.id)}</h2>`;
-  if (dataset.description) {
-    html += `<p>${escapeHtml(dataset.description)}</p>`;
-  }
-
-  // Meta section
-  html += '<div class="detail-section">';
-  html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
-  html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
-  html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
-  html += `<p><strong>Topics:</strong> ${
-    Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''
-  }</p>`;
-  html += `<p><strong>Keywords:</strong> ${
-    Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''
-  }</p>`;
-  html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
-  html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
-  html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
-  html += `<p><strong>Public Web Service:</strong> ${
-    dataset.public_web_service
-      ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
-      : ''
-  }</p>`;
-  html += `<p><strong>Internal Web Service:</strong> ${
-    dataset.internal_web_service
-      ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
-      : ''
-  }</p>`;
-  html += `<p><strong>Data Standard:</strong> ${
-    dataset.data_standard
-      ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
-      : ''
-  }</p>`;
-  if (dataset.notes) {
-    html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
-  }
-  html += '</div>';
-
-  // Attributes section
-  html += '<div class="detail-section">';
-  html += '<h3>Attributes</h3>';
-  if (!attrs.length) {
-    html += '<p>No attributes defined for this dataset.</p>';
-  } else {
-    html += '<ul>';
-    attrs.forEach(attr => {
-      html += `
-        <li>
-          <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
-            ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
-          </button>
-        </li>`;
-    });
-    html += '</ul>';
-  }
-  html += '</div>';
-
-  // Inline attribute details panel (stays on the dataset page)
-  html += `
-    <div class="detail-section" id="inlineAttributeDetail">
-      <h3>Attribute details</h3>
-      <p>Select an attribute from the list above to see its properties here without leaving this dataset.</p>
-    </div>
-  `;
-
- // Suggest change + export schema buttons (dataset)
-const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
-html += `
-  <div class="detail-section">
-    <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
-      Suggest a change to this dataset
-    </a>
-    <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
-      Export ArcGIS schema (Python)
-    </button>
-  </div>
-`;
-
-  datasetDetailEl.innerHTML = html;
-  datasetDetailEl.classList.remove('hidden');
-
-  // Wire breadcrumb root
-  const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
-  if (rootBtn) {
-    rootBtn.addEventListener('click', () => {
-      showDatasetsView();
-    });
-  }
-
-  // Wire attribute buttons to open inline attribute detail (stay on datasets view)
-  const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
-  attrButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const attrId = btn.getAttribute('data-attr-id');
-      renderInlineAttributeDetail(attrId);
-    });
-  });
-}
-
-// Wire export schema button
-const exportBtn = datasetDetailEl.querySelector('button[data-export-schema]');
-if (exportBtn) {
-  exportBtn.addEventListener('click', () => {
-    const dsId = exportBtn.getAttribute('data-export-schema');
-    const ds = Catalog.getDatasetById(dsId);
-    if (!ds) return;
-    const attrs = Catalog.getAttributesForDataset(ds);
-    const script = buildArcGisSchemaPython(ds, attrs);
-    downloadTextFile(script, `${ds.id}_schema_arcpy.py`);
-  });
-}
-
-
-  
-function renderInlineAttributeDetail(attrId) {
-  if (!datasetDetailEl) return;
-
-  const container = datasetDetailEl.querySelector('#inlineAttributeDetail');
-  if (!container) return;
-
-  const attribute = Catalog.getAttributeById(attrId);
-  if (!attribute) {
-    container.innerHTML = `
-      <h3>Attribute details</h3>
-      <p>Attribute not found: ${escapeHtml(attrId)}</p>
-    `;
-    return;
-  }
-
-  const datasetsUsing = Catalog.getDatasetsForAttribute(attrId) || [];
-
-  let html = '';
-  html += '<h3>Attribute details</h3>';
-  html += `<h4>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h4>`;
-  html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
-  html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
-  html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
-  html += `<p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>`;
-  html += `<p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>`;
-  if (attribute.example !== undefined) {
-    html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
-  }
-
-// Enumerated values (if present)
-if (
-  attribute.type === 'enumerated' &&
-  Array.isArray(attribute.values) &&
-  attribute.values.length
-) {
-  html += '<h4>Allowed values</h4>';
-  html += `
-    <table>
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  attribute.values.forEach(v => {
-    const code = v.code !== undefined ? String(v.code) : '';
-    const label = v.label || '';
-    const desc = v.description || '';
+    // Breadcrumb
     html += `
-      <tr>
-        <td>${escapeHtml(code)}</td>
-        <td>${escapeHtml(label)}</td>
-        <td>${escapeHtml(desc)}</td>
-      </tr>
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
+      </nav>
     `;
-  });
 
-  html += `
-      </tbody>
-    </table>
-  `;
-}
+    // Heading + description
+    html += `<h2>${escapeHtml(dataset.title || dataset.id)}</h2>`;
+    if (dataset.description) {
+      html += `<p>${escapeHtml(dataset.description)}</p>`;
+    }
 
+    // Meta section
+    html += '<div class="detail-section">';
+    html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
+    html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
+    html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
+    html += `<p><strong>Topics:</strong> ${
+      Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''
+    }</p>`;
+    html += `<p><strong>Keywords:</strong> ${
+      Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''
+    }</p>`;
+    html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
+    html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
+    html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
+    html += `<p><strong>Public Web Service:</strong> ${
+      dataset.public_web_service
+        ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
+        : ''
+    }</p>`;
+    html += `<p><strong>Internal Web Service:</strong> ${
+      dataset.internal_web_service
+        ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
+        : ''
+    }</p>`;
+    html += `<p><strong>Data Standard:</strong> ${
+      dataset.data_standard
+        ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+        : ''
+    }</p>`;
+    if (dataset.notes) {
+      html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
+    }
+    html += '</div>';
 
+    // Attributes section
+    html += '<div class="detail-section">';
+    html += '<h3>Attributes</h3>';
+    if (!attrs.length) {
+      html += '<p>No attributes defined for this dataset.</p>';
+    } else {
+      html += '<ul>';
+      attrs.forEach(attr => {
+        html += `
+          <li>
+            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+            </button>
+          </li>`;
+      });
+      html += '</ul>';
+    }
+    html += '</div>';
 
-  
-  // Optional: show which datasets use this attribute (helpful context)
-  html += '<h4>Datasets using this attribute</h4>';
-  if (!datasetsUsing.length) {
-    html += '<p>No other datasets currently reference this attribute.</p>';
-  } else {
-    html += '<ul>';
-    datasetsUsing.forEach(ds => {
-      html += `
-        <li>
-          ${escapeHtml(ds.title || ds.id)}
-        </li>
+    // Inline attribute details panel (stays on the dataset page)
+    html += `
+      <div class="detail-section" id="inlineAttributeDetail">
+        <h3>Attribute details</h3>
+        <p>Select an attribute from the list above to see its properties here without leaving this dataset.</p>
+      </div>
+    `;
+
+    // Suggest change + export schema buttons (dataset)
+    const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
+    html += `
+      <div class="detail-section">
+        <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
+          Suggest a change to this dataset
+        </a>
+        <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
+          Export ArcGIS schema (Python)
+        </button>
+      </div>
+    `;
+
+    datasetDetailEl.innerHTML = html;
+    datasetDetailEl.classList.remove('hidden');
+
+    // Wire breadcrumb root
+    const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
+    if (rootBtn) {
+      rootBtn.addEventListener('click', () => {
+        showDatasetsView();
+      });
+    }
+
+    // Wire attribute buttons to open inline attribute detail (stay on datasets view)
+    const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
+    attrButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const attrId = btn.getAttribute('data-attr-id');
+        renderInlineAttributeDetail(attrId);
+      });
+    });
+
+    // Wire export schema button (now that the HTML exists)
+    const exportBtn = datasetDetailEl.querySelector('button[data-export-schema]');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const dsId = exportBtn.getAttribute('data-export-schema');
+        const ds = Catalog.getDatasetById(dsId);
+        if (!ds) return;
+        const attrsForDs = Catalog.getAttributesForDataset(ds);
+        const script = buildArcGisSchemaPython(ds, attrsForDs);
+        downloadTextFile(script, `${ds.id}_schema_arcpy.py`);
+      });
+    }
+  }
+
+  function renderInlineAttributeDetail(attrId) {
+    if (!datasetDetailEl) return;
+
+    const container = datasetDetailEl.querySelector('#inlineAttributeDetail');
+    if (!container) return;
+
+    const attribute = Catalog.getAttributeById(attrId);
+    if (!attribute) {
+      container.innerHTML = `
+        <h3>Attribute details</h3>
+        <p>Attribute not found: ${escapeHtml(attrId)}</p>
       `;
-    });
-    html += '</ul>';
+      return;
+    }
+
+    const datasetsUsing = Catalog.getDatasetsForAttribute(attrId) || [];
+
+    let html = '';
+    html += '<h3>Attribute details</h3>';
+    html += `<h4>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h4>`;
+    html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
+    html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
+    html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
+    html += `<p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>`;
+    html += `<p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>`;
+    if (attribute.example !== undefined) {
+      html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
+    }
+
+    // Enumerated values (if present)
+    if (
+      attribute.type === 'enumerated' &&
+      Array.isArray(attribute.values) &&
+      attribute.values.length
+    ) {
+      html += '<h4>Allowed values</h4>';
+      html += `
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Label</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      attribute.values.forEach(v => {
+        const code = v.code !== undefined ? String(v.code) : '';
+        const label = v.label || '';
+        const desc = v.description || '';
+        html += `
+          <tr>
+            <td>${escapeHtml(code)}</td>
+            <td>${escapeHtml(label)}</td>
+            <td>${escapeHtml(desc)}</td>
+          </tr>
+        `;
+      });
+
+      html += `
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Datasets that use this attribute
+    html += '<h4>Datasets using this attribute</h4>';
+    if (!datasetsUsing.length) {
+      html += '<p>No other datasets currently reference this attribute.</p>';
+    } else {
+      html += '<ul>';
+      datasetsUsing.forEach(ds => {
+        html += `
+          <li>
+            ${escapeHtml(ds.title || ds.id)}
+          </li>
+        `;
+      });
+      html += '</ul>';
+    }
+
+    // Deep-link to full attribute page in Attributes tab
+    html += `
+      <p style="margin-top:0.6rem;">
+        <button type="button" class="link-button" data-open-full-attribute="${escapeHtml(attribute.id)}">
+          Open full attribute page
+        </button>
+      </p>
+    `;
+
+    container.innerHTML = html;
+
+    const openFullBtn = container.querySelector('button[data-open-full-attribute]');
+    if (openFullBtn) {
+      openFullBtn.addEventListener('click', () => {
+        const id = openFullBtn.getAttribute('data-open-full-attribute');
+        showAttributesView();
+        renderAttributeDetail(id);
+      });
+    }
   }
-
-  // Optional: deep-link to full attribute page in Attributes tab
-  html += `
-    <p style="margin-top:0.6rem;">
-      <button type="button" class="link-button" data-open-full-attribute="${escapeHtml(attribute.id)}">
-        Open full attribute page
-      </button>
-    </p>
-  `;
-
-  container.innerHTML = html;
-
-  const openFullBtn = container.querySelector('button[data-open-full-attribute]');
-  if (openFullBtn) {
-    openFullBtn.addEventListener('click', () => {
-      const id = openFullBtn.getAttribute('data-open-full-attribute');
-      showAttributesView();
-      renderAttributeDetail(id);
-    });
-  }
-}
-
-
-  
 
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
@@ -558,48 +550,45 @@ if (
     html += '</div>';
 
     // If this is an enumerated attribute, show its allowed values (codes + labels)
-if (
-  attribute.type === 'enumerated' &&
-  Array.isArray(attribute.values) &&
-  attribute.values.length
-) {
-  html += '<div class="detail-section">';
-  html += '<h3>Allowed values</h3>';
-  html += `
-    <table>
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Label</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+    if (
+      attribute.type === 'enumerated' &&
+      Array.isArray(attribute.values) &&
+      attribute.values.length
+    ) {
+      html += '<div class="detail-section">';
+      html += '<h3>Allowed values</h3>';
+      html += `
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Label</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
 
-  attribute.values.forEach(v => {
-    const code = v.code !== undefined ? String(v.code) : '';
-    const label = v.label || '';
-    const desc = v.description || '';
-    html += `
-      <tr>
-        <td>${escapeHtml(code)}</td>
-        <td>${escapeHtml(label)}</td>
-        <td>${escapeHtml(desc)}</td>
-      </tr>
-    `;
-  });
+      attribute.values.forEach(v => {
+        const code = v.code !== undefined ? String(v.code) : '';
+        const label = v.label || '';
+        const desc = v.description || '';
+        html += `
+          <tr>
+            <td>${escapeHtml(code)}</td>
+            <td>${escapeHtml(label)}</td>
+            <td>${escapeHtml(desc)}</td>
+          </tr>
+        `;
+      });
 
-  html += `
-      </tbody>
-    </table>
-  `;
-  html += '</div>';
-}
+      html += `
+          </tbody>
+        </table>
+      `;
+      html += '</div>';
+    }
 
-
-
-    
     // Datasets that use this attribute
     html += '<div class="detail-section">';
     html += '<h3>Datasets using this attribute</h3>';
@@ -670,6 +659,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// Build ArcGIS Python schema script for a dataset
 function buildArcGisSchemaPython(dataset, attrs) {
   const lines = [];
   const dsId = dataset.id || '';
@@ -693,7 +683,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
   lines.push('geometry_type = "POLYGON"  # e.g. "POINT", "POLYLINE", "POLYGON"');
 
   const proj = dataset.projection || '';
-  const epsgMatch = proj.match(/EPSG:(\\d+)/i);
+  const epsgMatch = proj.match(/EPSG:(\d+)/i);
   if (epsgMatch) {
     lines.push(`spatial_reference = arcpy.SpatialReference(${epsgMatch[1]})  # from ${proj}`);
   } else {
@@ -723,20 +713,22 @@ function buildArcGisSchemaPython(dataset, attrs) {
     const length = fieldInfo.length;
     const domain = 'None'; // placeholder, no auto-domain creation
 
+    const safeAlias = alias.replace(/"/g, '""');
+
     lines.push(
-      `    ("${name}", "${type}", "${alias.replace(/"/g, '\\"')}", ${length}, ${domain}),`
+      `    ("${name}", "${type}", "${safeAlias}", ${length}, ${domain}),`
     );
 
     if (attr.type === 'enumerated' && Array.isArray(attr.values) && attr.values.length) {
-      const linesForAttr = [];
-      linesForAttr.push(`# Domain suggestion for ${name} (${alias}):`);
+      const commentLines = [];
+      commentLines.push(`# Domain suggestion for ${name} (${alias}):`);
       attr.values.forEach(v => {
         const code = v.code !== undefined ? String(v.code) : '';
         const label = v.label || '';
         const desc = v.description || '';
-        linesForAttr.push(`#   ${code} = ${label}  -  ${desc}`);
+        commentLines.push(`#   ${code} = ${label}  -  ${desc}`);
       });
-      enumDomainComments.push(linesForAttr.join('\\n'));
+      enumDomainComments.push(commentLines.join('\n'));
     }
   });
 
@@ -751,6 +743,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
   lines.push('        kwargs["field_domain"] = domain');
   lines.push('    arcpy.management.AddField(out_fc, name, ftype, **kwargs)');
   lines.push('');
+
   if (enumDomainComments.length) {
     lines.push('# ---------------------------------------------------------------------------');
     lines.push('# Suggested coded value domains for enumerated fields');
@@ -762,7 +755,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
     });
   }
 
-  return lines.join('\\n');
+  return lines.join('\n');
 }
 
 function mapAttributeToArcGisField(attr) {
@@ -799,5 +792,3 @@ function downloadTextFile(content, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-
