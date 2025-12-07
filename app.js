@@ -423,6 +423,47 @@ function renderInlineAttributeDetail(attrId) {
     html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
   }
 
+// Enumerated values (if present)
+if (
+  attribute.type === 'enumerated' &&
+  Array.isArray(attribute.values) &&
+  attribute.values.length
+) {
+  html += '<h4>Allowed values</h4>';
+  html += `
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  attribute.values.forEach(v => {
+    const code = v.code !== undefined ? String(v.code) : '';
+    const label = v.label || '';
+    const desc = v.description || '';
+    html += `
+      <tr>
+        <td>${escapeHtml(code)}</td>
+        <td>${escapeHtml(label)}</td>
+        <td>${escapeHtml(desc)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+}
+
+
+
+  
   // Optional: show which datasets use this attribute (helpful context)
   html += '<h4>Datasets using this attribute</h4>';
   if (!datasetsUsing.length) {
@@ -498,6 +539,49 @@ function renderInlineAttributeDetail(attrId) {
     }
     html += '</div>';
 
+    // If this is an enumerated attribute, show its allowed values (codes + labels)
+if (
+  attribute.type === 'enumerated' &&
+  Array.isArray(attribute.values) &&
+  attribute.values.length
+) {
+  html += '<div class="detail-section">';
+  html += '<h3>Allowed values</h3>';
+  html += `
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  attribute.values.forEach(v => {
+    const code = v.code !== undefined ? String(v.code) : '';
+    const label = v.label || '';
+    const desc = v.description || '';
+    html += `
+      <tr>
+        <td>${escapeHtml(code)}</td>
+        <td>${escapeHtml(label)}</td>
+        <td>${escapeHtml(desc)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+  html += '</div>';
+}
+
+
+
+    
     // Datasets that use this attribute
     html += '<div class="detail-section">';
     html += '<h3>Datasets using this attribute</h3>';
