@@ -375,6 +375,11 @@ a:hover {
   text-decoration: none;
 }
 
+.export-button {
+  margin-left: 0.5rem;
+}
+
+
 /* ============================
    TABLES
    ============================ */
