@@ -273,119 +273,195 @@ document.addEventListener('DOMContentLoaded', async () => {
   const datasetDetailEl = document.getElementById('datasetDetail');
   const attributeDetailEl = document.getElementById('attributeDetail');
 
-  function renderDatasetDetail(datasetId) {
-    if (!datasetDetailEl) return;
+function renderDatasetDetail(datasetId) {
+  if (!datasetDetailEl) return;
 
-    const dataset = Catalog.getDatasetById(datasetId);
-    if (!dataset) {
-      datasetDetailEl.classList.remove('hidden');
-      datasetDetailEl.innerHTML = `<p>Dataset not found: ${escapeHtml(datasetId)}</p>`;
-      return;
-    }
-
-    const attrs = Catalog.getAttributesForDataset(dataset);
-
-    let html = '';
-
-    // Breadcrumb
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
-      </nav>
-    `;
-
-    // Heading + description
-    html += `<h2>${escapeHtml(dataset.title || dataset.id)}</h2>`;
-    if (dataset.description) {
-      html += `<p>${escapeHtml(dataset.description)}</p>`;
-    }
-
-    // Meta section
-    html += '<div class="detail-section">';
-    html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
-    html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
-    html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
-    html += `<p><strong>Topics:</strong> ${
-      Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''
-    }</p>`;
-    html += `<p><strong>Keywords:</strong> ${
-      Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''
-    }</p>`;
-    html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
-    html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
-    html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
-    html += `<p><strong>Public Web Service:</strong> ${
-      dataset.public_web_service
-        ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
-        : ''
-    }</p>`;
-    html += `<p><strong>Internal Web Service:</strong> ${
-      dataset.internal_web_service
-        ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
-        : ''
-    }</p>`;
-    html += `<p><strong>Data Standard:</strong> ${
-      dataset.data_standard
-        ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
-        : ''
-    }</p>`;
-    if (dataset.notes) {
-      html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
-    }
-    html += '</div>';
-
-    // Attributes section
-    html += '<div class="detail-section">';
-    html += '<h3>Attributes</h3>';
-    if (!attrs.length) {
-      html += '<p>No attributes defined for this dataset.</p>';
-    } else {
-      html += '<ul>';
-      attrs.forEach(attr => {
-        html += `
-          <li>
-            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
-              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
-            </button>
-          </li>`;
-      });
-      html += '</ul>';
-    }
-    html += '</div>';
-
-    // Suggest change button (dataset)
-    const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
-    html += `
-      <div class="detail-section">
-        <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
-          Suggest a change to this dataset
-        </a>
-      </div>
-    `;
-
-    datasetDetailEl.innerHTML = html;
+  const dataset = Catalog.getDatasetById(datasetId);
+  if (!dataset) {
     datasetDetailEl.classList.remove('hidden');
+    datasetDetailEl.innerHTML = `<p>Dataset not found: ${escapeHtml(datasetId)}</p>`;
+    return;
+  }
 
-    // Wire breadcrumb root
-    const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
-    if (rootBtn) {
-      rootBtn.addEventListener('click', () => {
-        showDatasetsView();
-      });
-    }
+  const attrs = Catalog.getAttributesForDataset(dataset);
 
-    // Wire attribute buttons to open attribute detail view
-    const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
-    attrButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const attrId = btn.getAttribute('data-attr-id');
-        showAttributesView();
-        renderAttributeDetail(attrId);
-      });
+  let html = '';
+
+  // Breadcrumb
+  html += `
+    <nav class="breadcrumb">
+      <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
+    </nav>
+  `;
+
+  // Heading + description
+  html += `<h2>${escapeHtml(dataset.title || dataset.id)}</h2>`;
+  if (dataset.description) {
+    html += `<p>${escapeHtml(dataset.description)}</p>`;
+  }
+
+  // Meta section
+  html += '<div class="detail-section">';
+  html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
+  html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
+  html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
+  html += `<p><strong>Topics:</strong> ${
+    Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''
+  }</p>`;
+  html += `<p><strong>Keywords:</strong> ${
+    Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''
+  }</p>`;
+  html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
+  html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
+  html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
+  html += `<p><strong>Public Web Service:</strong> ${
+    dataset.public_web_service
+      ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
+      : ''
+  }</p>`;
+  html += `<p><strong>Internal Web Service:</strong> ${
+    dataset.internal_web_service
+      ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
+      : ''
+  }</p>`;
+  html += `<p><strong>Data Standard:</strong> ${
+    dataset.data_standard
+      ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+      : ''
+  }</p>`;
+  if (dataset.notes) {
+    html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
+  }
+  html += '</div>';
+
+  // Attributes section
+  html += '<div class="detail-section">';
+  html += '<h3>Attributes</h3>';
+  if (!attrs.length) {
+    html += '<p>No attributes defined for this dataset.</p>';
+  } else {
+    html += '<ul>';
+    attrs.forEach(attr => {
+      html += `
+        <li>
+          <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+            ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+          </button>
+        </li>`;
+    });
+    html += '</ul>';
+  }
+  html += '</div>';
+
+  // Inline attribute details panel (stays on the dataset page)
+  html += `
+    <div class="detail-section" id="inlineAttributeDetail">
+      <h3>Attribute details</h3>
+      <p>Select an attribute from the list above to see its properties here without leaving this dataset.</p>
+    </div>
+  `;
+
+  // Suggest change button (dataset)
+  const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
+  html += `
+    <div class="detail-section">
+      <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
+        Suggest a change to this dataset
+      </a>
+    </div>
+  `;
+
+  datasetDetailEl.innerHTML = html;
+  datasetDetailEl.classList.remove('hidden');
+
+  // Wire breadcrumb root
+  const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
+  if (rootBtn) {
+    rootBtn.addEventListener('click', () => {
+      showDatasetsView();
     });
   }
+
+  // Wire attribute buttons to open inline attribute detail (stay on datasets view)
+  const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
+  attrButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const attrId = btn.getAttribute('data-attr-id');
+      renderInlineAttributeDetail(attrId);
+    });
+  });
+}
+
+function renderInlineAttributeDetail(attrId) {
+  if (!datasetDetailEl) return;
+
+  const container = datasetDetailEl.querySelector('#inlineAttributeDetail');
+  if (!container) return;
+
+  const attribute = Catalog.getAttributeById(attrId);
+  if (!attribute) {
+    container.innerHTML = `
+      <h3>Attribute details</h3>
+      <p>Attribute not found: ${escapeHtml(attrId)}</p>
+    `;
+    return;
+  }
+
+  const datasetsUsing = Catalog.getDatasetsForAttribute(attrId) || [];
+
+  let html = '';
+  html += '<h3>Attribute details</h3>';
+  html += `<h4>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h4>`;
+  html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
+  html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
+  html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
+  html += `<p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>`;
+  html += `<p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>`;
+  if (attribute.example !== undefined) {
+    html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
+  }
+
+  // Optional: show which datasets use this attribute (helpful context)
+  html += '<h4>Datasets using this attribute</h4>';
+  if (!datasetsUsing.length) {
+    html += '<p>No other datasets currently reference this attribute.</p>';
+  } else {
+    html += '<ul>';
+    datasetsUsing.forEach(ds => {
+      html += `
+        <li>
+          ${escapeHtml(ds.title || ds.id)}
+        </li>
+      `;
+    });
+    html += '</ul>';
+  }
+
+  // Optional: deep-link to full attribute page in Attributes tab
+  html += `
+    <p style="margin-top:0.6rem;">
+      <button type="button" class="link-button" data-open-full-attribute="${escapeHtml(attribute.id)}">
+        Open full attribute page
+      </button>
+    </p>
+  `;
+
+  container.innerHTML = html;
+
+  const openFullBtn = container.querySelector('button[data-open-full-attribute]');
+  if (openFullBtn) {
+    openFullBtn.addEventListener('click', () => {
+      const id = openFullBtn.getAttribute('data-open-full-attribute');
+      showAttributesView();
+      renderAttributeDetail(id);
+    });
+  }
+}
+
+
+  
 
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
