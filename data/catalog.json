@@ -71,6 +71,145 @@
       "nullable": false,
       "description": "Official name of the ACEC.",
       "example": "Sand Dunes ACEC"
+    },
+    {
+      "id": "EXAMPLE_ATTRIBUTE",
+      "label": "Example Attribute",
+      "type": "string",
+      "nullable": true,
+      "description": "This example attribute exists to demonstrate and explain the attribute fields shown in the catalog UI (ID, Label, Type, Nullable, Description, Example, and Allowed values for enumerated types).",
+      "example": "Sample value used only for demonstration."
+    },
+    {
+      "id": "FEATURE_COUNT_EST",
+      "label": "Estimated Feature Count",
+      "type": "integer",
+      "nullable": true,
+      "description": "Approximate number of features or records in the dataset.",
+      "example": 125000
+    },
+    {
+      "id": "IS_OFFICIAL",
+      "label": "Official Program Layer",
+      "type": "boolean",
+      "nullable": false,
+      "description": "Indicates whether this dataset is the officially endorsed program layer for its topic.",
+      "example": true
+    },
+    {
+      "id": "MGMT_AGENCY",
+      "label": "Managing Agency",
+      "type": "enumerated",
+      "nullable": false,
+      "description": "Primary federal agency responsible for managing the feature.",
+      "example": 1,
+      "values": [
+        { "code": 1, "label": "BLM",   "description": "Bureau of Land Management" },
+        { "code": 2, "label": "NPS",   "description": "National Park Service" },
+        { "code": 3, "label": "USFS",  "description": "U.S. Forest Service" },
+        { "code": 4, "label": "USFWS", "description": "U.S. Fish and Wildlife Service" },
+        { "code": 5, "label": "BOR",   "description": "Bureau of Reclamation" }
+      ]
+    },
+    {
+      "id": "ACCESS_SENSITIVITY",
+      "label": "Access Sensitivity",
+      "type": "enumerated",
+      "nullable": false,
+      "description": "High-level data sensitivity category for sharing and public access.",
+      "example": 0,
+      "values": [
+        {
+          "code": 0,
+          "label": "Public",
+          "description": "Suitable for open public release."
+        },
+        {
+          "code": 1,
+          "label": "CUI",
+          "description": "Controlled Unclassified Information; share only per policy."
+        },
+        {
+          "code": 2,
+          "label": "Internal only",
+          "description": "Internal use only; not cleared for public release."
+        }
+      ]
+    },
+    {
+      "id": "RMP_STATUS",
+      "label": "RMP Status",
+      "type": "enumerated",
+      "nullable": false,
+      "description": "Planning status of the Resource Management Plan.",
+      "example": 1,
+      "values": [
+        {
+          "code": 1,
+          "label": "Approved",
+          "description": "Approved RMP with decisions currently in effect."
+        },
+        {
+          "code": 2,
+          "label": "Draft",
+          "description": "Draft RMP in review and not yet approved."
+        },
+        {
+          "code": 3,
+          "label": "In revision",
+          "description": "Existing RMP currently being amended or revised."
+        }
+      ]
+    },
+    {
+      "id": "FIRE_CAUSE",
+      "label": "Fire Cause",
+      "type": "enumerated",
+      "nullable": true,
+      "description": "Best-known primary cause of the fire.",
+      "example": 1,
+      "values": [
+        {
+          "code": 1,
+          "label": "Lightning",
+          "description": "Ignition caused by lightning or other natural sources."
+        },
+        {
+          "code": 2,
+          "label": "Human-caused",
+          "description": "Ignition caused by human activity."
+        },
+        {
+          "code": 3,
+          "label": "Unknown",
+          "description": "Cause has not been determined or recorded."
+        }
+      ]
+    },
+    {
+      "id": "ACEC_STATUS",
+      "label": "ACEC Status",
+      "type": "enumerated",
+      "nullable": false,
+      "description": "Current designation status of the ACEC.",
+      "example": 1,
+      "values": [
+        {
+          "code": 1,
+          "label": "Designated",
+          "description": "ACEC is currently designated and in effect."
+        },
+        {
+          "code": 2,
+          "label": "Proposed",
+          "description": "ACEC has been proposed but is not yet designated."
+        },
+        {
+          "code": 3,
+          "label": "Released",
+          "description": "ACEC designation has been removed or is no longer in effect."
+        }
+      ]
     }
   ],
   "datasets": [
@@ -110,7 +249,8 @@
       "attribute_ids": [
         "RMP_ID",
         "STATE",
-        "EFFECTIVE_DATE"
+        "EFFECTIVE_DATE",
+        "EXAMPLE_ATTRIBUTE"
       ]
     },
     {
@@ -139,7 +279,12 @@
       "attribute_ids": [
         "RMP_ID",
         "STATE",
-        "EFFECTIVE_DATE"
+        "EFFECTIVE_DATE",
+        "RMP_STATUS",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
       ]
     },
     {
@@ -170,7 +315,12 @@
         "FIRE_NAME",
         "ACRES_BURNED",
         "DISCOVERY_DATE",
-        "STATE"
+        "STATE",
+        "FIRE_CAUSE",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
       ]
     },
     {
@@ -200,7 +350,12 @@
         "ACEC_ID",
         "ACEC_NAME",
         "STATE",
-        "EFFECTIVE_DATE"
+        "EFFECTIVE_DATE",
+        "ACEC_STATUS",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
       ]
     }
   ]
