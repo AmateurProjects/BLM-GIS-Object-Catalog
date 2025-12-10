@@ -305,14 +305,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Meta section
     html += '<div class="detail-section">';
     html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
+    html += `<p><strong>Geometry Type:</strong> ${escapeHtml(dataset.geometry_type || '')}</p>`;
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
+
     html += `<p><strong>Topics:</strong> ${
-      Array.isArray(dataset.topics) ? dataset.topics.map(escapeHtml).join(', ') : ''
+      Array.isArray(dataset.topics)
+        ? dataset.topics
+            .map(t => `<span class="pill pill-topic">${escapeHtml(t)}</span>`)
+            .join(' ')
+        : ''
     }</p>`;
+
     html += `<p><strong>Keywords:</strong> ${
-      Array.isArray(dataset.keywords) ? dataset.keywords.map(escapeHtml).join(', ') : ''
+      Array.isArray(dataset.keywords)
+        ? dataset.keywords
+            .map(k => `<span class="pill pill-keyword">${escapeHtml(k)}</span>`)
+            .join(' ')
+        : ''
     }</p>`;
+
     html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
     html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
     html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
@@ -335,6 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
     }
     html += '</div>';
+
 
     // Attributes section
     html += '<div class="detail-section">';
@@ -680,15 +693,21 @@ function buildArcGisSchemaPython(dataset, attrs) {
   lines.push('# TODO: Update these paths and settings before running');
   lines.push('gdb = r"C:\\path\\to\\your.gdb"');
   lines.push(`fc_name = "${objname}"`);
-  lines.push('geometry_type = "POLYGON"  # e.g. "POINT", "POLYLINE", "POLYGON"');
-
+  
   const proj = dataset.projection || '';
   const epsgMatch = proj.match(/EPSG:(\d+)/i);
+
+  // Use geometry_type from the dataset if present, default to POLYGON
+  const geomType = (dataset.geometry_type || 'POLYGON').toUpperCase();
+
+  lines.push(`geometry_type = "${geomType}"  # e.g. "POINT", "POLYLINE", "POLYGON"`);
+
   if (epsgMatch) {
     lines.push(`spatial_reference = arcpy.SpatialReference(${epsgMatch[1]})  # from ${proj}`);
   } else {
     lines.push('spatial_reference = None  # TODO: set a spatial reference if desired');
   }
+
 
   lines.push('');
   lines.push('# Create the feature class');
