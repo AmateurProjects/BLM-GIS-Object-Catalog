@@ -151,8 +151,13 @@ input[type="search"]:focus {
 #datasetList,
 #attributeList {
   margin: 0;
-  padding: 0;
+  padding: 0.4rem 0.4rem;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-soft);
 }
+
 
 .list-item {
   margin-bottom: 0.35rem;
