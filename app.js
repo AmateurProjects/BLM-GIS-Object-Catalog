@@ -193,14 +193,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     filtered.forEach(ds => {
       const li = document.createElement('li');
       li.className = 'list-item dataset-item';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'list-item-button';
-      btn.textContent = ds.title || ds.id;
-      btn.addEventListener('click', () => {
-        showDatasetsView();
-        renderDatasetDetail(ds.id);
-      });
+     
+const btn = document.createElement('button');
+btn.type = 'button';
+btn.className = 'list-item-button';
+
+// Geometry icon
+const geom = (ds.geometry_type || '').toUpperCase();
+let geomIcon = '';
+if (geom === 'POINT' || geom === 'MULTIPOINT') {
+  geomIcon = '●';
+} else if (geom === 'POLYLINE' || geom === 'LINE') {
+  geomIcon = '⟶';
+} else if (geom === 'POLYGON') {
+  geomIcon = '⬛';
+} else if (geom === 'TABLE') {
+  geomIcon = '☰';
+}
+
+// Use innerHTML so we can show icon + label
+btn.innerHTML = `
+  <span class="geom-icon geom-icon-list">${geomIcon}</span>
+  <span class="list-item-label">${escapeHtml(ds.title || ds.id)}</span>
+`;
+
+btn.addEventListener('click', () => {
+  showDatasetsView();
+  renderDatasetDetail(ds.id);
+});
+
       li.appendChild(btn);
       list.appendChild(li);
     });
@@ -283,6 +304,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const geom = (dataset.geometry_type || '').toUpperCase();
+let geomIcon = '';
+if (geom === 'POINT' || geom === 'MULTIPOINT') {
+  geomIcon = '●';
+} else if (geom === 'POLYLINE' || geom === 'LINE') {
+  geomIcon = '⟶';
+} else if (geom === 'POLYGON') {
+  geomIcon = '⬛';
+} else if (geom === 'TABLE') {
+  geomIcon = '☰';
+}
+
+    
+
     const attrs = Catalog.getAttributesForDataset(dataset);
 
     let html = '';
@@ -305,7 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Meta section
     html += '<div class="card card-meta">';
     html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
-    html += `<p><strong>Geometry Type:</strong> ${escapeHtml(dataset.geometry_type || '')}</p>`;
+    html += `<p><strong>Geometry Type:</strong> <span class="geom-icon geom-icon-inline">${geomIcon}</span>${escapeHtml(dataset.geometry_type || '')}</p>`;
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
 
