@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Meta section
-    html += '<div class="detail-section">';
+    html += '<div class="card card-meta">';
     html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
     html += `<p><strong>Geometry Type:</strong> ${escapeHtml(dataset.geometry_type || '')}</p>`;
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // Attributes section
-    html += '<div class="detail-section">';
+    html += '<div class="card card-attributes">';
     html += '<h3>Attributes</h3>';
     if (!attrs.length) {
       html += '<p>No attributes defined for this dataset.</p>';
@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inline attribute details panel (stays on the dataset page)
     html += `
-      <div class="detail-section" id="inlineAttributeDetail">
+      <div class="card card-inline-attribute" id="inlineAttributeDetail">
         <h3>Attribute details</h3>
         <p>Select an attribute from the list above to see its properties here without leaving this dataset.</p>
       </div>
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Suggest change + export schema buttons (dataset)
     const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
     html += `
-      <div class="detail-section">
+      <div class="card card-actions">
         <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
           Suggest a change to this dataset
         </a>
@@ -550,8 +550,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       </nav>
     `;
 
+
+    // Meta section
+    
     html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
-    html += '<div class="detail-section">';
+    html += '<div class="card card-attribute-meta">';
     html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
     html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
     html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
@@ -568,7 +571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       Array.isArray(attribute.values) &&
       attribute.values.length
     ) {
-      html += '<div class="detail-section">';
+      html += '<div class="card card-enumerated">';
       html += '<h3>Allowed values</h3>';
       html += `
         <table>
@@ -603,7 +606,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Datasets that use this attribute
-    html += '<div class="detail-section">';
+    html += '<div class="card card-attribute-datasets">';
     html += '<h3>Datasets using this attribute</h3>';
     if (!datasets.length) {
       html += '<p>No datasets currently reference this attribute.</p>';
@@ -621,10 +624,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     html += '</div>';
 
-    // Suggest change button (attribute)
+    // Action card (attribute)
     const issueUrl = Catalog.buildGithubIssueUrlForAttribute(attribute);
     html += `
-      <div class="detail-section">
+      <div class="card card-actions">
         <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
           Suggest a change to this attribute
         </a>
