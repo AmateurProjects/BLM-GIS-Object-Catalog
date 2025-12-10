@@ -494,3 +494,25 @@ code {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(78, 163, 255, 0.35);
 }
+
+
+/* ============================
+   GEOMETRY ICONS
+   ============================ */
+
+.geom-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
+}
+
+.geom-icon-list {
+  width: 1.2rem;
+}
+
+.geom-icon-inline {
+  margin-right: 0.35rem;
+}
+
