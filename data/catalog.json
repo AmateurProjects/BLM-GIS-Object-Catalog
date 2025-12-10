@@ -331,7 +331,6 @@
       ]
     },
 
-    /* --- New attributes for Rights-of-Way --- */
     {
       "id": "ROW_ID",
       "label": "ROW Identifier",
