@@ -259,8 +259,11 @@ input[type="search"]:focus {
   margin-bottom: 0.2rem;
 }
 
-/* Sections within detail panel (meta, attributes, datasets, etc.) */
-.detail-section {
+/* ============================
+   CARD COMPONENT
+   ============================ */
+
+.card {
   margin-top: 0.6rem;
   padding: 0.75rem 0.9rem;
   background: var(--bg-panel);
@@ -269,17 +272,18 @@ input[type="search"]:focus {
   box-shadow: var(--shadow-soft);
 }
 
+/* Backwards compat: if anything still uses .detail-section */
+.detail-section {
+  composes: card;
+}
+
 /* Make label/value pairs line up a bit better */
-.detail-section p strong {
+.card p strong {
   display: inline-block;
   min-width: 145px;
   font-weight: 600;
 }
 
-#inlineAttributeDetail h4 {
-  margin: 0.35rem 0 0.45rem;
-  font-size: 0.98rem;
-}
 
 /* ============================
    BREADCRUMB
