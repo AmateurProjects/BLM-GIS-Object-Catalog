@@ -370,3 +370,276 @@
           "label": "Other",
           "description": "Other type of authorized facility or use."
         }
+      ]
+    },
+    {
+      "id": "AUTHORITY",
+      "label": "Authority",
+      "type": "string",
+      "nullable": true,
+      "description": "Legal authority or statute under which the right-of-way was issued.",
+      "example": "FLPMA Title V"
+    }
+  ],
+
+  "datasets": [
+    {
+      "id": "This is a hidden unique ID for the dataset used for the Catalog UI.",
+      "objname": "Object name is the editable database oject such as a feature class in the database.",
+      "title": "Data Catalog Field Explanations",
+      "description": "Plain language description of what this data catalog item is.",
+      "office_owner": "The branch, division, or office responsible for updating and maintaining the dataset.",
+      "contact_email": "Email address of the best point of contant for this dataset.",
+      "topics": [
+        "Topics can be added to help group datasets by theme. Example: planning",
+        "fluid minerals",
+        "fire"
+      ],
+      "keywords": [
+        "Keywords help with search. Example: RMP",
+        "land use planning",
+        "ACEC"
+      ],
+      "extent": {
+        "_comment": "extent is OPTIONAL - this may be used for a future feature of the site.",
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "TABLE",
+      "_comment": "projection and geometry_type are OPTIONAL - they may be used for future features of the site.",
+      "update_frequency": "How often the dataset updates: monthly, daily, etc.",
+      "status": "Dataset status: authoritative, planned, depreciated, etc.",
+      "public_web_service": "This is the URL to the public web servive for the dataset.",
+      "internal_web_service": "The URL of the internal web service for the dataset.",
+      "data_standard": "URL to the data standard for the dataset.",
+      "access_level": "Controlled Unclassified Information (CUI) category or \"PUBLIC\" if none.",
+      "notes": "OPTIONAL field to use in the rare case that there is a need to share additional information here about this dataset to the user.",
+      "attribute_ids": [
+        "RMP_ID",
+        "STATE",
+        "EFFECTIVE_DATE",
+        "EXAMPLE_ATTRIBUTE"
+      ]
+    },
+    {
+      "id": "blm_rmp_boundaries",
+      "objname": "BLM_RMP_Boundaries",
+      "title": "BLM Resource Management Plan Boundaries",
+      "description": "Polygon boundaries of BLM Resource Management Plan decision areas.",
+      "office_owner": "BLM Division of Planning",
+      "contact_email": "planning@example.gov",
+      "topics": ["planning", "land_status"],
+      "keywords": ["RMP", "land use planning", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "POLYGON",
+      "update_frequency": "annual",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/RMP/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/RMP/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_rmp_boundaries",
+      "access_level": "PUBLIC",
+      "notes": "Used in NEPA and land use planning program-wide.",
+      "attribute_ids": [
+        "RMP_ID",
+        "STATE",
+        "EFFECTIVE_DATE",
+        "RMP_STATUS",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
+      ]
+    },
+    {
+      "id": "blm_wildfire_perimeters",
+      "objname": "BLM_Wildfire_Perimeters",
+      "title": "BLM Wildfire Perimeters",
+      "description": "Perimeters of wildfires intersecting BLM-managed lands.",
+      "office_owner": "BLM Fire and Aviation",
+      "contact_email": "fire@example.gov",
+      "topics": ["wildfire", "risk"],
+      "keywords": ["fire", "perimeter", "burned area", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "POLYGON",
+      "update_frequency": "daily during fire season",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Fire/Perimeters/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Fire/Perimeters/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_wildfire_perimeters",
+      "access_level": "PUBLIC",
+      "notes": "Includes only perimeters that intersect BLM-administered lands.",
+      "attribute_ids": [
+        "FIRE_ID",
+        "FIRE_NAME",
+        "ACRES_BURNED",
+        "DISCOVERY_DATE",
+        "STATE",
+        "FIRE_CAUSE",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
+      ]
+    },
+    {
+      "id": "blm_acecs",
+      "objname": "BLM_ACEC_Boundaries",
+      "title": "BLM Areas of Critical Environmental Concern (ACECs)",
+      "description": "Polygon boundaries of designated Areas of Critical Environmental Concern (ACECs) on BLM-administered lands.",
+      "office_owner": "BLM Division of Planning",
+      "contact_email": "planning@example.gov",
+      "topics": ["planning", "resource_protection"],
+      "keywords": ["ACEC", "land use planning", "special management area", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "POLYGON",
+      "update_frequency": "as needed",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Planning/ACEC/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Planning/ACEC/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_acec_boundaries",
+      "access_level": "PUBLIC",
+      "notes": "Includes currently designated ACECs; proposed ACECs are maintained separately.",
+      "attribute_ids": [
+        "ACEC_ID",
+        "ACEC_NAME",
+        "STATE",
+        "EFFECTIVE_DATE",
+        "ACEC_STATUS",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
+      ]
+    },
+    {
+      "id": "blm_wilderness_study_areas",
+      "objname": "BLM_Wilderness_Study_Areas",
+      "title": "BLM Wilderness Study Areas",
+      "description": "Polygon boundaries of Wilderness Study Areas on BLM-administered lands.",
+      "office_owner": "BLM Division of Planning",
+      "contact_email": "planning@example.gov",
+      "topics": ["planning", "wilderness"],
+      "keywords": ["WSA", "wilderness", "planning", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "POLYGON",
+      "update_frequency": "as needed",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Planning/WSA/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Planning/WSA/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_wilderness_study_areas",
+      "access_level": "PUBLIC",
+      "notes": "Includes WSAs and their current status relative to wilderness designation.",
+      "attribute_ids": [
+        "WSA_ID",
+        "WSA_NAME",
+        "STATE",
+        "EFFECTIVE_DATE",
+        "WSA_STATUS",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
+      ]
+    },
+    {
+      "id": "blm_oil_gas_leases",
+      "objname": "BLM_Oil_Gas_Leases",
+      "title": "BLM Oil and Gas Leases",
+      "description": "Polygon representation of BLM-administered oil and gas lease areas.",
+      "office_owner": "BLM Energy and Minerals",
+      "contact_email": "energy@example.gov",
+      "topics": ["fluid_minerals", "energy"],
+      "keywords": ["lease", "oil and gas", "fluid minerals", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "POLYGON",
+      "update_frequency": "monthly",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Energy/Leases/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Energy/Leases/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_oil_gas_leases",
+      "access_level": "PUBLIC",
+      "notes": "Represents active and historical oil and gas leases on BLM-administered lands.",
+      "attribute_ids": [
+        "LEASE_ID",
+        "STATE",
+        "EFFECTIVE_DATE",
+        "LEASE_STATUS",
+        "OPERATOR_NAME",
+        "COMMODITY",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
+      ]
+    },
+    {
+      "id": "blm_rights_of_way",
+      "objname": "BLM_Rights_of_Way",
+      "title": "BLM Rights-of-Way",
+      "description": "Linear representation of rights-of-way authorized across BLM-administered lands.",
+      "office_owner": "BLM Lands and Realty",
+      "contact_email": "lands@example.gov",
+      "topics": ["lands", "infrastructure"],
+      "keywords": ["right-of-way", "ROW", "transmission line", "pipeline", "BLM"],
+      "extent": {
+        "west": -125.0,
+        "south": 31.0,
+        "east": -101.0,
+        "north": 49.0
+      },
+      "projection": "EPSG:4326",
+      "geometry_type": "POLYLINE",
+      "update_frequency": "monthly",
+      "status": "authoritative",
+      "public_web_service": "https://example.com/arcgis/rest/services/Lands/ROW/FeatureServer",
+      "internal_web_service": "https://internal.example.gov/arcgis/rest/services/Lands/ROW/FeatureServer",
+      "data_standard": "https://example.gov/standards/blm_rights_of_way",
+      "access_level": "PUBLIC",
+      "notes": "Includes major transmission, pipeline, road, and other rights-of-way.",
+      "attribute_ids": [
+        "ROW_ID",
+        "STATE",
+        "EFFECTIVE_DATE",
+        "ROW_TYPE",
+        "AUTHORITY",
+        "MGMT_AGENCY",
+        "ACCESS_SENSITIVITY",
+        "FEATURE_COUNT_EST",
+        "IS_OFFICIAL"
+      ]
+    }
+  ]
+}
