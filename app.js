@@ -384,32 +384,37 @@ if (geom === 'POINT' || geom === 'MULTIPOINT') {
     html += '</div>';
 
 
-    // Attributes section
-    html += '<div class="card card-attributes">';
-    html += '<h3>Attributes</h3>';
-    if (!attrs.length) {
-      html += '<p>No attributes defined for this dataset.</p>';
-    } else {
-      html += '<ul>';
-      attrs.forEach(attr => {
-        html += `
-          <li>
-            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
-              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
-            </button>
-          </li>`;
-      });
-      html += '</ul>';
-    }
-    html += '</div>';
+// Attributes + inline attribute details in a row
+html += `
+  <div class="card-row">
+    <div class="card card-attributes">
+      <h3>Attributes</h3>
+`;
 
-    // Inline attribute details panel (stays on the dataset page)
+if (!attrs.length) {
+  html += '<p>No attributes defined for this dataset.</p>';
+} else {
+  html += '<ul>';
+  attrs.forEach(attr => {
     html += `
-      <div class="card card-inline-attribute" id="inlineAttributeDetail">
-        <h3>Attribute details</h3>
-        <p>Select an attribute from the list above to see its properties here without leaving this dataset.</p>
-      </div>
-    `;
+      <li>
+        <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+          ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+        </button>
+      </li>`;
+  });
+  html += '</ul>';
+}
+
+html += `
+    </div>
+    <div class="card card-inline-attribute" id="inlineAttributeDetail">
+      <h3>Attribute details</h3>
+      <p>Select an attribute from the list to see its properties here without leaving this dataset.</p>
+    </div>
+  </div>
+`;
+
 
     // Suggest change + export schema buttons (dataset)
     const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
