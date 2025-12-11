@@ -537,6 +537,7 @@ if (!datasetsUsing.length) {
 
     container.innerHTML = html;
 
+    // Wire "Open full attribute page" button
     const openFullBtn = container.querySelector('button[data-open-full-attribute]');
     if (openFullBtn) {
       openFullBtn.addEventListener('click', () => {
@@ -545,22 +546,18 @@ if (!datasetsUsing.length) {
         renderAttributeDetail(id);
       });
     }
+  
+    //wire dataset links in the inline attribute card
+    const dsButtons = container.querySelectorAll('button[data-dataset-id]');
+    dsButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dsId = btn.getAttribute('data-dataset-id');
+        showDatasetsView();
+        renderDatasetDetail(dsId);
+      });
+    });  
   }
 
-  //wire dataset links in the inline attribute card
-  const dsButtons = container.querySelectorAll('button[data-dataset-id]');
-  dsButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const dsId = btn.getAttribute('data-dataset-id');
-      showDatasetsView();
-      renderDatasetDetail(dsId);
-  });
-});
-
-
-
-
-  
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
 
