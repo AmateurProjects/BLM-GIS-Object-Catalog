@@ -503,21 +503,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
     }
 
-    // Datasets that use this attribute
-    html += '<h4>Datasets using this attribute</h4>';
-    if (!datasetsUsing.length) {
-      html += '<p>No other datasets currently reference this attribute.</p>';
-    } else {
-      html += '<ul>';
-      datasetsUsing.forEach(ds => {
-        html += `
-          <li>
-            ${escapeHtml(ds.title || ds.id)}
-          </li>
-        `;
-      });
-      html += '</ul>';
-    }
+   // Datasets that use this attribute
+html += '<h4>Datasets using this attribute</h4>';
+if (!datasetsUsing.length) {
+  html += '<p>No other datasets currently reference this attribute.</p>';
+} else {
+  html += '<ul>';
+  datasetsUsing.forEach(ds => {
+    html += `
+      <li>
+        <button
+          type="button"
+          class="link-button"
+          data-dataset-id="${escapeHtml(ds.id)}"
+        >
+          ${escapeHtml(ds.title || ds.id)}
+        </button>
+      </li>
+    `;
+  });
+  html += '</ul>';
+}
+
 
     // Deep-link to full attribute page in Attributes tab
     html += `
@@ -540,6 +547,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  //wire dataset links in the inline attribute card
+  const dsButtons = container.querySelectorAll('button[data-dataset-id]');
+  dsButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dsId = btn.getAttribute('data-dataset-id');
+      showDatasetsView();
+      renderDatasetDetail(dsId);
+  });
+});
+
+
+
+
+  
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
 
