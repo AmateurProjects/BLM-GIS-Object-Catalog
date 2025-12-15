@@ -175,8 +175,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             ds.id,
             ds.title,
             ds.description,
-            ...(ds.topics || []),
-            ...(ds.keywords || [])
+            ds.agency_owner,
+            ds.office_owner,
+            ...(ds.topics || [])
+            // NOTE: keywords removed from schema
           ]
             .filter(Boolean)
             .join(' ')
@@ -228,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const haystack = [
             attr.id,
             attr.label,
-            attr.description
+            attr.definition
           ]
             .filter(Boolean)
             .join(' ')
@@ -314,8 +316,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Meta section
     html += '<div class="card card-meta">';
-    html += `<p><strong>Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
+    html += `<p><strong>Database Object Name:</strong> ${escapeHtml(dataset.objname || '')}</p>`;
     html += `<p><strong>Geometry Type:</strong> ${geomIconHtml}${escapeHtml(dataset.geometry_type || '')}</p>`;
+    html += `<p><strong>Agency Owner:</strong> ${escapeHtml(dataset.agency_owner || '')}</p>`;
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
 
@@ -323,14 +326,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       Array.isArray(dataset.topics)
         ? dataset.topics
             .map(t => `<span class="pill pill-topic">${escapeHtml(t)}</span>`)
-            .join(' ')
-        : ''
-    }</p>`;
-
-    html += `<p><strong>Keywords:</strong> ${
-      Array.isArray(dataset.keywords)
-        ? dataset.keywords
-            .map(k => `<span class="pill pill-keyword">${escapeHtml(k)}</span>`)
             .join(' ')
         : ''
     }</p>`;
@@ -456,13 +451,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let html = '';
     html += '<h3>Attribute details</h3>';
     html += `<h4>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h4>`;
-    html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
-    html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
-    html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
-    html += `<p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>`;
-    html += `<p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>`;
-    if (attribute.example !== undefined) {
-      html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
+
+    html += `<p><strong>Attribute Field Name:</strong> ${escapeHtml(attribute.id)}</p>`;
+    html += `<p><strong>Attribute Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
+    html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
+    html += `<p><strong>Attribute Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
+    if (attribute.expected_value !== undefined) {
+      html += `<p><strong>Example Expected Value:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
     }
 
     // Enumerated values (if present)
@@ -503,28 +498,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
     }
 
-   // Datasets that use this attribute
-html += '<h4>Datasets using this attribute</h4>';
-if (!datasetsUsing.length) {
-  html += '<p>No other datasets currently reference this attribute.</p>';
-} else {
-  html += '<ul>';
-  datasetsUsing.forEach(ds => {
-    html += `
-      <li>
-        <button
-          type="button"
-          class="link-button"
-          data-dataset-id="${escapeHtml(ds.id)}"
-        >
-          ${escapeHtml(ds.title || ds.id)}
-        </button>
-      </li>
-    `;
-  });
-  html += '</ul>';
-}
-
+    // Datasets that use this attribute
+    html += '<h4>Datasets using this attribute</h4>';
+    if (!datasetsUsing.length) {
+      html += '<p>No other datasets currently reference this attribute.</p>';
+    } else {
+      html += '<ul>';
+      datasetsUsing.forEach(ds => {
+        html += `
+          <li>
+            <button
+              type="button"
+              class="link-button"
+              data-dataset-id="${escapeHtml(ds.id)}"
+            >
+              ${escapeHtml(ds.title || ds.id)}
+            </button>
+          </li>
+        `;
+      });
+      html += '</ul>';
+    }
 
     // Deep-link to full attribute page in Attributes tab
     html += `
@@ -546,8 +540,8 @@ if (!datasetsUsing.length) {
         renderAttributeDetail(id);
       });
     }
-  
-    //wire dataset links in the inline attribute card
+
+    // Wire dataset links in the inline attribute card
     const dsButtons = container.querySelectorAll('button[data-dataset-id]');
     dsButtons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -555,7 +549,7 @@ if (!datasetsUsing.length) {
         showDatasetsView();
         renderDatasetDetail(dsId);
       });
-    });  
+    });
   }
 
   function renderAttributeDetail(attrId) {
@@ -584,13 +578,12 @@ if (!datasetsUsing.length) {
     // Meta section
     html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
     html += '<div class="card card-attribute-meta">';
-    html += `<p><strong>ID:</strong> ${escapeHtml(attribute.id)}</p>`;
-    html += `<p><strong>Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
-    html += `<p><strong>Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
-    html += `<p><strong>Nullable:</strong> ${attribute.nullable ? 'Yes' : 'No'}</p>`;
-    html += `<p><strong>Description:</strong> ${escapeHtml(attribute.description || '')}</p>`;
-    if (attribute.example !== undefined) {
-      html += `<p><strong>Example:</strong> ${escapeHtml(String(attribute.example))}</p>`;
+    html += `<p><strong>Attribute Field Name:</strong> ${escapeHtml(attribute.id)}</p>`;
+    html += `<p><strong>Attribute Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
+    html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
+    html += `<p><strong>Attribute Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
+    if (attribute.expected_value !== undefined) {
+      html += `<p><strong>Example Expected Value:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
     }
     html += '</div>';
 
@@ -721,13 +714,13 @@ function getGeometryIconHTML(geometryType, contextClass) {
   // Other types use Unicode glyphs wrapped in a span
   let symbol = '';
   if (geom === 'POINT' || geom === 'MULTIPOINT') {
-    symbol = '•';        // filled dot
+    symbol = '•'; // filled dot
   } else if (geom === 'POLYLINE' || geom === 'LINE') {
-    symbol = '〰️';      // wavy line
+    symbol = '〰️'; // wavy line
   } else if (geom === 'TABLE') {
-    symbol = '▦';        // table/grid
+    symbol = '▦'; // table/grid
   } else {
-    symbol = '';         // unknown / no icon
+    symbol = ''; // unknown / no icon
   }
 
   return `<span class="${fullClass}">${symbol}</span>`;
@@ -756,7 +749,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
   lines.push(`fc_name = "${objname}"`);
 
   const proj = dataset.projection || '';
-  const epsgMatch = proj.match(/EPSG:(\d+)/i);
+  const epsgMatch = proj.match(/EPSG:(\\d+)/i);
 
   // Use geometry_type from the dataset if present, default to POLYGON
   const geomType = (dataset.geometry_type || 'POLYGON').toUpperCase();
