@@ -104,11 +104,11 @@
       "description": "Primary federal agency responsible for managing the feature.",
       "example": 1,
       "values": [
-        { "code": 1, "label": "BLM",   "description": "Bureau of Land Management" },
-        { "code": 2, "label": "NPS",   "description": "National Park Service" },
-        { "code": 3, "label": "USFS",  "description": "U.S. Forest Service" },
-        { "code": 4, "label": "USFWS","description": "U.S. Fish and Wildlife Service" },
-        { "code": 5, "label": "BOR",   "description": "Bureau of Reclamation" }
+        { "code": 1, "label": "BLM", "description": "Bureau of Land Management" },
+        { "code": 2, "label": "NPS", "description": "National Park Service" },
+        { "code": 3, "label": "USFS", "description": "U.S. Forest Service" },
+        { "code": 4, "label": "USFWS", "description": "U.S. Fish and Wildlife Service" },
+        { "code": 5, "label": "BOR", "description": "Bureau of Reclamation" }
       ]
     },
     {
@@ -119,21 +119,9 @@
       "description": "High-level data sensitivity category for sharing and public access.",
       "example": 0,
       "values": [
-        {
-          "code": 0,
-          "label": "Public",
-          "description": "Suitable for open public release."
-        },
-        {
-          "code": 1,
-          "label": "CUI",
-          "description": "Controlled Unclassified Information; share only per policy."
-        },
-        {
-          "code": 2,
-          "label": "Internal only",
-          "description": "Internal use only; not cleared for public release."
-        }
+        { "code": 0, "label": "Public", "description": "Suitable for open public release." },
+        { "code": 1, "label": "CUI", "description": "Controlled Unclassified Information; share only per policy." },
+        { "code": 2, "label": "Internal only", "description": "Internal use only; not cleared for public release." }
       ]
     },
     {
@@ -144,21 +132,9 @@
       "description": "Planning status of the Resource Management Plan.",
       "example": 1,
       "values": [
-        {
-          "code": 1,
-          "label": "Approved",
-          "description": "Approved RMP with decisions currently in effect."
-        },
-        {
-          "code": 2,
-          "label": "Draft",
-          "description": "Draft RMP in review and not yet approved."
-        },
-        {
-          "code": 3,
-          "label": "In revision",
-          "description": "Existing RMP currently being amended or revised."
-        }
+        { "code": 1, "label": "Approved", "description": "Approved RMP with decisions currently in effect." },
+        { "code": 2, "label": "Draft", "description": "Draft RMP in review and not yet approved." },
+        { "code": 3, "label": "In revision", "description": "Existing RMP currently being amended or revised." }
       ]
     },
     {
@@ -169,21 +145,9 @@
       "description": "Best-known primary cause of the fire.",
       "example": 1,
       "values": [
-        {
-          "code": 1,
-          "label": "Lightning",
-          "description": "Ignition caused by lightning or other natural sources."
-        },
-        {
-          "code": 2,
-          "label": "Human-caused",
-          "description": "Ignition caused by human activity."
-        },
-        {
-          "code": 3,
-          "label": "Unknown",
-          "description": "Cause has not been determined or recorded."
-        }
+        { "code": 1, "label": "Lightning", "description": "Ignition caused by lightning or other natural sources." },
+        { "code": 2, "label": "Human-caused", "description": "Ignition caused by human activity." },
+        { "code": 3, "label": "Unknown", "description": "Cause has not been determined or recorded." }
       ]
     },
     {
@@ -194,24 +158,11 @@
       "description": "Current designation status of the ACEC.",
       "example": 1,
       "values": [
-        {
-          "code": 1,
-          "label": "Designated",
-          "description": "ACEC is currently designated and in effect."
-        },
-        {
-          "code": 2,
-          "label": "Proposed",
-          "description": "ACEC has been proposed but is not yet designated."
-        },
-        {
-          "code": 3,
-          "label": "Released",
-          "description": "ACEC designation has been removed or is no longer in effect."
-        }
+        { "code": 1, "label": "Designated", "description": "ACEC is currently designated and in effect." },
+        { "code": 2, "label": "Proposed", "description": "ACEC has been proposed but is not yet designated." },
+        { "code": 3, "label": "Released", "description": "ACEC designation has been removed or is no longer in effect." }
       ]
     },
-
     {
       "id": "WSA_ID",
       "label": "WSA Identifier",
@@ -236,24 +187,11 @@
       "description": "Current status of the Wilderness Study Area.",
       "example": 1,
       "values": [
-        {
-          "code": 1,
-          "label": "Pending",
-          "description": "WSA is under review and not yet resolved."
-        },
-        {
-          "code": 2,
-          "label": "Designated Wilderness",
-          "description": "WSA has been designated as wilderness by Congress."
-        },
-        {
-          "code": 3,
-          "label": "Released",
-          "description": "WSA has been released from further wilderness consideration."
-        }
+        { "code": 1, "label": "Pending", "description": "WSA is under review and not yet resolved." },
+        { "code": 2, "label": "Designated Wilderness", "description": "WSA has been designated as wilderness by Congress." },
+        { "code": 3, "label": "Released", "description": "WSA has been released from further wilderness consideration." }
       ]
     },
-
     {
       "id": "LEASE_ID",
       "label": "Lease Identifier",
@@ -270,26 +208,10 @@
       "description": "Current administrative status of the lease.",
       "example": 1,
       "values": [
-        {
-          "code": 1,
-          "label": "Active",
-          "description": "Lease is currently in effect."
-        },
-        {
-          "code": 2,
-          "label": "Expired",
-          "description": "Lease has expired according to its terms."
-        },
-        {
-          "code": 3,
-          "label": "Terminated",
-          "description": "Lease has been terminated or canceled."
-        },
-        {
-          "code": 4,
-          "label": "Pending",
-          "description": "Lease is pending issuance or approval."
-        }
+        { "code": 1, "label": "Active", "description": "Lease is currently in effect." },
+        { "code": 2, "label": "Expired", "description": "Lease has expired according to its terms." },
+        { "code": 3, "label": "Terminated", "description": "Lease has been terminated or canceled." },
+        { "code": 4, "label": "Pending", "description": "Lease is pending issuance or approval." }
       ]
     },
     {
@@ -308,29 +230,12 @@
       "description": "Primary mineral commodity covered by the lease.",
       "example": 3,
       "values": [
-        {
-          "code": 1,
-          "label": "Oil",
-          "description": "Lease is primarily for oil."
-        },
-        {
-          "code": 2,
-          "label": "Gas",
-          "description": "Lease is primarily for gas."
-        },
-        {
-          "code": 3,
-          "label": "Oil and Gas",
-          "description": "Lease covers both oil and gas."
-        },
-        {
-          "code": 4,
-          "label": "Other",
-          "description": "Lease covers other mineral commodities."
-        }
+        { "code": 1, "label": "Oil", "description": "Lease is primarily for oil." },
+        { "code": 2, "label": "Gas", "description": "Lease is primarily for gas." },
+        { "code": 3, "label": "Oil and Gas", "description": "Lease covers both oil and gas." },
+        { "code": 4, "label": "Other", "description": "Lease covers other mineral commodities." }
       ]
     },
-
     {
       "id": "ROW_ID",
       "label": "ROW Identifier",
@@ -347,26 +252,10 @@
       "description": "Type of facility or use authorized by the right-of-way.",
       "example": 1,
       "values": [
-        {
-          "code": 1,
-          "label": "Transmission Line",
-          "description": "Electric transmission line right-of-way."
-        },
-        {
-          "code": 2,
-          "label": "Pipeline",
-          "description": "Pipeline right-of-way."
-        },
-        {
-          "code": 3,
-          "label": "Road",
-          "description": "Road or access route right-of-way."
-        },
-        {
-          "code": 4,
-          "label": "Other",
-          "description": "Other type of authorized facility or use."
-        }
+        { "code": 1, "label": "Transmission Line", "description": "Electric transmission line right-of-way." },
+        { "code": 2, "label": "Pipeline", "description": "Pipeline right-of-way." },
+        { "code": 3, "label": "Road", "description": "Road or access route right-of-way." },
+        { "code": 4, "label": "Other", "description": "Other type of authorized facility or use." }
       ]
     },
     {
@@ -385,17 +274,13 @@
       "objname": "Object name is the editable database oject such as a feature class in the database.",
       "title": "Data Catalog Field Explanations",
       "description": "Plain language description of what this data catalog item is.",
+      "agency_owner": "Agency Owner is the high-level owning agency responsible for the dataset (e.g., Bureau of Land Management).",
       "office_owner": "The branch, division, or office responsible for updating and maintaining the dataset.",
       "contact_email": "Email address of the best point of contant for this dataset.",
       "topics": [
         "Topics can be added to help group datasets by theme. Example: planning",
         "fluid minerals",
         "fire"
-      ],
-      "keywords": [
-        "Keywords help with search. Example: RMP",
-        "land use planning",
-        "ACEC"
       ],
       "extent": {
         "_comment": "extent is OPTIONAL - this may be used for a future feature of the site.",
@@ -426,10 +311,10 @@
       "objname": "BLM_RMP_Boundaries",
       "title": "BLM Resource Management Plan Boundaries",
       "description": "Polygon boundaries of BLM Resource Management Plan decision areas.",
+      "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Division of Planning",
       "contact_email": "planning@example.gov",
       "topics": ["planning", "land_status"],
-      "keywords": ["RMP", "land use planning", "BLM"],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -461,10 +346,10 @@
       "objname": "BLM_Wildfire_Perimeters",
       "title": "BLM Wildfire Perimeters",
       "description": "Perimeters of wildfires intersecting BLM-managed lands.",
+      "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Fire and Aviation",
       "contact_email": "fire@example.gov",
       "topics": ["wildfire", "risk"],
-      "keywords": ["fire", "perimeter", "burned area", "BLM"],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -498,10 +383,10 @@
       "objname": "BLM_ACEC_Boundaries",
       "title": "BLM Areas of Critical Environmental Concern (ACECs)",
       "description": "Polygon boundaries of designated Areas of Critical Environmental Concern (ACECs) on BLM-administered lands.",
+      "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Division of Planning",
       "contact_email": "planning@example.gov",
       "topics": ["planning", "resource_protection"],
-      "keywords": ["ACEC", "land use planning", "special management area", "BLM"],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -534,10 +419,10 @@
       "objname": "BLM_Wilderness_Study_Areas",
       "title": "BLM Wilderness Study Areas",
       "description": "Polygon boundaries of Wilderness Study Areas on BLM-administered lands.",
+      "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Division of Planning",
       "contact_email": "planning@example.gov",
       "topics": ["planning", "wilderness"],
-      "keywords": ["WSA", "wilderness", "planning", "BLM"],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -570,10 +455,10 @@
       "objname": "BLM_Oil_Gas_Leases",
       "title": "BLM Oil and Gas Leases",
       "description": "Polygon representation of BLM-administered oil and gas lease areas.",
+      "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Energy and Minerals",
       "contact_email": "energy@example.gov",
       "topics": ["fluid_minerals", "energy"],
-      "keywords": ["lease", "oil and gas", "fluid minerals", "BLM"],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -607,10 +492,10 @@
       "objname": "BLM_Rights_of_Way",
       "title": "BLM Rights-of-Way",
       "description": "Linear representation of rights-of-way authorized across BLM-administered lands.",
+      "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Lands and Realty",
       "contact_email": "lands@example.gov",
       "topics": ["lands", "infrastructure"],
-      "keywords": ["right-of-way", "ROW", "transmission line", "pipeline", "BLM"],
       "extent": {
         "west": -125.0,
         "south": 31.0,
