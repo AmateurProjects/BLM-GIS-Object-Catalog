@@ -129,6 +129,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   const datasetDetailEl = document.getElementById('datasetDetail');
   const attributeDetailEl = document.getElementById('attributeDetail');
 
+  // --- Edit Fields for Suggest Change functionality ---
+
+  const DATASET_EDIT_FIELDS = [
+    { key: 'objname', label: 'Database Object Name', type: 'text' },
+    { key: 'topics', label: 'Topics (comma-separated)', type: 'csv' },
+
+    { key: 'agency_owner', label: 'Agency Owner', type: 'text' },
+    { key: 'office_owner', label: 'Office Owner', type: 'text' },
+    { key: 'contact_email', label: 'Contact Email', type: 'text' },
+
+    { key: 'geometry_type', label: 'Geometry Type', type: 'text' },
+    { key: 'update_frequency', label: 'Update Frequency', type: 'text' },
+
+    { key: 'status', label: 'Status', type: 'text' },
+    { key: 'access_level', label: 'Access Level', type: 'text' },
+
+    { key: 'public_web_service', label: 'Public Web Service', type: 'text' },
+    { key: 'internal_web_service', label: 'Internal Web Service', type: 'text' },
+    { key: 'data_standard', label: 'Data Standard', type: 'text' },
+
+    { key: 'notes', label: 'Notes', type: 'textarea' },
+  ];
+
   // --- Helpers (shared) ---
   function compactObject(obj) {
     const out = {};
@@ -156,6 +179,201 @@ document.addEventListener('DOMContentLoaded', async () => {
       return JSON.parse(t);
     } catch (e) {
       return { __parse_error__: e.message };
+    }
+  }
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function computeChanges(original, updated) {
+    const keys = new Set([...Object.keys(original || {}), ...Object.keys(updated || {})]);
+    const changes = [];
+    keys.forEach((k) => {
+      const a = original ? original[k] : undefined;
+      const b = updated ? updated[k] : undefined;
+      if (JSON.stringify(a) !== JSON.stringify(b)) {
+        changes.push({ key: k, from: a, to: b });
+      }
+    });
+    return changes;
+  }
+
+  function buildGithubIssueUrlForEditedDataset(datasetId, original, updated, changes) {
+    const title = encodeURIComponent(`Dataset change request: ${datasetId}`);
+
+    const bodyLines = [
+      `## Suggested changes for dataset: \`${datasetId}\``,
+      '',
+      '### Summary of changes',
+    ];
+
+    if (!changes.length) {
+      bodyLines.push('- No changes detected.');
+    } else {
+      changes.forEach((c) => {
+        bodyLines.push(
+          `- **${c.key}**: \`${JSON.stringify(c.from)}\` → \`${JSON.stringify(c.to)}\``
+        );
+      });
+    }
+
+    bodyLines.push(
+      '',
+      '---',
+      '',
+      '### Original dataset JSON',
+      '```json',
+      JSON.stringify(original, null, 2),
+      '```',
+      '',
+      '### Updated dataset JSON',
+      '```json',
+      JSON.stringify(updated, null, 2),
+      '```'
+    );
+
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
+
+  // --- Edit mode renderer ---
+
+  function renderDatasetEditForm(datasetId) {
+    if (!datasetDetailEl) return;
+
+    const dataset = Catalog.getDatasetById(datasetId);
+    if (!dataset) return;
+
+    const original = deepClone(dataset);
+    const draft = deepClone(dataset);
+    const attrs = Catalog.getAttributesForDataset(dataset);
+
+    let html = '';
+
+    // Breadcrumb
+    html += `
+    <nav class="breadcrumb">
+      <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
+    </nav>
+  `;
+
+    html += `<h2>Editing: ${escapeHtml(dataset.title || dataset.id)}</h2>`;
+    if (dataset.description) html += `<p>${escapeHtml(dataset.description)}</p>`;
+
+    // Form container
+    html += `<div class="card card-meta" id="datasetEditCard">`;
+    html += `<div class="dataset-edit-actions">
+      <button type="button" class="btn" data-edit-cancel>Cancel</button>
+      <button type="button" class="btn primary" data-edit-submit>Submit suggestion</button>
+    </div>`;
+
+    // Fields
+    DATASET_EDIT_FIELDS.forEach((f) => {
+      const val = draft[f.key];
+
+      if (f.type === 'textarea') {
+        html += `
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+          <textarea class="dataset-edit-input" data-edit-key="${escapeHtml(f.key)}">${escapeHtml(
+          val || ''
+        )}</textarea>
+        </div>
+      `;
+      } else {
+        const displayVal =
+          f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
+        html += `
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+          <input class="dataset-edit-input" type="text" data-edit-key="${escapeHtml(
+          f.key
+        )}" value="${escapeHtml(displayVal)}" />
+        </div>
+      `;
+      }
+    });
+
+    html += `</div>`;
+
+    // Keep attributes section unchanged (read-only), as requested
+    html += `
+    <div class="card-row">
+      <div class="card card-attributes">
+        <h3>Attributes</h3>
+  `;
+
+    if (!attrs.length) {
+      html += '<p>No attributes defined for this dataset.</p>';
+    } else {
+      html += '<ul>';
+      attrs.forEach((attr) => {
+        html += `
+        <li>
+          <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+            ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+          </button>
+        </li>`;
+      });
+      html += '</ul>';
+    }
+
+    html += `
+      </div>
+      <div class="card card-inline-attribute" id="inlineAttributeDetail">
+        <h3>Attribute details</h3>
+        <p>Select an attribute from the list to see its properties here without leaving this dataset.</p>
+      </div>
+    </div>
+  `;
+
+    datasetDetailEl.innerHTML = html;
+    datasetDetailEl.classList.remove('hidden');
+
+    // Breadcrumb
+    const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
+    if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
+
+    // Inline attribute hooks
+    const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
+    attrButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const attrId = btn.getAttribute('data-attr-id');
+        renderInlineAttributeDetail(attrId);
+      });
+    });
+
+    // Cancel -> back to normal view
+    const cancelBtn = datasetDetailEl.querySelector('button[data-edit-cancel]');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => renderDatasetDetail(datasetId));
+
+    // Submit -> collect values, compute diff, open issue
+    const submitBtn = datasetDetailEl.querySelector('button[data-edit-submit]');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const inputs = datasetDetailEl.querySelectorAll('[data-edit-key]');
+        inputs.forEach((el) => {
+          const k = el.getAttribute('data-edit-key');
+          const raw = el.value;
+
+          const fieldDef = DATASET_EDIT_FIELDS.find((x) => x.key === k);
+          if (fieldDef && fieldDef.type === 'csv') {
+            draft[k] = parseCsvList(raw);
+          } else {
+            draft[k] = String(raw || '').trim();
+          }
+        });
+
+        const updated = compactObject(draft);
+        const origCompact = compactObject(original);
+        const changes = computeChanges(origCompact, updated);
+
+        const issueUrl = buildGithubIssueUrlForEditedDataset(datasetId, origCompact, updated, changes);
+        window.open(issueUrl, '_blank', 'noopener');
+      });
     }
   }
 
@@ -512,12 +730,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filtered = !ft
       ? allDatasets
       : allDatasets.filter((ds) => {
-          const haystack = [ds.id, ds.title, ds.description, ds.agency_owner, ds.office_owner, ...(ds.topics || [])]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-          return haystack.includes(ft);
-        });
+        const haystack = [ds.id, ds.title, ds.description, ds.agency_owner, ds.office_owner, ...(ds.topics || [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(ft);
+      });
 
     if (!filtered.length) {
       datasetListEl.innerHTML = '<p>No datasets found.</p>';
@@ -560,9 +778,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filtered = !ft
       ? allAttributes
       : allAttributes.filter((attr) => {
-          const haystack = [attr.id, attr.label, attr.definition].filter(Boolean).join(' ').toLowerCase();
-          return haystack.includes(ft);
-        });
+        const haystack = [attr.id, attr.label, attr.definition].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(ft);
+      });
 
     if (!filtered.length) {
       attributeListEl.innerHTML = '<p>No attributes found.</p>';
@@ -629,37 +847,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
 
-    html += `<p><strong>Topics:</strong> ${
-      Array.isArray(dataset.topics)
+    html += `<p><strong>Topics:</strong> ${Array.isArray(dataset.topics)
         ? dataset.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
         : ''
-    }</p>`;
+      }</p>`;
 
     html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
     html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
     html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
 
-    html += `<p><strong>Public Web Service:</strong> ${
-      dataset.public_web_service
+    html += `<p><strong>Public Web Service:</strong> ${dataset.public_web_service
         ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(
-            dataset.public_web_service
-          )}</a>`
+          dataset.public_web_service
+        )}</a>`
         : ''
-    }</p>`;
+      }</p>`;
 
-    html += `<p><strong>Internal Web Service:</strong> ${
-      dataset.internal_web_service
+    html += `<p><strong>Internal Web Service:</strong> ${dataset.internal_web_service
         ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(
-            dataset.internal_web_service
-          )}</a>`
+          dataset.internal_web_service
+        )}</a>`
         : ''
-    }</p>`;
+      }</p>`;
 
-    html += `<p><strong>Data Standard:</strong> ${
-      dataset.data_standard
+    html += `<p><strong>Data Standard:</strong> ${dataset.data_standard
         ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
         : ''
-    }</p>`;
+      }</p>`;
 
     if (dataset.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
     html += '</div>';
@@ -695,20 +909,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
-    const issueUrl = Catalog.buildGithubIssueUrlForDataset(dataset);
     html += `
-      <div class="card card-actions">
-        <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
-          Suggest a change to this dataset
-        </a>
-        <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
-          Export ArcGIS schema (Python)
-        </button>
-      </div>
-    `;
+  <div class="card card-actions">
+    <button type="button" class="suggest-button" data-edit-dataset="${escapeHtml(dataset.id)}">
+      Suggest a change to this dataset
+    </button>
+    <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
+      Export ArcGIS schema (Python)
+    </button>
+  </div>
+`;
+
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
+
+    const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
+    if (editBtn) {
+      editBtn.addEventListener('click', () => {
+        const dsId = editBtn.getAttribute('data-edit-dataset');
+        renderDatasetEditForm(dsId);
+      });
+    }
+
 
     const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
     if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
