@@ -3,15 +3,24 @@
    ============================ */
 
 :root {
-  --bg-main: #121212;             /* Deep dark background */
-  --bg-panel: #1e1e1e;            /* Panel background */
-  --bg-card: #1d1d1d;             /* Cards and lookup items */
-  --bg-hover: #2a2a2a;            /* Hover state */
-  --border-color: #333;           /* Soft borders */
-  --text-main: #e6e6e6;           /* Primary text */
-  --text-muted: #a1a1a1;          /* Muted text */
-  --accent: #4ea3ff;              /* Soft blue accent */
-  --accent-hover: #77bdff;        /* Accent hover */
+  --bg-main: #121212;
+  /* Deep dark background */
+  --bg-panel: #1e1e1e;
+  /* Panel background */
+  --bg-card: #1d1d1d;
+  /* Cards and lookup items */
+  --bg-hover: #2a2a2a;
+  /* Hover state */
+  --border-color: #333;
+  /* Soft borders */
+  --text-main: #e6e6e6;
+  /* Primary text */
+  --text-muted: #a1a1a1;
+  /* Muted text */
+  --accent: #4ea3ff;
+  /* Soft blue accent */
+  --accent-hover: #77bdff;
+  /* Accent hover */
   --radius: 6px;
   --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.45);
 
@@ -92,7 +101,8 @@ main {
 section {
   flex: 1;
   display: flex;
-  min-height: 0; /* allow flex children to scroll */
+  min-height: 0;
+  /* allow flex children to scroll */
 }
 
 /* ============================
@@ -221,18 +231,21 @@ input[type="search"]:focus {
 
 .detail-panel {
   flex: 1;
-  padding: 1rem 1.25rem; /* aligns with header padding */
+  padding: 1rem 1.25rem;
+  /* aligns with header padding */
   overflow-y: auto;
   background: radial-gradient(circle at top left, #1a1a1a 0, #101010 45%, #090909 100%);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  align-items: flex-start;   /* left-align children in the flex row */
-  text-align: left;          /* default text alignment */
+  align-items: flex-start;
+  /* left-align children in the flex row */
+  text-align: left;
+  /* default text alignment */
 }
 
 /* Children stay constrained in width but hug the left side */
-.detail-panel > * {
+.detail-panel>* {
   max-width: 980px;
   width: 100%;
   margin-left: 0;
@@ -471,7 +484,8 @@ code {
   padding: 0.75rem 0.9rem;
   border-left: 3px solid #f39c12;
   border-radius: var(--radius);
-  background: #221a11; /* works with your dark theme */
+  background: #221a11;
+  /* works with your dark theme */
   font-size: 0.9rem;
 }
 
@@ -498,7 +512,8 @@ code {
 }
 
 .pill-topic {
-  border-color: #3fae6a; /* soft green */
+  border-color: #3fae6a;
+  /* soft green */
   box-shadow: 0 0 0 1px rgba(63, 174, 106, 0.35);
 }
 
@@ -519,7 +534,8 @@ code {
   margin-right: 0.35rem;
   width: 1.1rem;
   height: 1.1rem;
-  color: var(--geom-purple); /* POINT / TABLE / LINE get this */
+  color: var(--geom-purple);
+  /* POINT / TABLE / LINE get this */
 }
 
 /* Slight extra spacing in list context */
@@ -641,7 +657,7 @@ code {
   background: var(--bg-panel);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   padding: 1rem;
 }
 
@@ -721,4 +737,35 @@ code {
   justify-content: flex-end;
   gap: 0.6rem;
   margin-top: 1rem;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.tab-pill {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tab-pill:hover {
+  background: var(--bg-hover);
+}
+
+.tab-pill.active {
+  background: var(--accent);
+  color: #0b0b0b;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.attr-tab-panel.hidden {
+  display: none;
 }
