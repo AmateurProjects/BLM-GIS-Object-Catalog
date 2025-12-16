@@ -372,7 +372,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const changes = computeChanges(origCompact, updated);
 
         const issueUrl = buildGithubIssueUrlForEditedDataset(datasetId, origCompact, updated, changes);
+
+        // Return UI to normal view right away
+        renderDatasetDetail(datasetId);
+
+        // Then open the GitHub issue in a new tab
         window.open(issueUrl, '_blank', 'noopener');
+
       });
     }
   }
@@ -848,8 +854,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
 
     html += `<p><strong>Topics:</strong> ${Array.isArray(dataset.topics)
-        ? dataset.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
-        : ''
+      ? dataset.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
+      : ''
       }</p>`;
 
     html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
@@ -857,22 +863,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
 
     html += `<p><strong>Public Web Service:</strong> ${dataset.public_web_service
-        ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(
-          dataset.public_web_service
-        )}</a>`
-        : ''
+      ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(
+        dataset.public_web_service
+      )}</a>`
+      : ''
       }</p>`;
 
     html += `<p><strong>Internal Web Service:</strong> ${dataset.internal_web_service
-        ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(
-          dataset.internal_web_service
-        )}</a>`
-        : ''
+      ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(
+        dataset.internal_web_service
+      )}</a>`
+      : ''
       }</p>`;
 
     html += `<p><strong>Data Standard:</strong> ${dataset.data_standard
-        ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
-        : ''
+      ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+      : ''
       }</p>`;
 
     if (dataset.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
