@@ -245,7 +245,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         internal_web_service: String(fd.get('internal_web_service') || '').trim(),
         data_standard: String(fd.get('data_standard') || '').trim(),
         projection: String(fd.get('projection') || '').trim(),
-        attribute_ids: parseCsvList(fd.get('attribute_ids')),
         notes: String(fd.get('notes') || '').trim(),
       });
 
