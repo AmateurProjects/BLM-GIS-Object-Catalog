@@ -769,3 +769,54 @@ code {
 .attr-tab-panel.hidden {
   display: none;
 }
+
+.dataset-edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dataset-edit-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.dataset-edit-label {
+  color: var(--text-muted);
+  padding-top: 6px;
+}
+
+.dataset-edit-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.dataset-edit-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+textarea.dataset-edit-input {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* Optional if you don't already have these */
+.btn {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.btn.primary {
+  border-color: var(--accent);
+}

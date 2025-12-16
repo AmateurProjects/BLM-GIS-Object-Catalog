@@ -1226,7 +1226,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
   const objname = dataset.objname || dsId;
 
   lines.push('# -*- coding: utf-8 -*-');
-  lines.push('# Auto-generated ArcGIS schema script from Public Lands Data Catalog');
+  lines.push('# Auto-generated ArcGIS schema script from Public Lands National GIS Data Catalog');
   lines.push(`# Dataset ID: ${dsId}`);
   if (dataset.title) lines.push(`# Title: ${dataset.title}`);
   if (dataset.description) lines.push(`# Description: ${dataset.description}`);
