@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const datasetDetailEl = document.getElementById('datasetDetail');
   const attributeDetailEl = document.getElementById('attributeDetail');
 
-  // --- Edit Fields for Suggest Change functionality ---
+  // --- Edit Fields for Suggest Dataset Change functionality ---
 
   const DATASET_EDIT_FIELDS = [
     { key: 'objname', label: 'Database Object Name', type: 'text' },
@@ -151,6 +151,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     { key: 'notes', label: 'Notes', type: 'textarea' },
   ];
+
+  // --- Edit Fields for Suggest Attribute Change functionality ---
+  const ATTRIBUTE_EDIT_FIELDS = [
+    { key: 'label', label: 'Attribute Label', type: 'text' },
+    { key: 'type', label: 'Attribute Type', type: 'text' }, // you can later make this a select
+    { key: 'definition', label: 'Attribute Definition', type: 'textarea' },
+    { key: 'expected_value', label: 'Example Expected Value', type: 'text' },
+    { key: 'values', label: 'Allowed values (JSON array) — for enumerated types', type: 'json' },
+  ];
+
 
   // --- Helpers (shared) ---
   function compactObject(obj) {
@@ -236,6 +246,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const body = encodeURIComponent(bodyLines.join('\n'));
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
   }
+
+  function buildGithubIssueUrlForEditedAttribute(attrId, original, updated, changes) {
+    const title = encodeURIComponent(`Attribute change request: ${attrId}`);
+
+    const bodyLines = [
+      `## Suggested changes for attribute: \`${attrId}\``,
+      '',
+      '### Summary of changes',
+    ];
+
+    if (!changes.length) {
+      bodyLines.push('- No changes detected.');
+    } else {
+      changes.forEach((c) => {
+        bodyLines.push(
+          `- **${c.key}**: \`${JSON.stringify(c.from)}\` → \`${JSON.stringify(c.to)}\``
+        );
+      });
+    }
+
+    bodyLines.push(
+      '',
+      '---',
+      '',
+      '### Original attribute JSON',
+      '```json',
+      JSON.stringify(original, null, 2),
+      '```',
+      '',
+      '### Updated attribute JSON',
+      '```json',
+      JSON.stringify(updated, null, 2),
+      '```'
+    );
+
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
+
+
+
 
   // --- Edit mode renderer ---
 
@@ -382,6 +433,186 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   }
+
+
+  function renderAttributeEditForm(attrId) {
+    if (!attributeDetailEl) return;
+
+    const attribute = Catalog.getAttributeById(attrId);
+    if (!attribute) return;
+
+    const original = deepClone(attribute);
+    const draft = deepClone(attribute);
+    const datasets = Catalog.getDatasetsForAttribute(attrId) || [];
+
+    let html = '';
+
+    html += `
+    <nav class="breadcrumb">
+      <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-current">${escapeHtml(attribute.id)}</span>
+    </nav>
+  `;
+
+    html += `<h2>Editing: ${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
+
+    html += `<div class="card card-attribute-meta" id="attributeEditCard">`;
+
+    html += `<div class="dataset-edit-actions">
+      <button type="button" class="btn" data-edit-attr-cancel>Cancel</button>
+      <button type="button" class="btn primary" data-edit-attr-submit>Submit suggestion</button>
+    </div>`;
+
+    ATTRIBUTE_EDIT_FIELDS.forEach((f) => {
+      let val = draft[f.key];
+
+      // For enumerated values, we edit as JSON text
+      if (f.type === 'json') {
+        val = val === undefined ? '' : JSON.stringify(val, null, 2);
+        html += `
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+          <textarea class="dataset-edit-input" data-edit-attr-key="${escapeHtml(f.key)}">${escapeHtml(
+          val
+        )}</textarea>
+        </div>
+      `;
+        return;
+      }
+
+      if (f.type === 'textarea') {
+        html += `
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+          <textarea class="dataset-edit-input" data-edit-attr-key="${escapeHtml(f.key)}">${escapeHtml(
+          val || ''
+        )}</textarea>
+        </div>
+      `;
+        return;
+      }
+
+      html += `
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+        <input class="dataset-edit-input" type="text" data-edit-attr-key="${escapeHtml(
+        f.key
+      )}" value="${escapeHtml(val === undefined ? '' : String(val))}" />
+      </div>
+    `;
+    });
+
+    html += `</div>`;
+
+    // Keep “Allowed values” preview if it exists (optional but nice)
+    if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
+      html += '<div class="card card-enumerated">';
+      html += '<h3>Current allowed values (read-only preview)</h3>';
+      html += `
+      <table>
+        <thead>
+          <tr><th>Code</th><th>Label</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+    `;
+      attribute.values.forEach((v) => {
+        const code = v.code !== undefined ? String(v.code) : '';
+        const label = v.label || '';
+        const desc = v.description || '';
+        html += `
+        <tr>
+          <td>${escapeHtml(code)}</td>
+          <td>${escapeHtml(label)}</td>
+          <td>${escapeHtml(desc)}</td>
+        </tr>
+      `;
+      });
+      html += `
+        </tbody>
+      </table>
+    `;
+      html += '</div>';
+    }
+
+    // Keep datasets list unchanged (read-only), like your normal view
+    html += '<div class="card card-attribute-datasets">';
+    html += '<h3>Datasets using this attribute</h3>';
+    if (!datasets.length) {
+      html += '<p>No datasets currently reference this attribute.</p>';
+    } else {
+      html += '<ul>';
+      datasets.forEach((ds) => {
+        html += `
+        <li>
+          <button type="button" class="link-button" data-dataset-id="${escapeHtml(ds.id)}">
+            ${escapeHtml(ds.title || ds.id)}
+          </button>
+        </li>`;
+      });
+      html += '</ul>';
+    }
+    html += '</div>';
+
+    attributeDetailEl.innerHTML = html;
+    attributeDetailEl.classList.remove('hidden');
+
+    // Breadcrumb root
+    const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
+    if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
+
+    // Dataset navigation still works
+    const dsButtons = attributeDetailEl.querySelectorAll('button[data-dataset-id]');
+    dsButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const dsId = btn.getAttribute('data-dataset-id');
+        showDatasetsView();
+        renderDatasetDetail(dsId);
+      });
+    });
+
+    // Cancel -> normal view
+    const cancelBtn = attributeDetailEl.querySelector('button[data-edit-attr-cancel]');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => renderAttributeDetail(attrId));
+
+    // Submit -> collect, validate JSON for values, diff, open issue, return to normal view
+    const submitBtn = attributeDetailEl.querySelector('button[data-edit-attr-submit]');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const inputs = attributeDetailEl.querySelectorAll('[data-edit-attr-key]');
+        inputs.forEach((el) => {
+          const k = el.getAttribute('data-edit-attr-key');
+          const raw = el.value;
+
+          const def = ATTRIBUTE_EDIT_FIELDS.find((x) => x.key === k);
+          if (def && def.type === 'json') {
+            const parsed = tryParseJson(raw);
+            if (parsed && parsed.__parse_error__) {
+              alert(`Allowed values JSON parse error:\n${parsed.__parse_error__}`);
+              throw new Error('Invalid JSON in values');
+            }
+            draft[k] = parsed === null ? undefined : parsed;
+          } else {
+            const s = String(raw || '').trim();
+            draft[k] = s === '' ? undefined : s;
+          }
+        });
+
+        const updated = compactObject(draft);
+        const origCompact = compactObject(original);
+        const changes = computeChanges(origCompact, updated);
+
+        const issueUrl = buildGithubIssueUrlForEditedAttribute(attrId, origCompact, updated, changes);
+
+        // return UI to normal view immediately
+        renderAttributeDetail(attrId);
+
+        window.open(issueUrl, '_blank', 'noopener');
+      });
+    }
+  }
+
+
 
   // --- Load catalog once ---
   let catalog;
@@ -1147,17 +1378,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     html += '</div>';
 
-    const issueUrl = Catalog.buildGithubIssueUrlForAttribute(attribute);
     html += `
-      <div class="card card-actions">
-        <a href="${issueUrl}" target="_blank" rel="noopener" class="suggest-button">
-          Suggest a change to this attribute
-        </a>
-      </div>
-    `;
+  <div class="card card-actions">
+    <button type="button" class="suggest-button" data-edit-attribute="${escapeHtml(attribute.id)}">
+      Suggest a change to this attribute
+    </button>
+  </div>
+`;
+
 
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
+
+    const editAttrBtn = attributeDetailEl.querySelector('button[data-edit-attribute]');
+    if (editAttrBtn) {
+      editAttrBtn.addEventListener('click', () => {
+        const id = editAttrBtn.getAttribute('data-edit-attribute');
+        renderAttributeEditForm(id);
+      });
+    }
 
     const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
     if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
