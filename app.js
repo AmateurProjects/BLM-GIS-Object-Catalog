@@ -142,6 +142,140 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+    // ---- New dataset submission (GitHub Issue via form) ----
+  const newDatasetBtn = document.getElementById('newDatasetBtn');
+  const newDatasetDialog = document.getElementById('newDatasetDialog');
+  const newDatasetForm = document.getElementById('newDatasetForm');
+  const newDatasetCloseBtn = document.getElementById('newDatasetCloseBtn');
+  const newDatasetCancelBtn = document.getElementById('newDatasetCancelBtn');
+
+  function openNewDatasetDialog() {
+    if (!newDatasetDialog) return;
+    if (typeof newDatasetDialog.showModal === 'function') {
+      newDatasetDialog.showModal();
+    } else {
+      // Fallback if <dialog> isn’t supported
+      alert('Your browser does not support the dataset submission modal. Please use GitHub Issues directly.');
+    }
+  }
+
+  function closeNewDatasetDialog() {
+    if (!newDatasetDialog) return;
+    newDatasetDialog.close();
+  }
+
+  if (newDatasetBtn) newDatasetBtn.addEventListener('click', openNewDatasetDialog);
+  if (newDatasetCloseBtn) newDatasetCloseBtn.addEventListener('click', closeNewDatasetDialog);
+  if (newDatasetCancelBtn) newDatasetCancelBtn.addEventListener('click', closeNewDatasetDialog);
+
+  function compactObject(obj) {
+    const out = {};
+    Object.keys(obj).forEach(k => {
+      const v = obj[k];
+      if (v === undefined || v === null) return;
+      if (Array.isArray(v) && v.length === 0) return;
+      if (typeof v === 'string' && v.trim() === '') return;
+      out[k] = v;
+    });
+    return out;
+  }
+
+  function parseCsvList(str) {
+    return String(str || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  function buildGithubIssueUrlForNewDataset(datasetObj) {
+    const titleBase = datasetObj.id || datasetObj.title || 'New dataset request';
+    const title = encodeURIComponent(`New dataset request: ${titleBase}`);
+
+    const bodyLines = [
+      '## New dataset submission',
+      '',
+      'Please review the dataset proposal below. If approved, add it to `data/catalog.json` under `datasets`.',
+      '',
+      '### Review checklist',
+      '- [ ] ID is unique and follows naming conventions',
+      '- [ ] Title/description are clear',
+      '- [ ] Owner/contact info is present',
+      '- [ ] Geometry type is correct',
+      '- [ ] Services/standards links are valid (if provided)',
+      '- [ ] Attribute IDs are valid (if provided)',
+      '',
+      '---',
+      '',
+      '### Proposed dataset JSON',
+      '```json',
+      JSON.stringify(datasetObj, null, 2),
+      '```'
+    ];
+
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
+
+  if (newDatasetForm) {
+    newDatasetForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const fd = new FormData(newDatasetForm);
+
+      const id = String(fd.get('id') || '').trim();
+      if (!id) {
+        alert('Dataset ID is required.');
+        return;
+      }
+
+      const dataset = compactObject({
+        id,
+        title: String(fd.get('title') || '').trim(),
+        description: String(fd.get('description') || '').trim(),
+        objname: String(fd.get('objname') || '').trim(),
+        geometry_type: String(fd.get('geometry_type') || '').trim(),
+        agency_owner: String(fd.get('agency_owner') || '').trim(),
+        office_owner: String(fd.get('office_owner') || '').trim(),
+        contact_email: String(fd.get('contact_email') || '').trim(),
+        topics: parseCsvList(fd.get('topics')),
+        update_frequency: String(fd.get('update_frequency') || '').trim(),
+        status: String(fd.get('status') || '').trim(),
+        access_level: String(fd.get('access_level') || '').trim(),
+        public_web_service: String(fd.get('public_web_service') || '').trim(),
+        internal_web_service: String(fd.get('internal_web_service') || '').trim(),
+        data_standard: String(fd.get('data_standard') || '').trim(),
+        projection: String(fd.get('projection') || '').trim(),
+        attribute_ids: parseCsvList(fd.get('attribute_ids')),
+        notes: String(fd.get('notes') || '').trim(),
+      });
+
+      // Light validation: warn if dataset id already exists in current catalog
+      const exists = Catalog.getDatasetById(id);
+      if (exists) {
+        const proceed = confirm(`A dataset with ID "${id}" already exists in the catalog. Open an issue anyway?`);
+        if (!proceed) return;
+      }
+
+      const issueUrl = buildGithubIssueUrlForNewDataset(dataset);
+      window.open(issueUrl, '_blank', 'noopener');
+
+      // Reset + close
+      newDatasetForm.reset();
+      closeNewDatasetDialog();
+      
+    });
+  }
+
+  if (newDatasetDialog) {
+  newDatasetDialog.addEventListener('click', (e) => {
+    const rect = newDatasetDialog.getBoundingClientRect();
+    const clickedInDialog =
+      e.clientX >= rect.left && e.clientX <= rect.right &&
+      e.clientY >= rect.top && e.clientY <= rect.bottom;
+    if (!clickedInDialog) closeNewDatasetDialog();
+  });
+}
+
   const allDatasets = catalog.datasets || [];
   const allAttributes = catalog.attributes || [];
 
