@@ -18,12 +18,15 @@
     <!-- DATASETS VIEW -->
     <section id="datasetsView">
       <div class="sidebar">
-        <div class="toolbar">
+        <div class="toolbar toolbar-row">
           <input
             id="datasetSearchInput"
             type="search"
             placeholder="Search datasets..."
           />
+          <button id="newDatasetBtn" type="button" class="primary-button">
+            + Submit new dataset
+          </button>
         </div>
         <div id="datasetList"></div>
       </div>
@@ -46,7 +49,123 @@
     </section>
   </main>
 
-  <script src="app.js?v=7"></script>
+  <!-- NEW DATASET SUBMISSION DIALOG -->
+  <dialog id="newDatasetDialog" class="modal">
+    <form id="newDatasetForm" method="dialog" class="modal-card">
+      <div class="modal-header">
+        <h2>Submit a new dataset</h2>
+        <button type="button" class="icon-button" id="newDatasetCloseBtn" aria-label="Close">✕</button>
+      </div>
 
+      <p class="modal-help">
+        This form will open a pre-filled GitHub Issue for review/approval by the catalog owner.
+      </p>
+
+      <div class="form-grid">
+        <label>
+          <span>Dataset ID (required)</span>
+          <input name="id" required placeholder="e.g., blm_rmp_boundaries" />
+        </label>
+
+        <label>
+          <span>Title</span>
+          <input name="title" placeholder="Human-friendly dataset title" />
+        </label>
+
+        <label class="span-2">
+          <span>Description</span>
+          <textarea name="description" rows="3" placeholder="Short description of the dataset"></textarea>
+        </label>
+
+        <label>
+          <span>Database Object Name</span>
+          <input name="objname" placeholder="e.g., SDE.ADMIN.RMP_BOUNDARIES" />
+        </label>
+
+        <label>
+          <span>Geometry Type</span>
+          <select name="geometry_type">
+            <option value="">(select)</option>
+            <option value="POINT">POINT</option>
+            <option value="POLYLINE">POLYLINE</option>
+            <option value="POLYGON">POLYGON</option>
+            <option value="TABLE">TABLE</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Agency Owner</span>
+          <input name="agency_owner" placeholder="e.g., BLM" />
+        </label>
+
+        <label>
+          <span>Office Owner</span>
+          <input name="office_owner" placeholder="e.g., HQ / State / Field Office" />
+        </label>
+
+        <label>
+          <span>Contact Email</span>
+          <input name="contact_email" type="email" placeholder="name@agency.gov" />
+        </label>
+
+        <label>
+          <span>Topics (comma-separated)</span>
+          <input name="topics" placeholder="e.g., planning, NEPA, boundaries" />
+        </label>
+
+        <label>
+          <span>Update Frequency</span>
+          <input name="update_frequency" placeholder="e.g., Quarterly / Annually / Ad hoc" />
+        </label>
+
+        <label>
+          <span>Status</span>
+          <input name="status" placeholder="e.g., Authoritative / Draft" />
+        </label>
+
+        <label>
+          <span>Access Level</span>
+          <input name="access_level" placeholder="e.g., Public / Internal" />
+        </label>
+
+        <label class="span-2">
+          <span>Public Web Service URL</span>
+          <input name="public_web_service" placeholder="https://..." />
+        </label>
+
+        <label class="span-2">
+          <span>Internal Web Service URL</span>
+          <input name="internal_web_service" placeholder="https://..." />
+        </label>
+
+        <label class="span-2">
+          <span>Data Standard URL</span>
+          <input name="data_standard" placeholder="https://..." />
+        </label>
+
+        <label class="span-2">
+          <span>Projection</span>
+          <input name="projection" placeholder="e.g., EPSG:3857 / EPSG:4269" />
+        </label>
+
+        <label class="span-2">
+          <span>Attribute IDs (comma-separated)</span>
+          <input name="attribute_ids" placeholder="e.g., OBJECTID, NAME, STATE" />
+        </label>
+
+        <label class="span-2">
+          <span>Notes</span>
+          <textarea name="notes" rows="3" placeholder="Any special notes, caveats, lineage, etc."></textarea>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-button" id="newDatasetCancelBtn">Cancel</button>
+        <button type="submit" class="primary-button">Open GitHub Issue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js?v=7"></script>
 </body>
 </html>
