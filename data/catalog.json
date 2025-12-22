@@ -1,4 +1,36 @@
-{
+ {
+  "ui": {
+    "placeholders": {
+      "new_dataset": {
+        "id": "e.g., blm_rmp_boundaries",
+        "title": "Human-friendly dataset title",
+        "description": "Short description of the dataset",
+        "objname": "e.g., SDE.ADMIN.RMP_BOUNDARIES",
+        "geometry_type": "e.g., POLYGON / POLYLINE / POINT / TABLE",
+        "agency_owner": "e.g., BLM",
+        "office_owner": "e.g., HQ / State / Field Office",
+        "contact_email": "name@agency.gov",
+        "topics": "e.g., planning, NEPA, boundaries",
+        "update_frequency": "e.g., Quarterly / Annually / Ad hoc",
+        "status": "e.g., Authoritative / Draft",
+        "access_level": "e.g., Public / Internal",
+        "public_web_service": "https://...",
+        "internal_web_service": "https://...",
+        "data_standard": "https://...",
+        "projection": "e.g., EPSG:3857 / EPSG:4269",
+        "notes": "Any special notes, caveats, lineage, etc."
+      }
+    }
+  },
+
+
+
+
+
+
+
+
+
   "attributes": [
     {
       "id": "RMP_ID",
@@ -348,6 +380,23 @@
       "expected_value": "FLPMA Title V"
     }
   ],
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   "datasets": [
     {

@@ -474,6 +474,18 @@ document.addEventListener('DOMContentLoaded', async () => {
    function renderNewDatasetCreateForm(prefill = {}) {
     if (!datasetDetailEl) return;
 
+    // Placeholder strings come from data/catalog.json so you can edit without touching JS
+    const NEW_DATASET_PLACEHOLDERS =
+      (catalogData &&
+        catalogData.ui &&
+        catalogData.ui.placeholders &&
+        catalogData.ui.placeholders.new_dataset) ||
+      {};
+
+    function placeholderFor(key, fallback = '') {
+      return escapeHtml(NEW_DATASET_PLACEHOLDERS[key] || fallback || '');
+    }
+
     function goBackToLastDatasetOrList() {
       showDatasetsView();
       if (lastSelectedDatasetId && Catalog.getDatasetById(lastSelectedDatasetId)) {
@@ -537,7 +549,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div class="dataset-edit-row">
         <label class="dataset-edit-label">Dataset ID (required)</label>
         <input class="dataset-edit-input" type="text" data-new-ds-key="id"
-               placeholder="e.g., blm_rmp_boundaries"
+               placeholder="${placeholderFor('id', 'e.g., blm_rmp_boundaries')}"
                value="${escapeHtml(draft.id || '')}" />
       </div>
     `;
@@ -551,7 +563,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="dataset-edit-row">
             <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
             <textarea class="dataset-edit-input" data-new-ds-key="${escapeHtml(f.key)}"
-                      placeholder="${f.key === 'description' ? 'Short description of the dataset' : ''}">${escapeHtml(val || '')}</textarea>
+                      placeholder="${placeholderFor(f.key)}">${escapeHtml(val || '')}</textarea>
           </div>
         `;
       } else {
@@ -561,6 +573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="dataset-edit-row">
             <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
             <input class="dataset-edit-input" type="text" data-new-ds-key="${escapeHtml(f.key)}"
+                   placeholder="${placeholderFor(f.key)}"
                    value="${escapeHtml(displayVal)}" />
          </div>
         `;
@@ -835,8 +848,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Load catalog once ---
   let catalog;
+  let catalogData = null;
   try {
     catalog = await Catalog.loadCatalog();
+    catalogData = catalog;
   } catch (err) {
     console.error('Failed to load catalog.json:', err);
     if (datasetListEl) datasetListEl.textContent = 'Error loading catalog.';
