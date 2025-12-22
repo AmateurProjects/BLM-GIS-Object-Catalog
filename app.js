@@ -2,8 +2,9 @@
 
 // ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
+// Repo layout: /index.html, /app.js, /styles.css, /data/catalog.json
 
-// >>>>> SET THIS to your real GitHub repo's "new issue" URL base
+// >>>>> SET THIS to your GitHub repo's "new issue" URL base
 // Example: 'https://github.com/blm-gis/public-lands-data-catalog/issues/new'
 const GITHUB_NEW_ISSUE_BASE =
   'https://github.com/AmateurProjects/Public-Lands-Data-Catalog/issues/new';
@@ -129,7 +130,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const datasetDetailEl = document.getElementById('datasetDetail');
   const attributeDetailEl = document.getElementById('attributeDetail');
 
+  // Track last viewed dataset so "Cancel" (and similar actions) can return you to where you were.
+  let lastSelectedDatasetId = null;
+
   // --- Edit Fields for Suggest Dataset Change functionality ---
+  // NOTE: DATASET_EDIT_FIELDS drives BOTH "Suggest change" and "Submit new dataset" pages
 
   const DATASET_EDIT_FIELDS = [
     { key: 'title', label: 'Title', type: 'text' },
@@ -245,6 +250,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       JSON.stringify(updated, null, 2),
       '```'
     );
+
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
+
+  function buildGithubIssueUrlForNewDataset(datasetObj) {
+    const titleBase = datasetObj.id || datasetObj.title || 'New dataset request';
+    const title = encodeURIComponent(`New dataset request: ${titleBase}`);
+
+    const bodyLines = [
+      '## New dataset submission',
+      '',
+      'Please review the dataset proposal below. If approved, add it to `data/catalog.json` under `datasets`.',
+      '',
+      '### Review checklist',
+      '- [ ] ID is unique and follows naming conventions',
+      '- [ ] Title/description are clear',
+      '- [ ] Owner/contact info is present',
+      '- [ ] Geometry type is correct',
+      '- [ ] Services/standards links are valid (if provided)',
+      '',
+      '---',
+      '',
+      '### Proposed dataset JSON',
+      '```json',
+      JSON.stringify(datasetObj, null, 2),
+      '```',
+    ];
 
     const body = encodeURIComponent(bodyLines.join('\n'));
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
@@ -433,6 +466,185 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Then open the GitHub issue in a new tab
         window.open(issueUrl, '_blank', 'noopener');
 
+      });
+    }
+  }
+
+    // --- NEW DATASET "editable page" (replaces the modal) ---
+   function renderNewDatasetCreateForm(prefill = {}) {
+    if (!datasetDetailEl) return;
+
+    function goBackToLastDatasetOrList() {
+      showDatasetsView();
+      if (lastSelectedDatasetId && Catalog.getDatasetById(lastSelectedDatasetId)) {
+        renderDatasetDetail(lastSelectedDatasetId);
+        return;
+      }
+      if (allDatasets && allDatasets.length) {
+        renderDatasetDetail(allDatasets[0].id);
+        return;
+      }
+      datasetDetailEl.classList.add('hidden');
+    }
+
+
+    // Start with a blank draft; allow optional prefill (future use)
+    const draft = {
+      id: '',
+      title: '',
+      description: '',
+      objname: '',
+      topics: [],
+      agency_owner: '',
+      office_owner: '',
+      contact_email: '',
+      geometry_type: '',
+      update_frequency: '',
+      status: '',
+      access_level: '',
+      public_web_service: '',
+      internal_web_service: '',
+      data_standard: '',
+      projection: '',
+      notes: '',
+      ...deepClone(prefill || {}),
+    };
+
+    let html = '';
+
+    // Breadcrumb
+    html += `
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Submit new dataset</span>
+      </nav>
+    `;
+
+    html += `<h2>Submit a new dataset</h2>`;
+    html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
+
+    html += `<div class="card card-meta" id="newDatasetEditCard">`;
+    html += `
+      <div class="dataset-edit-actions">
+        <button type="button" class="btn" data-new-ds-cancel>Cancel</button>
+        <button type="button" class="btn primary" data-new-ds-submit>Submit suggestion</button>
+      </div>
+    `;
+
+    // Dataset ID (required) — shown first
+    html += `
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Dataset ID (required)</label>
+        <input class="dataset-edit-input" type="text" data-new-ds-key="id"
+               placeholder="e.g., blm_rmp_boundaries"
+               value="${escapeHtml(draft.id || '')}" />
+      </div>
+    `;
+
+    // Render the rest using the same field list you use for edit mode
+    DATASET_EDIT_FIELDS.forEach((f) => {
+      const val = draft[f.key];
+
+      if (f.type === 'textarea') {
+        html += `
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <textarea class="dataset-edit-input" data-new-ds-key="${escapeHtml(f.key)}"
+                      placeholder="${f.key === 'description' ? 'Short description of the dataset' : ''}">${escapeHtml(val || '')}</textarea>
+          </div>
+        `;
+      } else {
+        const displayVal =
+          f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
+        html += `
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <input class="dataset-edit-input" type="text" data-new-ds-key="${escapeHtml(f.key)}"
+                   value="${escapeHtml(displayVal)}" />
+         </div>
+        `;
+      }
+    });
+
+    html += `</div>`;
+
+    datasetDetailEl.innerHTML = html;
+    datasetDetailEl.classList.remove('hidden');
+
+    // Breadcrumb root
+    const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
+    if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
+
+    // Cancel: return to “normal” dataset view (first dataset) or just show list
+    const cancelBtn = datasetDetailEl.querySelector('button[data-new-ds-cancel]');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+      goBackToLastDatasetOrList();
+      });
+    }
+
+    // Submit: validate, build payload, open issue, then return UI to normal view
+    const submitBtn = datasetDetailEl.querySelector('button[data-new-ds-submit]');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const inputs = datasetDetailEl.querySelectorAll('[data-new-ds-key]');
+        const out = {};
+
+        inputs.forEach((el) => {
+          const k = el.getAttribute('data-new-ds-key');
+          const raw = el.value;
+
+          if (k === 'topics') {
+            out[k] = parseCsvList(raw);
+            return;
+          }
+          out[k] = String(raw || '').trim();
+        });
+
+        const id = String(out.id || '').trim();
+        if (!id) {
+          alert('Dataset ID is required.');
+          return;
+        }
+
+        // If ID already exists, confirm
+        const exists = Catalog.getDatasetById(id);
+        if (exists) {
+          const proceed = confirm(
+            `A dataset with ID "${id}" already exists in the catalog. Open an issue anyway?`
+          );
+          if (!proceed) return;
+        }
+
+        // Build the dataset object (remove empty values)
+        const datasetObj = compactObject({
+          id,
+          title: out.title,
+          description: out.description,
+          objname: out.objname,
+          geometry_type: out.geometry_type,
+          agency_owner: out.agency_owner,
+          office_owner: out.office_owner,
+          contact_email: out.contact_email,
+          topics: out.topics || [],
+          update_frequency: out.update_frequency,
+          status: out.status,
+          access_level: out.access_level,
+          public_web_service: out.public_web_service,
+          internal_web_service: out.internal_web_service,
+          data_standard: out.data_standard,
+          projection: out.projection,
+          notes: out.notes,
+        });
+
+        const issueUrl = buildGithubIssueUrlForNewDataset(datasetObj);
+
+        // Return UI to normal dataset view immediately
+        goBackToLastDatasetOrList();
+
+        const w = window.open(issueUrl, '_blank', 'noopener');
+        if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
       });
     }
   }
@@ -639,116 +851,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // DATASET SUBMISSION MODAL
   // ===========================
   const newDatasetBtn = document.getElementById('newDatasetBtn');
-  const newDatasetDialog = document.getElementById('newDatasetDialog');
-  const newDatasetForm = document.getElementById('newDatasetForm');
-  const newDatasetCloseBtn = document.getElementById('newDatasetCloseBtn');
-  const newDatasetCancelBtn = document.getElementById('newDatasetCancelBtn');
-
-  function openNewDatasetDialog() {
-    if (!newDatasetDialog) return;
-    if (typeof newDatasetDialog.showModal === 'function') {
-      newDatasetDialog.showModal();
-    } else {
-      alert(
-        'Your browser does not support the dataset submission modal. Please use GitHub Issues directly.'
-      );
-    }
-  }
-
-  function closeNewDatasetDialog() {
-    if (!newDatasetDialog) return;
-    newDatasetDialog.close();
-  }
-
-  function buildGithubIssueUrlForNewDataset(datasetObj) {
-    const titleBase = datasetObj.id || datasetObj.title || 'New dataset request';
-    const title = encodeURIComponent(`New dataset request: ${titleBase}`);
-
-    const bodyLines = [
-      '## New dataset submission',
-      '',
-      'Please review the dataset proposal below. If approved, add it to `data/catalog.json` under `datasets`.',
-      '',
-      '### Review checklist',
-      '- [ ] ID is unique and follows naming conventions',
-      '- [ ] Title/description are clear',
-      '- [ ] Owner/contact info is present',
-      '- [ ] Geometry type is correct',
-      '- [ ] Services/standards links are valid (if provided)',
-      '',
-      '---',
-      '',
-      '### Proposed dataset JSON',
-      '```json',
-      JSON.stringify(datasetObj, null, 2),
-      '```',
-    ];
-
-    const body = encodeURIComponent(bodyLines.join('\n'));
-    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
-  }
-
-  if (newDatasetBtn) newDatasetBtn.addEventListener('click', openNewDatasetDialog);
-  if (newDatasetCloseBtn) newDatasetCloseBtn.addEventListener('click', closeNewDatasetDialog);
-  if (newDatasetCancelBtn) newDatasetCancelBtn.addEventListener('click', closeNewDatasetDialog);
-
-  // click outside dialog to close (your preferred method)
-  if (newDatasetDialog) {
-    newDatasetDialog.addEventListener('click', (e) => {
-      const rect = newDatasetDialog.getBoundingClientRect();
-      const clickedInDialog =
-        e.clientX >= rect.left &&
-        e.clientX <= rect.right &&
-        e.clientY >= rect.top &&
-        e.clientY <= rect.bottom;
-      if (!clickedInDialog) closeNewDatasetDialog();
-    });
-  }
-
-  if (newDatasetForm) {
-    newDatasetForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const fd = new FormData(newDatasetForm);
-      const id = String(fd.get('id') || '').trim();
-      if (!id) {
-        alert('Dataset ID is required.');
-        return;
-      }
-
-      const dataset = compactObject({
-        id,
-        title: String(fd.get('title') || '').trim(),
-        description: String(fd.get('description') || '').trim(),
-        objname: String(fd.get('objname') || '').trim(),
-        geometry_type: String(fd.get('geometry_type') || '').trim(),
-        agency_owner: String(fd.get('agency_owner') || '').trim(),
-        office_owner: String(fd.get('office_owner') || '').trim(),
-        contact_email: String(fd.get('contact_email') || '').trim(),
-        topics: parseCsvList(fd.get('topics')),
-        update_frequency: String(fd.get('update_frequency') || '').trim(),
-        status: String(fd.get('status') || '').trim(),
-        access_level: String(fd.get('access_level') || '').trim(),
-        public_web_service: String(fd.get('public_web_service') || '').trim(),
-        internal_web_service: String(fd.get('internal_web_service') || '').trim(),
-        data_standard: String(fd.get('data_standard') || '').trim(),
-        projection: String(fd.get('projection') || '').trim(),
-        notes: String(fd.get('notes') || '').trim(),
-      });
-
-      const exists = Catalog.getDatasetById(id);
-      if (exists) {
-        const proceed = confirm(
-          `A dataset with ID "${id}" already exists in the catalog. Open an issue anyway?`
-        );
-        if (!proceed) return;
-      }
-
-      const issueUrl = buildGithubIssueUrlForNewDataset(dataset);
-      window.open(issueUrl, '_blank', 'noopener');
-
-      newDatasetForm.reset();
-      closeNewDatasetDialog();
+  
+  // Replace modal behavior with an editable page in the detail panel
+  if (newDatasetBtn) {
+    newDatasetBtn.addEventListener('click', () => {
+      showDatasetsView();
+      renderNewDatasetCreateForm();
     });
   }
 
@@ -1060,6 +1168,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderDatasetDetail(datasetId) {
     if (!datasetDetailEl) return;
 
+    // update "last selected dataset" state whenever we render a dataset detail
+    lastSelectedDatasetId = datasetId;
+
     const dataset = Catalog.getDatasetById(datasetId);
     if (!dataset) {
       datasetDetailEl.classList.remove('hidden');
@@ -1300,6 +1411,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', () => {
         const dsId = btn.getAttribute('data-dataset-id');
         showDatasetsView();
+        // keep lastSelectedDatasetId in sync on navigation
+        lastSelectedDatasetId = dsId;
         renderDatasetDetail(dsId);
       });
     });
@@ -1413,6 +1526,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', () => {
         const dsId = btn.getAttribute('data-dataset-id');
         showDatasetsView();
+        // keep lastSelectedDatasetId in sync on navigation
+        lastSelectedDatasetId = dsId;
         renderDatasetDetail(dsId);
       });
     });
@@ -1431,8 +1546,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     attributeSearchInput.addEventListener('input', () => renderAttributeList(attributeSearchInput.value));
   }
 
-  if (allDatasets.length) renderDatasetDetail(allDatasets[0].id);
-
+// Initial render: only render the active tab's detail (Datasets tab is active by default)
+  if (allDatasets.length) {
+    lastSelectedDatasetId = allDatasets[0].id;
+    renderDatasetDetail(allDatasets[0].id);
+  }
+// Attribute detail will render when user clicks the Attributes tab or an attribute link
 });
 
 // ====== UTILS ======
