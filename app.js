@@ -579,6 +579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const submitBtn = attributeDetailEl.querySelector('button[data-edit-attr-submit]');
     if (submitBtn) {
       submitBtn.addEventListener('click', () => {
+        let hadError = false;
         const inputs = attributeDetailEl.querySelectorAll('[data-edit-attr-key]');
         inputs.forEach((el) => {
           const k = el.getAttribute('data-edit-attr-key');
@@ -589,7 +590,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const parsed = tryParseJson(raw);
             if (parsed && parsed.__parse_error__) {
               alert(`Allowed values JSON parse error:\n${parsed.__parse_error__}`);
-              throw new Error('Invalid JSON in values');
+              hadError = true;
+              return;
             }
             draft[k] = parsed === null ? undefined : parsed;
           } else {
@@ -597,6 +599,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             draft[k] = s === '' ? undefined : s;
           }
         });
+
+        if (hadError) return;
 
         const updated = compactObject(draft);
         const origCompact = compactObject(original);
@@ -1425,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (allDatasets.length) renderDatasetDetail(allDatasets[0].id);
-  if (allAttributes.length) renderAttributeDetail(allAttributes[0].id);
+
 });
 
 // ====== UTILS ======
@@ -1483,7 +1487,7 @@ function buildArcGisSchemaPython(dataset, attrs) {
   lines.push(`fc_name = "${objname}"`);
 
   const proj = dataset.projection || '';
-  const epsgMatch = proj.match(/EPSG:(\\d+)/i);
+  const epsgMatch = proj.match(/EPSG:(\d+)/i);
 
   const geomType = (dataset.geometry_type || 'POLYGON').toUpperCase();
   lines.push(`geometry_type = "${geomType}"  # e.g. "POINT", "POLYLINE", "POLYGON"`);
