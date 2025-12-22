@@ -132,6 +132,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Edit Fields for Suggest Dataset Change functionality ---
 
   const DATASET_EDIT_FIELDS = [
+    { key: 'title', label: 'Title', type: 'text' },
+    { key: 'description', label: 'Description', type: 'textarea' },
+
     { key: 'objname', label: 'Database Object Name', type: 'text' },
     { key: 'topics', label: 'Topics (comma-separated)', type: 'csv' },
 
