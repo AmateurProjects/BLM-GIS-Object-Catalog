@@ -1152,6 +1152,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
 
+    // Animate ONLY when entering edit mode (not when browsing existing attributes)
+    staggerCards(attributeDetailEl);
+    animatePanel(attributeDetailEl);
+
     // Breadcrumb root
     const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
     if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
