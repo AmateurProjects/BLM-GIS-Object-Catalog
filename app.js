@@ -3,11 +3,17 @@
 // ====== UI FX HELPERS ======
  function animatePanel(el) {
    if (!el) return;
-   // Re-trigger CSS animation by toggling a class
-   el.classList.remove('fx-enter');
-   // Force reflow so the browser restarts the animation
-   void el.offsetWidth;
-   el.classList.add('fx-enter');
+  // Temporarily hide scrollbars while animation plays
+  el.classList.add('fx-animating');
+
+  // Re-trigger CSS animation by toggling a class
+  el.classList.remove('fx-enter');
+  void el.offsetWidth; // Force reflow so the browser restarts the animation
+  el.classList.add('fx-enter');
+
+  // Remove the no-scroll class when the animation ends
+  const onEnd = () => el.classList.remove('fx-animating');
+  el.addEventListener('animationend', onEnd, { once: true });
  }
 
 
@@ -1377,9 +1383,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-   // animate on render (and stagger cards after HTML is set)
-   animatePanel(datasetDetailEl);
-
     const geomIconHtml = getGeometryIconHTML(dataset.geometry_type || '', 'geom-icon-inline');
     const attrs = Catalog.getAttributesForDataset(dataset);
 
@@ -1481,9 +1484,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
-   // Apply stagger after content exists, then re-trigger bounce
-   staggerCards(datasetDetailEl);
-   animatePanel(datasetDetailEl);
 
     const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
     if (editBtn) {
@@ -1637,9 +1637,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-   // animate on render (stagger will be applied after innerHTML set)
-   animatePanel(attributeDetailEl);
-
     const datasets = Catalog.getDatasetsForAttribute(attrId);
 
     let html = '';
@@ -1721,10 +1718,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
-
-   // Apply stagger after content exists, then re-trigger bounce
-   staggerCards(attributeDetailEl);
-   animatePanel(attributeDetailEl);
 
     const editAttrBtn = attributeDetailEl.querySelector('button[data-edit-attribute]');
     if (editAttrBtn) {
