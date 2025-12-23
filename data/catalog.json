@@ -33,25 +33,6 @@
       }
     }
   },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
   "attributes": [
     {
       "id": "RMP_ID",
@@ -144,11 +125,31 @@
       "definition": "Primary federal agency responsible for managing the feature.",
       "expected_value": 1,
       "values": [
-        { "code": 1, "label": "BLM", "description": "Bureau of Land Management" },
-        { "code": 2, "label": "NPS", "description": "National Park Service" },
-        { "code": 3, "label": "USFS", "description": "U.S. Forest Service" },
-        { "code": 4, "label": "USFWS", "description": "U.S. Fish and Wildlife Service" },
-        { "code": 5, "label": "BOR", "description": "Bureau of Reclamation" }
+        {
+          "code": 1,
+          "label": "BLM",
+          "description": "Bureau of Land Management"
+        },
+        {
+          "code": 2,
+          "label": "NPS",
+          "description": "National Park Service"
+        },
+        {
+          "code": 3,
+          "label": "USFS",
+          "description": "U.S. Forest Service"
+        },
+        {
+          "code": 4,
+          "label": "USFWS",
+          "description": "U.S. Fish and Wildlife Service"
+        },
+        {
+          "code": 5,
+          "label": "BOR",
+          "description": "Bureau of Reclamation"
+        }
       ]
     },
     {
@@ -401,25 +402,28 @@
       "expected_value": "FLPMA Title V"
     }
   ],
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   "datasets": [
+    {
+      "id": "blm_admin_units",
+      "title": "BLM Administrative Units",
+      "description": "This feature data set covers both BLM administrative land areas and office locations. Land areas are depicted with polygons for the smallest administrative unit (field offices). Other levels of administrative units, other, district and state, were derived from these polygons. Overviews were created to improve drawing speed and should not be used for analysis.",
+      "objname": "unknown",
+      "geometry_type": "multiple",
+      "agency_owner": "BLM",
+      "office_owner": "NOC",
+      "contact_email": "scrowe@blm.gov",
+      "topics": [
+        "BLM Offices",
+        "field office",
+        "jurisdiction"
+      ],
+      "update_frequency": "Ad hoc",
+      "status": "Authoritative",
+      "access_level": "public",
+      "public_web_service": "https://gis.blm.gov/arcgis/rest/services/admin_boundaries/BLM_Natl_AdminUnit/MapServer",
+      "internal_web_service": "unknown",
+      "data_standard": "https://doimspp.sharepoint.com/sites/blm-oc/DataAdmin/DataStandards/SitePages/ADMU.aspx"
+    },
     {
       "id": "This is a hidden unique ID for the dataset used for the Catalog UI.",
       "objname": "Object name is the editable database oject such as a feature class in the database.",
@@ -465,7 +469,10 @@
       "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Division of Planning",
       "contact_email": "planning@example.gov",
-      "topics": ["planning", "land_status"],
+      "topics": [
+        "planning",
+        "land_status"
+      ],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -500,7 +507,10 @@
       "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Fire and Aviation",
       "contact_email": "fire@example.gov",
-      "topics": ["wildfire", "risk"],
+      "topics": [
+        "wildfire",
+        "risk"
+      ],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -537,7 +547,10 @@
       "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Division of Planning",
       "contact_email": "planning@example.gov",
-      "topics": ["planning", "resource_protection"],
+      "topics": [
+        "planning",
+        "resource_protection"
+      ],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -573,7 +586,10 @@
       "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Division of Planning",
       "contact_email": "planning@example.gov",
-      "topics": ["planning", "wilderness"],
+      "topics": [
+        "planning",
+        "wilderness"
+      ],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -609,7 +625,10 @@
       "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Energy and Minerals",
       "contact_email": "energy@example.gov",
-      "topics": ["fluid_minerals", "energy"],
+      "topics": [
+        "fluid_minerals",
+        "energy"
+      ],
       "extent": {
         "west": -125.0,
         "south": 31.0,
@@ -646,7 +665,10 @@
       "agency_owner": "Bureau of Land Management",
       "office_owner": "BLM Lands and Realty",
       "contact_email": "lands@example.gov",
-      "topics": ["lands", "infrastructure"],
+      "topics": [
+        "lands",
+        "infrastructure"
+      ],
       "extent": {
         "west": -125.0,
         "south": 31.0,
