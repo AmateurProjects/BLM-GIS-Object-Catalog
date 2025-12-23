@@ -50,6 +50,146 @@
  }
 
 
+// ====== URL STATUS CHECK HELPERS ======
+const URL_CHECK = {
+  timeoutMs: 3500,
+  concurrency: 3,
+};
+
+// Cache URL check results for this browser session (page lifetime)
+// url -> { status: "ok"|"bad"|"unknown", ts: number }
+const urlStatusCache = new Map();
+
+function getCachedUrlStatus(url) {
+  if (!url) return null;
+  return urlStatusCache.get(url) || null;
+}
+
+function setCachedUrlStatus(url, status) {
+  if (!url) return;
+  urlStatusCache.set(url, { status, ts: Date.now() });
+}
+
+function setUrlStatus(rowEl, status, titleText) {
+  if (!rowEl) return;
+  rowEl.setAttribute('data-url-status', status);
+  const icon = rowEl.querySelector('.url-status-icon');
+  if (icon) icon.title = titleText || '';
+}
+
+// Tries to determine if a URL is reachable.
+// Returns: "ok" | "bad" | "unknown"
+async function checkUrlStatus(url) {
+  if (!url) return 'bad';
+  const cached = getCachedUrlStatus(url);
+  if (cached && cached.status) return cached.status;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return 'bad';
+  } catch {
+    return 'bad';
+  }
+
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), URL_CHECK.timeoutMs);
+
+  try {
+    // Try HEAD first (fast + minimal payload)
+    let resp = await fetch(url, {
+      method: 'HEAD',
+      mode: 'cors',
+      redirect: 'follow',
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+
+    // If CORS blocks reading status, some browsers throw; if not, use status.
+    if (resp && typeof resp.status === 'number') {
+      const s = (resp.status >= 200 && resp.status < 400) ? 'ok' : 'bad';
+      setCachedUrlStatus(url, s);
+      return s;
+    }
+    setCachedUrlStatus(url, 'unknown');
+    return 'unknown';
+  } catch (e1) {
+    // Fallback: no-cors GET gives opaque response (still indicates network likely worked)
+    try {
+      let resp2 = await fetch(url, {
+        method: 'GET',
+        mode: 'no-cors',
+        redirect: 'follow',
+        signal: controller.signal,
+        cache: 'no-store',
+      });
+      // opaque response => cannot verify status, but request likely reached the server
+      if (resp2 && resp2.type === 'opaque') return 'unknown';
+      // if somehow we got a normal response here, treat 2xx/3xx as ok
+      if (resp2 && typeof resp2.status === 'number') {
+        const s2 = (resp2.status >= 200 && resp2.status < 400) ? 'ok' : 'bad';
+        setCachedUrlStatus(url, s2);
+        return s2;
+      }
+      setCachedUrlStatus(url, 'unknown');
+      return 'unknown';
+    } catch (e2) {
+      setCachedUrlStatus(url, 'bad');
+      return 'bad';
+    }
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function runUrlChecks(hostEl) {
+  if (!hostEl) return;
+  const rows = Array.from(hostEl.querySelectorAll('[data-url-check-row]'));
+  if (!rows.length) return;
+
+  // If cached, paint immediately. Otherwise mark as checking.
+  const toCheck = [];
+  rows.forEach((row) => {
+    const url = row.getAttribute('data-url') || '';
+    if (!url) {
+      setUrlStatus(row, 'bad', 'Missing/invalid URL');
+      return;
+    }
+    const cached = getCachedUrlStatus(url);
+    if (cached && cached.status) {
+      const title =
+        cached.status === 'ok'
+          ? 'Link looks reachable (cached)'
+          : cached.status === 'bad'
+          ? 'Link appears unreachable/invalid (cached)'
+          : 'Cannot verify (cached), click to test';
+      setUrlStatus(row, cached.status, title);
+    } else {
+      setUrlStatus(row, 'checking', 'Checking link…');
+      toCheck.push(row);
+    }
+  });
+
+  if (!toCheck.length) return;
+
+  let idx = 0;
+  const workers = new Array(URL_CHECK.concurrency).fill(0).map(async () => {
+    while (idx < toCheck.length) {
+      const row = toCheck[idx++];
+      const url = row.getAttribute('data-url') || '';
+      const result = await checkUrlStatus(url);
+      if (result === 'ok') setUrlStatus(row, 'ok', 'Link looks reachable');
+      else if (result === 'bad') setUrlStatus(row, 'bad', 'Link appears unreachable/invalid');
+      else setUrlStatus(row, 'unknown', 'Cannot verify (CORS/blocked), click to test');
+    }
+  });
+
+  await Promise.all(workers);
+}
+
+
+
+
+
+
 // ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
 // Repo layout: /index.html, /app.js, /styles.css, /data/catalog.json
@@ -1430,24 +1570,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
     html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
 
-    html += `<p><strong>Public Web Service:</strong> ${dataset.public_web_service
-      ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(
-        dataset.public_web_service
-      )}</a>`
-      : ''
-      }</p>`;
+ html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.public_web_service || '')}" data-url-status="idle">
+   <strong>Public Web Service:</strong>
+   <span class="url-status-icon" aria-hidden="true"></span>
+   ${dataset.public_web_service
+     ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
+     : ''
+   }
+ </p>`;
 
-    html += `<p><strong>Internal Web Service:</strong> ${dataset.internal_web_service
-      ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(
-        dataset.internal_web_service
-      )}</a>`
-      : ''
-      }</p>`;
+ html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.internal_web_service || '')}" data-url-status="idle">
+   <strong>Internal Web Service:</strong>
+   <span class="url-status-icon" aria-hidden="true"></span>
+   ${dataset.internal_web_service
+     ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
+     : ''
+   }
+ </p>`;
 
-    html += `<p><strong>Data Standard:</strong> ${dataset.data_standard
-      ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
-      : ''
-      }</p>`;
+ html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.data_standard || '')}" data-url-status="idle">
+   <strong>Data Standard:</strong>
+   <span class="url-status-icon" aria-hidden="true"></span>
+   ${dataset.data_standard
+     ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+     : ''
+   }
+ </p>`;
 
     if (dataset.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
     html += '</div>';
@@ -1498,6 +1646,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
+// Check URL status icons (async)
+runUrlChecks(datasetDetailEl);
 
     const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
     if (editBtn) {

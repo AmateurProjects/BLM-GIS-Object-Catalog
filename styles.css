@@ -304,6 +304,41 @@ input[type="search"]:focus {
 }
 
 /* ============================
+   URL CHECK ICONS
+   ============================ */
+.url-check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.url-check-row strong {
+  min-width: 145px; /* matches your label alignment */
+}
+
+.url-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+/* Icon glyphs by status */
+.url-check-row[data-url-status="checking"] .url-status-icon::before { content: "⏳"; }
+.url-check-row[data-url-status="ok"] .url-status-icon::before { content: "✅"; }
+.url-check-row[data-url-status="bad"] .url-status-icon::before { content: "⛔"; }
+.url-check-row[data-url-status="unknown"] .url-status-icon::before { content: "❔"; }
+.url-check-row[data-url-status="idle"] .url-status-icon::before { content: "🔗"; }
+
+
+/* ============================
    FX: prevent scrollbars during panel enter animation
    ============================ */
 
