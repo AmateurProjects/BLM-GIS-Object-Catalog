@@ -1,19 +1,25 @@
 // app.js
 
 // ====== UI FX HELPERS ======
- function animatePanel(el) {
+ function animatePanel(el, durationMs = 650) {
    if (!el) return;
-  // Temporarily hide scrollbars while animation plays
-  el.classList.add('fx-animating');
 
-  // Re-trigger CSS animation by toggling a class
-  el.classList.remove('fx-enter');
-  void el.offsetWidth; // Force reflow so the browser restarts the animation
-  el.classList.add('fx-enter');
+   // Hide scrollbars globally during the animation (prevents transient page scrollbars)
+   document.documentElement.classList.add('fx-no-scroll');
+   document.body.classList.add('fx-no-scroll');
+   el.classList.add('fx-animating');
 
-  // Remove the no-scroll class when the animation ends
-  const onEnd = () => el.classList.remove('fx-animating');
-  el.addEventListener('animationend', onEnd, { once: true });
+   // Re-trigger CSS animation by toggling a class
+   el.classList.remove('fx-enter');
+   void el.offsetWidth; // Force reflow so the browser restarts the animation
+   el.classList.add('fx-enter');
+
+   // Always clean up (animationend may fire on child cards, not on the panel itself)
+   window.setTimeout(() => {
+     el.classList.remove('fx-animating');
+     document.documentElement.classList.remove('fx-no-scroll');
+     document.body.classList.remove('fx-no-scroll');
+   }, durationMs);
  }
 
 
@@ -1370,6 +1376,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderDatasetDetail(datasetId) {
     if (!datasetDetailEl) return;
 
+  // Browsing existing datasets should not animate.
+  // Also make sure no prior FX classes linger from edit/create flows.
+  datasetDetailEl.classList.remove('fx-enter', 'fx-animating');
+
     // update "last selected dataset" state whenever we render a dataset detail
     lastSelectedDatasetId = datasetId;
 
@@ -1626,6 +1636,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
+
+  // Browsing existing attributes should not animate.
+  // Also make sure no prior FX classes linger from edit/create flows.
+  attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
 
    // highlight active attribute in sidebar (if list is rendered)
    setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);

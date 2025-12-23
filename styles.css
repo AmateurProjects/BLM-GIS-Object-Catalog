@@ -307,8 +307,20 @@ input[type="search"]:focus {
    FX: prevent scrollbars during panel enter animation
    ============================ */
 
+/* Global no-scroll while FX plays (prevents page-level scrollbars flickering in) */
+html.fx-no-scroll,
+body.fx-no-scroll {
+  overflow: hidden !important;
+}
+
+/* Panel no-scroll while FX plays */
 .detail-panel.fx-animating {
   overflow: hidden !important;
+}
+
+/* Keeps layout from shifting when scrollbars appear/disappear */
+html {
+  scrollbar-gutter: stable;
 }
 
 
