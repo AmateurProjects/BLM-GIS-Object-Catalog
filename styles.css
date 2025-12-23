@@ -140,6 +140,20 @@ section {
   margin-bottom: 0.75rem;
 }
 
+/* When toolbars are stacked (search on top, action button below) */
+.sidebar .toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Container that holds the action button under the search bar */
+.toolbar-actions {
+  display: flex;
+  justify-content: flex-start; /* stays left-aligned under search */
+}
+
+
 input[type="search"] {
   width: 100%;
   padding: 0.5rem 0.65rem;
@@ -406,8 +420,17 @@ a:hover {
 }
 
 .export-button {
-  margin-left: 0.5rem;
+  margin-left: 0;
 }
+
+/* Center the action buttons in the action card (dataset + attribute pages) */
+.card-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 
 /* ============================
    TABLES

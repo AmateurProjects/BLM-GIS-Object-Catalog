@@ -20,11 +20,13 @@
     <!-- DATASETS VIEW -->
     <section id="datasetsView">
       <div class="sidebar">
-        <div class="toolbar toolbar-row">
+        <div class="toolbar">
           <input id="datasetSearchInput" type="search" placeholder="Search datasets..." />
-          <button id="newDatasetBtn" type="button" class="primary-button">
-            + Submit new dataset
-          </button>
+          <div class="toolbar-actions">
+            <button id="newDatasetBtn" type="button" class="primary-button">
+              + Submit new dataset
+            </button>
+          </div>
         </div>
         <div id="datasetList"></div>
       </div>
@@ -33,11 +35,13 @@
     <!-- ATTRIBUTES VIEW -->
     <section id="attributesView" class="hidden">
       <div class="sidebar">
-        <div class="toolbar toolbar-row">
+        <div class="toolbar">
           <input id="attributeSearchInput" type="search" placeholder="Search attributes..." />
-          <button id="newAttributeBtn" type="button" class="primary-button">
-            + Add attribute(s)
-          </button>
+          <div class="toolbar-actions">
+            <button id="newAttributeBtn" type="button" class="primary-button">
+              + Add attribute(s)
+            </button>
+          </div>
         </div>
         <div id="attributeList"></div>
       </div>
