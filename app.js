@@ -1,5 +1,25 @@
 // app.js
 
+// ====== UI FX HELPERS ======
+ function animatePanel(el) {
+   if (!el) return;
+   // Re-trigger CSS animation by toggling a class
+   el.classList.remove('fx-enter');
+   // Force reflow so the browser restarts the animation
+   void el.offsetWidth;
+   el.classList.add('fx-enter');
+ }
+
+ function setActiveListButton(listRootEl, predicateFn) {
+   if (!listRootEl) return;
+   const btns = listRootEl.querySelectorAll('button.list-item-button');
+   btns.forEach((b) => {
+     const isActive = predicateFn(b);
+     b.classList.toggle('is-active', isActive);
+   });
+ }
+
+
 // ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
 // Repo layout: /index.html, /app.js, /styles.css, /data/catalog.json
@@ -1243,6 +1263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'list-item-button';
+      btn.setAttribute('data-ds-id', ds.id);
 
       const geomIconHtml = getGeometryIconHTML(ds.geometry_type || '', 'geom-icon-list');
 
@@ -1262,6 +1283,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     datasetListEl.innerHTML = '';
     datasetListEl.appendChild(list);
+
+   // keep active highlight in sync after re-render
+   setActiveListButton(datasetListEl, (b) => b.getAttribute('data-ds-id') === lastSelectedDatasetId);
   }
 
   function renderAttributeList(filterText = '') {
@@ -1288,6 +1312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'list-item-button';
+      btn.setAttribute('data-attr-id', attr.id);
       btn.textContent = `${attr.id} – ${attr.label || ''}`;
 
       btn.addEventListener('click', () => {
@@ -1312,12 +1337,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // update "last selected dataset" state whenever we render a dataset detail
     lastSelectedDatasetId = datasetId;
 
+   // highlight active dataset in sidebar (if list is rendered)
+   setActiveListButton(datasetListEl, (b) => b.getAttribute('data-ds-id') === datasetId);
+
     const dataset = Catalog.getDatasetById(datasetId);
     if (!dataset) {
       datasetDetailEl.classList.remove('hidden');
       datasetDetailEl.innerHTML = `<p>Dataset not found: ${escapeHtml(datasetId)}</p>`;
       return;
     }
+
+   // animate on render
+   animatePanel(datasetDetailEl);
 
     const geomIconHtml = getGeometryIconHTML(dataset.geometry_type || '', 'geom-icon-inline');
     const attrs = Catalog.getAttributesForDataset(dataset);
@@ -1562,12 +1593,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
 
+   // highlight active attribute in sidebar (if list is rendered)
+   setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
+
     const attribute = Catalog.getAttributeById(attrId);
     if (!attribute) {
       attributeDetailEl.classList.remove('hidden');
       attributeDetailEl.innerHTML = `<p>Attribute not found: ${escapeHtml(attrId)}</p>`;
       return;
     }
+
+   // animate on render
+   animatePanel(attributeDetailEl);
 
     const datasets = Catalog.getDatasetsForAttribute(attrId);
 

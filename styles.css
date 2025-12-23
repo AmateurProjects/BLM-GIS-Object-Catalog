@@ -26,6 +26,12 @@
 
   /* Purple geometry color to match line emoji */
   --geom-purple: #c275ff;
+
+   /* Game UI-lite */
+   --glow-accent: 0 0 0 1px rgba(78, 163, 255, 0.22), 0 10px 24px rgba(0, 0, 0, 0.55);
+   --glow-accent-strong: 0 0 0 1px rgba(78, 163, 255, 0.35), 0 16px 38px rgba(0, 0, 0, 0.65);
+   --glow-purple: 0 0 0 1px rgba(194, 117, 255, 0.22), 0 12px 28px rgba(0, 0, 0, 0.60);
+
 }
 
 *,
@@ -120,6 +126,12 @@ section {
   gap: 0.75rem;
 }
 
+ /* Slightly “premium” sidebar panels */
+ #datasetList,
+ #attributeList {
+   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.00));
+ }
+
 .sidebar .toolbar {
   margin-bottom: 0;
 }
@@ -201,12 +213,45 @@ input[type="search"]:focus {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
   font-size: 0.9rem;
+  position: relative;
 }
+
+ /* Accent “rail” on hover (game UI vibe) */
+ .list-item-button::before {
+   content: "";
+   position: absolute;
+   left: 0;
+   top: 8px;
+   bottom: 8px;
+   width: 3px;
+   border-radius: 999px;
+   background: transparent;
+   transition: background 140ms ease;
+   opacity: 0.95;
+ }
 
 .list-item-button:hover {
   background: var(--bg-hover);
   border-color: var(--border-color);
+  transform: translateX(2px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.03);
 }
+
+
+ .list-item-button:hover::before {
+   background: var(--accent);
+ }
+
+ /* Active/selected list item (set by JS) */
+ .list-item-button.is-active {
+   background: rgba(78, 163, 255, 0.10);
+   border-color: rgba(78, 163, 255, 0.30);
+   box-shadow: var(--glow-accent);
+ }
+ .list-item-button.is-active::before {
+   background: var(--accent);
+ }
+
 
 .list-item-button:focus-visible {
   outline: 2px solid var(--accent);
@@ -258,6 +303,15 @@ input[type="search"]:focus {
   /* default text alignment */
 }
 
+ /* Re-triggerable detail transition (JS toggles .fx-enter) */
+ .detail-panel.fx-enter {
+   animation: panelIn 180ms ease-out;
+ }
+ @keyframes panelIn {
+   from { opacity: 0; transform: translateY(6px); }
+   to   { opacity: 1; transform: translateY(0); }
+ }
+
 /* Children stay constrained in width but hug the left side */
 .detail-panel>* {
   max-width: 980px;
@@ -306,7 +360,15 @@ input[type="search"]:focus {
   border-radius: var(--radius);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-soft);
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
+
+ .card:hover,
+ .detail-section:hover {
+   transform: translateY(-2px);
+   border-color: rgba(78, 163, 255, 0.25);
+   box-shadow: var(--glow-accent);
+ }
 
 /* Make label/value pairs line up a bit better */
 .card p strong,
@@ -411,17 +473,45 @@ a:hover {
   border: 1px solid var(--accent);
   text-decoration: none;
   font-size: 0.9rem;
+   position: relative;
+   overflow: hidden;
+   box-shadow: var(--glow-accent);
+   transition: transform 90ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease;
 }
 
 .suggest-button:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   text-decoration: none;
+  box-shadow: var(--glow-accent-strong);
 }
 
 .export-button {
   margin-left: 0;
 }
+
+ /* Button “spark” on press */
+ .suggest-button::after,
+ .primary-button::after,
+ .btn.primary::after {
+   content: "";
+   position: absolute;
+   inset: -40%;
+   background: radial-gradient(circle, rgba(255,255,255,0.22), transparent 55%);
+   transform: scale(0);
+   transition: transform 220ms ease;
+   pointer-events: none;
+ }
+ .suggest-button:active,
+ .primary-button:active,
+ .btn.primary:active {
+   transform: translateY(1px);
+ }
+ .suggest-button:active::after,
+ .primary-button:active::after,
+ .btn.primary:active::after {
+   transform: scale(1);
+ }
 
 /* Center the action buttons in the action card (dataset + attribute pages) */
 .card-actions {
@@ -532,7 +622,14 @@ code {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
+
+ .pill:hover {
+   transform: translateY(-1px);
+   border-color: rgba(78, 163, 255, 0.35);
+   box-shadow: var(--glow-accent);
+ }
 
 .pill-topic {
   border-color: #3fae6a;
@@ -847,3 +944,8 @@ textarea.dataset-edit-input {
 .btn.primary {
   border-color: var(--accent);
 }
+
+ /* Respect users who prefer less motion */
+ @media (prefers-reduced-motion: reduce) {
+   * { animation: none !important; transition: none !important; }
+ }
