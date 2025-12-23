@@ -1,4 +1,4 @@
- {
+{
   "ui": {
     "placeholders": {
       "new_dataset": {
@@ -19,6 +19,17 @@
         "data_standard": "https://...",
         "projection": "e.g., EPSG:3857 / EPSG:4269",
         "notes": "Any special notes, caveats, lineage, etc."
+      },
+      "new_attribute": {
+        "id": "e.g., STATE_NAME",
+        "label": "e.g., State Name",
+        "type": "e.g., string | integer | float | date | enumerated",
+        "definition": "Short definition of what this attribute represents.",
+        "expected_value": "Example value, e.g., \"California\"",
+        "values": "For enumerated types: JSON array like [{\"code\":1,\"label\":\"...\",\"description\":\"...\"}]",
+        "notes": "Optional notes for reviewers",
+        "bulk_attributes_json": "[{ \"id\": \"...\", \"label\": \"...\", \"type\": \"...\", \"definition\": \"...\" }]",
+        "bulk_notes": "Optional notes for reviewers"
       }
     }
   },
@@ -28,6 +39,16 @@
 
 
 
+
+
+
+
+
+
+
+
+
+  
 
 
 

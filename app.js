@@ -133,6 +133,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Track last viewed dataset so "Cancel" (and similar actions) can return you to where you were.
   let lastSelectedDatasetId = null;
 
+
+  // NOTE: goBackToAttributesListOrFirst() is defined later in Helpers.
+
+
   // --- Edit Fields for Suggest Dataset Change functionality ---
   // NOTE: DATASET_EDIT_FIELDS drives BOTH "Suggest change" and "Submit new dataset" pages
 
@@ -202,6 +206,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));
+  }
+
+  function goBackToLastDatasetOrList() {
+    showDatasetsView();
+    if (lastSelectedDatasetId && Catalog.getDatasetById(lastSelectedDatasetId)) {
+      renderDatasetDetail(lastSelectedDatasetId);
+      return;
+    }
+    if (allDatasets && allDatasets.length) {
+      renderDatasetDetail(allDatasets[0].id);
+      return;
+    }
+    datasetDetailEl && datasetDetailEl.classList.add('hidden');
+  }
+
+  function goBackToAttributesListOrFirst() {
+    showAttributesView();
+    if (allAttributes && allAttributes.length) {
+      renderAttributeDetail(allAttributes[0].id);
+      return;
+    }
+    attributeDetailEl && attributeDetailEl.classList.add('hidden');
   }
 
   function computeChanges(original, updated) {
@@ -321,6 +347,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
   }
 
+  function buildGithubIssueUrlForNewAttributes(payload) {
+    const title = encodeURIComponent(payload.title || 'New attribute(s) request');
+
+    const bodyLines = [
+      '## New attribute(s) submission',
+      '',
+      'Please review the attribute proposal below. If approved, add it to `data/catalog.json` under `attributes`.',
+      '',
+      '### Review checklist',
+      '- [ ] ID(s) are unique and follow naming conventions',
+      '- [ ] Type/definition are clear',
+      '- [ ] Enumerations are complete (if applicable)',
+      '',
+      '---',
+      '',
+      '### Proposed attributes JSON',
+      '```json',
+      JSON.stringify(payload.attributes, null, 2),
+      '```',
+    ];
+
+    if (payload.notes) {
+      bodyLines.push('', '### Notes / context', payload.notes);
+    }
+
+    const body = encodeURIComponent(bodyLines.join('\n'));
+    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
+  }
 
 
 
@@ -470,6 +524,268 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // --- NEW ATTRIBUTE "editable page" (replaces the modal) ---
+  function renderNewAttributeCreateForm(prefill = {}) {
+    // Use attribute detail panel when we are on the Attributes tab;
+    // otherwise fall back to dataset detail panel (rare).
+    const hostEl = attributeDetailEl || datasetDetailEl;
+    if (!hostEl) return;
+
+    const NEW_ATTR_PLACEHOLDERS =
+      (catalogData &&
+        catalogData.ui &&
+        catalogData.ui.placeholders &&
+        catalogData.ui.placeholders.new_attribute) ||
+      {};
+
+    function placeholderFor(key, fallback = '') {
+      return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
+    }
+
+    // draft supports both single + bulk modes
+    const draft = {
+      mode: 'single', // 'single' | 'bulk'
+      id: '',
+      label: '',
+      type: '',
+      definition: '',
+      expected_value: '',
+      values_json: '',
+      notes: '',
+      bulk_json: '',
+      bulk_notes: '',
+      ...deepClone(prefill || {}),
+    };
+
+    let html = '';
+
+    // Breadcrumb (Attributes)
+    html += `
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Add new attribute</span>
+      </nav>
+    `;
+
+    html += `<h2>Add a new attribute</h2>`;
+    html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
+
+    // Mode toggle
+    html += `
+      <div class="card card-meta">
+        <div class="dataset-edit-actions">
+          <button type="button" class="btn ${draft.mode === 'single' ? 'primary' : ''}" data-new-attr-mode="single">Single</button>
+          <button type="button" class="btn ${draft.mode === 'bulk' ? 'primary' : ''}" data-new-attr-mode="bulk">Bulk JSON</button>
+          <span style="flex:1"></span>
+          <button type="button" class="btn" data-new-attr-cancel>Cancel</button>
+          <button type="button" class="btn primary" data-new-attr-submit>Submit suggestion</button>
+        </div>
+      </div>
+    `;
+
+    // Single form card
+    html += `<div class="card card-attribute-meta" id="newAttrSingleCard" ${draft.mode === 'bulk' ? 'style="display:none"' : ''}>`;
+
+    // Attribute ID first (required)
+    html += `
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Attribute ID (required)</label>
+        <input class="dataset-edit-input" type="text" data-new-attr-key="id"
+               placeholder="${placeholderFor('id', 'e.g., STATE_NAME')}"
+               value="${escapeHtml(draft.id || '')}" />
+      </div>
+    `;
+
+    // Use your existing field list so the “feel” matches edit mode
+    ATTRIBUTE_EDIT_FIELDS.forEach((f) => {
+      // note: your attribute object uses expected_value but the edit fields key is expected_value already
+      const k = f.key;
+      let val = '';
+      if (k === 'values') val = draft.values_json || '';
+      else val = draft[k] === undefined ? '' : String(draft[k] || '');
+
+      if (f.type === 'textarea' || f.type === 'json') {
+        html += `
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <textarea class="dataset-edit-input" data-new-attr-key="${escapeHtml(k)}"
+              placeholder="${placeholderFor(k)}">${escapeHtml(val)}</textarea>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <input class="dataset-edit-input" type="text" data-new-attr-key="${escapeHtml(k)}"
+              placeholder="${placeholderFor(k)}"
+              value="${escapeHtml(val)}" />
+          </div>
+        `;
+      }
+    });
+
+    // Notes
+    html += `
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Notes / context (optional)</label>
+        <textarea class="dataset-edit-input" data-new-attr-key="notes"
+          placeholder="${placeholderFor('notes', 'any extra context for reviewers')}">${escapeHtml(draft.notes || '')}</textarea>
+      </div>
+    `;
+
+    html += `</div>`;
+
+    // Bulk form card
+    html += `<div class="card card-attribute-meta" id="newAttrBulkCard" ${draft.mode === 'single' ? 'style="display:none"' : ''}>`;
+    html += `
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Bulk attributes JSON (required)</label>
+        <textarea class="dataset-edit-input" data-new-attr-bulk="json" rows="12"
+          placeholder="${placeholderFor('bulk_attributes_json', '[{ \"id\": \"...\", \"label\": \"...\" }]')}">${escapeHtml(draft.bulk_json || '')}</textarea>
+      </div>
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Notes / context (optional)</label>
+        <textarea class="dataset-edit-input" data-new-attr-bulk="notes"
+          placeholder="${placeholderFor('bulk_notes', 'any extra context for reviewers')}">${escapeHtml(draft.bulk_notes || '')}</textarea>
+      </div>
+    `;
+    html += `</div>`;
+
+    hostEl.innerHTML = html;
+    hostEl.classList.remove('hidden');
+
+    // Breadcrumb root
+    const rootBtn = hostEl.querySelector('button[data-breadcrumb="attributes"]');
+    if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
+
+    // Cancel -> back to list/first attribute
+    const cancelBtn = hostEl.querySelector('button[data-new-attr-cancel]');
+    if (cancelBtn) cancelBtn.addEventListener('click', goBackToAttributesListOrFirst);
+
+    // Mode switching
+    const modeBtns = hostEl.querySelectorAll('button[data-new-attr-mode]');
+    const singleCard = hostEl.querySelector('#newAttrSingleCard');
+    const bulkCard = hostEl.querySelector('#newAttrBulkCard');
+    modeBtns.forEach((b) => {
+      b.addEventListener('click', () => {
+        const mode = b.getAttribute('data-new-attr-mode');
+        const isBulk = mode === 'bulk';
+        if (singleCard) singleCard.style.display = isBulk ? 'none' : '';
+        if (bulkCard) bulkCard.style.display = isBulk ? '' : 'none';
+        modeBtns.forEach((x) => {
+          const active = x.getAttribute('data-new-attr-mode') === mode;
+          x.classList.toggle('primary', active);
+        });
+      });
+    });
+
+    // Submit -> validate, build payload, open issue, then return UI to normal view
+    const submitBtn = hostEl.querySelector('button[data-new-attr-submit]');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        // determine mode from which card is visible
+        const isBulk = bulkCard && bulkCard.style.display !== 'none';
+
+        let attributesPayload = [];
+        let notes = '';
+
+        if (isBulk) {
+          const raw = String(hostEl.querySelector('[data-new-attr-bulk="json"]')?.value || '').trim();
+          notes = String(hostEl.querySelector('[data-new-attr-bulk="notes"]')?.value || '').trim();
+
+          const parsed = tryParseJson(raw);
+          if (!parsed) {
+            alert('Bulk JSON is required.');
+            return;
+          }
+          if (parsed.__parse_error__) {
+            alert(`Bulk JSON parse error:\n${parsed.__parse_error__}`);
+            return;
+          }
+          if (!Array.isArray(parsed)) {
+            alert('Bulk JSON must be a JSON array of attribute objects.');
+            return;
+          }
+          attributesPayload = parsed;
+        } else {
+          const getVal = (k) => String(hostEl.querySelector(`[data-new-attr-key="${k}"]`)?.value || '').trim();
+
+          const id = getVal('id');
+          if (!id) {
+            alert('Attribute ID is required.');
+            return;
+          }
+
+          const type = getVal('type');
+          const definition = getVal('definition');
+          const label = getVal('label');
+          const expectedValueRaw = getVal('expected_value');
+          notes = getVal('notes');
+
+          let values = undefined;
+          if (type === 'enumerated') {
+            const valuesRaw = getVal('values');
+            if (valuesRaw) {
+              const parsedValues = tryParseJson(valuesRaw);
+              if (parsedValues && parsedValues.__parse_error__) {
+                alert(`Enumerated values JSON parse error:\n${parsedValues.__parse_error__}`);
+                return;
+              }
+              if (parsedValues && !Array.isArray(parsedValues)) {
+                alert('Enumerated values must be a JSON array of objects like {code,label,description}.');
+                return;
+              }
+              values = parsedValues || [];
+            } else {
+              values = [];
+            }
+          }
+
+          const attrObj = compactObject({
+            id,
+            label,
+            type,
+            definition,
+            expected_value: expectedValueRaw || undefined,
+            values,
+          });
+
+          const exists = Catalog.getAttributeById(id);
+          if (exists) {
+            const proceed = confirm(`An attribute with ID "${id}" already exists. Open an issue anyway?`);
+            if (!proceed) return;
+          }
+
+          attributesPayload = [attrObj];
+        }
+
+        const missingIds = attributesPayload.filter((a) => !a || typeof a !== 'object' || !a.id).length;
+        if (missingIds) {
+          alert('One or more attribute objects are missing an "id" field.');
+          return;
+        }
+
+        const payload = {
+          title:
+            attributesPayload.length === 1
+              ? `New attribute request: ${attributesPayload[0].id}`
+              : `New attributes request (${attributesPayload.length})`,
+          attributes: attributesPayload,
+          notes,
+        };
+
+        const issueUrl = buildGithubIssueUrlForNewAttributes(payload);
+
+        // Return UI to normal attribute view immediately
+        goBackToAttributesListOrFirst();
+
+        const w = window.open(issueUrl, '_blank', 'noopener');
+        if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
+      });
+    }
+  }
+
     // --- NEW DATASET "editable page" (replaces the modal) ---
    function renderNewDatasetCreateForm(prefill = {}) {
     if (!datasetDetailEl) return;
@@ -486,18 +802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return escapeHtml(NEW_DATASET_PLACEHOLDERS[key] || fallback || '');
     }
 
-    function goBackToLastDatasetOrList() {
-      showDatasetsView();
-      if (lastSelectedDatasetId && Catalog.getDatasetById(lastSelectedDatasetId)) {
-        renderDatasetDetail(lastSelectedDatasetId);
-        return;
-      }
-      if (allDatasets && allDatasets.length) {
-        renderDatasetDetail(allDatasets[0].id);
-        return;
-      }
-      datasetDetailEl.classList.add('hidden');
-    }
+// NOTE: goBackToLastDatasetOrList() is defined in Helpers above.
 
 
     // Start with a blank draft; allow optional prefill (future use)
@@ -879,191 +1184,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ATTRIBUTE SUBMISSION MODAL
   // ===========================
   const newAttributeBtn = document.getElementById('newAttributeBtn');
-  const newAttributeDialog = document.getElementById('newAttributeDialog');
-  const newAttributeForm = document.getElementById('newAttributeForm');
-  const newAttributeCloseBtn = document.getElementById('newAttributeCloseBtn');
-  const newAttributeCancelBtn = document.getElementById('newAttributeCancelBtn');
-
-  const attrTabBtns = document.querySelectorAll('button[data-attr-tab]');
-  const attrPanels = document.querySelectorAll('[data-attr-panel]');
-
-  function openNewAttributeDialog() {
-    if (!newAttributeDialog) return;
-    if (typeof newAttributeDialog.showModal === 'function') {
-      newAttributeDialog.showModal();
-    } else {
-      alert(
-        'Your browser does not support the attribute submission modal. Please use GitHub Issues directly.'
-      );
-    }
-  }
-
-  function closeNewAttributeDialog() {
-    if (!newAttributeDialog) return;
-    newAttributeDialog.close();
-  }
-
-  function setAttrTab(tabName) {
-    attrTabBtns.forEach((b) =>
-      b.classList.toggle('active', b.getAttribute('data-attr-tab') === tabName)
-    );
-    attrPanels.forEach((p) =>
-      p.classList.toggle('hidden', p.getAttribute('data-attr-panel') !== tabName)
-    );
-  }
-
-  function buildGithubIssueUrlForNewAttributes(payload) {
-    const title = encodeURIComponent(payload.title || 'New attribute(s) request');
-
-    const bodyLines = [
-      '## New attribute(s) submission',
-      '',
-      'Please review the attribute proposal below. If approved, add it to `data/catalog.json` under `attributes`.',
-      '',
-      '### Review checklist',
-      '- [ ] ID(s) are unique and follow naming conventions',
-      '- [ ] Type/definition are clear',
-      '- [ ] Enumerations are complete (if applicable)',
-      '',
-      '---',
-      '',
-      '### Proposed attributes JSON',
-      '```json',
-      JSON.stringify(payload.attributes, null, 2),
-      '```',
-    ];
-
-    if (payload.notes) {
-      bodyLines.push('', '### Notes / context', payload.notes);
-    }
-
-    const body = encodeURIComponent(bodyLines.join('\n'));
-    return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
-  }
 
   if (newAttributeBtn) {
     newAttributeBtn.addEventListener('click', () => {
-      setAttrTab('single');
-      openNewAttributeDialog();
-    });
-  }
-  if (newAttributeCloseBtn) newAttributeCloseBtn.addEventListener('click', closeNewAttributeDialog);
-  if (newAttributeCancelBtn) newAttributeCancelBtn.addEventListener('click', closeNewAttributeDialog);
-
-  attrTabBtns.forEach((btn) => {
-    btn.addEventListener('click', () => setAttrTab(btn.getAttribute('data-attr-tab')));
-  });
-
-  // backdrop click close (simple)
-  if (newAttributeDialog) {
-    newAttributeDialog.addEventListener('click', (e) => {
-      if (e.target === newAttributeDialog) closeNewAttributeDialog();
-    });
-  }
-
-  if (newAttributeForm) {
-    newAttributeForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const activeTabBtn = document.querySelector('button[data-attr-tab].active');
-      const mode = activeTabBtn ? activeTabBtn.getAttribute('data-attr-tab') : 'single';
-
-      const fd = new FormData(newAttributeForm);
-      let attributesPayload = [];
-      let notes = '';
-
-      if (mode === 'bulk') {
-        const raw = String(fd.get('bulk_attributes_json') || '').trim();
-        notes = String(fd.get('bulk_notes') || '').trim();
-
-        const parsed = tryParseJson(raw);
-        if (!parsed) {
-          alert('Bulk JSON is required.');
-          return;
-        }
-        if (parsed.__parse_error__) {
-          alert(`Bulk JSON parse error:\n${parsed.__parse_error__}`);
-          return;
-        }
-        if (!Array.isArray(parsed)) {
-          alert('Bulk JSON must be a JSON array of attribute objects.');
-          return;
-        }
-
-        attributesPayload = parsed;
-      } else {
-        const id = String(fd.get('attr_id') || '').trim();
-        if (!id) {
-          alert('Attribute ID is required.');
-          return;
-        }
-
-        const type = String(fd.get('attr_type') || '').trim();
-        const definition = String(fd.get('attr_definition') || '').trim();
-        const label = String(fd.get('attr_label') || '').trim();
-        const expectedValueRaw = String(fd.get('attr_expected_value') || '').trim();
-        notes = String(fd.get('attr_notes') || '').trim();
-
-        let values = undefined;
-        if (type === 'enumerated') {
-          const valuesRaw = String(fd.get('attr_values_json') || '').trim();
-          if (valuesRaw) {
-            const parsedValues = tryParseJson(valuesRaw);
-            if (parsedValues && parsedValues.__parse_error__) {
-              alert(`Enumerated values JSON parse error:\n${parsedValues.__parse_error__}`);
-              return;
-            }
-            if (parsedValues && !Array.isArray(parsedValues)) {
-              alert('Enumerated values must be a JSON array of objects like {code,label,description}.');
-              return;
-            }
-            values = parsedValues || [];
-          } else {
-            values = [];
-          }
-        }
-
-        const attrObj = compactObject({
-          id,
-          label,
-          type,
-          definition,
-          expected_value: expectedValueRaw || undefined,
-          values,
-        });
-
-        const exists = Catalog.getAttributeById(id);
-        if (exists) {
-          const proceed = confirm(
-            `An attribute with ID "${id}" already exists. Open an issue anyway?`
-          );
-          if (!proceed) return;
-        }
-
-        attributesPayload = [attrObj];
-      }
-
-      const missingIds = attributesPayload.filter((a) => !a || typeof a !== 'object' || !a.id).length;
-      if (missingIds) {
-        alert('One or more attribute objects are missing an "id" field.');
-        return;
-      }
-
-      const payload = {
-        title:
-          attributesPayload.length === 1
-            ? `New attribute request: ${attributesPayload[0].id}`
-            : `New attributes request (${attributesPayload.length})`,
-        attributes: attributesPayload,
-        notes,
-      };
-
-      const issueUrl = buildGithubIssueUrlForNewAttributes(payload);
-      window.open(issueUrl, '_blank', 'noopener');
-
-      newAttributeForm.reset();
-      setAttrTab('single');
-      closeNewAttributeDialog();
+       // Replace old modal behavior with the new editable page
+       showAttributesView();
+       renderNewAttributeCreateForm();
     });
   }
 
