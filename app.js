@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
   }
 
-  function buildGithubIssueUrlForNewDataset(datasetObj) {
+  function buildGithubIssueUrlForNewDataset(datasetObj, newAttributes = []) {
     const titleBase = datasetObj.id || datasetObj.title || 'New dataset request';
     const title = encodeURIComponent(`New dataset request: ${titleBase}`);
 
@@ -485,6 +485,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       '- [ ] Title/description are clear',
       '- [ ] Owner/contact info is present',
       '- [ ] Geometry type is correct',
+      '- [ ] Attribute IDs are valid (existing or proposed below)',
       '- [ ] Services/standards links are valid (if provided)',
       '',
       '---',
@@ -494,6 +495,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       JSON.stringify(datasetObj, null, 2),
       '```',
     ];
+
+  if (Array.isArray(newAttributes) && newAttributes.length) {
+    bodyLines.push(
+      '',
+      '---',
+      '',
+      '### Proposed NEW attributes JSON (add under `attributes`)',
+      '```json',
+      JSON.stringify(newAttributes, null, 2),
+      '```'
+    );
+  }
 
     const body = encodeURIComponent(bodyLines.join('\n'));
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
@@ -1022,6 +1035,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       data_standard: '',
       projection: '',
       notes: '',
+      // NEW: attribute selection/creation
+      attribute_ids: [],       // existing attribute IDs selected
+      new_attributes: [],      // array of new attribute draft objects
+
       ...deepClone(prefill || {}),
     };
 
@@ -1085,8 +1102,235 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     html += `</div>`;
 
+  // ---------------------------
+  // Attributes section (existing + new)
+  // ---------------------------
+
+  // Datalist options for existing attributes
+  const attrOptions = (allAttributes || [])
+    .map((a) => {
+      const id = a.id || '';
+      const label = a.label ? ` — ${a.label}` : '';
+      return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
+    })
+    .join('');
+
+  html += `
+    <div class="card card-meta" id="newDatasetAttributesCard">
+      <h3>Attributes</h3>
+      <p class="modal-help" style="margin-top:0.25rem;">
+        Add existing attributes, or create new ones inline. New attributes will be included in the GitHub issue.
+      </p>
+
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Add existing attribute (search by ID)</label>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <input class="dataset-edit-input" style="flex:1;" type="text"
+            list="existingAttributesDatalist"
+            data-new-ds-existing-attr-input
+            placeholder="Start typing an attribute ID..." />
+          <button type="button" class="btn" data-new-ds-add-existing-attr>Add</button>
+        </div>
+        <datalist id="existingAttributesDatalist">
+          ${attrOptions}
+        </datalist>
+      </div>
+
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Selected attributes</label>
+        <div data-new-ds-selected-attrs style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
+      </div>
+
+      <div class="dataset-edit-row">
+        <label class="dataset-edit-label">Create new attribute</label>
+        <div>
+          <button type="button" class="btn" data-new-ds-add-new-attr>+ Add new attribute</button>
+        </div>
+      </div>
+
+      <div data-new-ds-new-attrs></div>
+    </div>
+  `;
+
+
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
+
+  // ---------- Attributes UI wiring ----------
+
+  const selectedAttrsEl = datasetDetailEl.querySelector('[data-new-ds-selected-attrs]');
+  const existingAttrInput = datasetDetailEl.querySelector('[data-new-ds-existing-attr-input]');
+  const addExistingBtn = datasetDetailEl.querySelector('button[data-new-ds-add-existing-attr]');
+  const addNewAttrBtn = datasetDetailEl.querySelector('button[data-new-ds-add-new-attr]');
+  const newAttrsHost = datasetDetailEl.querySelector('[data-new-ds-new-attrs]');
+
+  const NEW_ATTR_PLACEHOLDERS =
+    (catalogData &&
+      catalogData.ui &&
+      catalogData.ui.placeholders &&
+      catalogData.ui.placeholders.new_attribute) ||
+    {};
+  function attrPlaceholderFor(key, fallback = '') {
+    return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
+  }
+
+  function renderSelectedAttrChips() {
+    if (!selectedAttrsEl) return;
+    const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
+    draft.attribute_ids = ids;
+
+    selectedAttrsEl.innerHTML = ids.length
+      ? ids
+          .map(
+            (id) => `
+              <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
+                <span>${escapeHtml(id)}</span>
+                <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(id)}">✕</button>
+              </span>
+            `
+          )
+          .join('')
+      : `<span style="color: var(--text-muted);">None selected yet.</span>`;
+
+    // remove handlers
+    selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const id = b.getAttribute('data-remove-attr-id');
+        draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
+        renderSelectedAttrChips();
+      });
+    });
+  }
+
+  function makeNewAttrDraft() {
+    return {
+      id: '',
+      label: '',
+      type: '',
+      definition: '',
+      expected_value: '',
+      values_json: '',
+      notes: '',
+    };
+  }
+
+  function renderNewAttributesForms() {
+    if (!newAttrsHost) return;
+    const arr = draft.new_attributes || [];
+    if (!arr.length) {
+      newAttrsHost.innerHTML = '';
+      return;
+    }
+
+    newAttrsHost.innerHTML = arr
+      .map((a, idx) => {
+        const safeIdx = String(idx);
+        return `
+          <div class="card" style="margin-top:0.75rem;" data-new-attr-card data-new-attr-idx="${safeIdx}">
+            <div class="dataset-edit-actions" style="margin-bottom:0.75rem;">
+              <strong style="align-self:center;">New attribute #${idx + 1}</strong>
+              <span style="flex:1"></span>
+              <button type="button" class="btn" data-remove-new-attr="${safeIdx}">Remove</button>
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Attribute ID (required)</label>
+              <input class="dataset-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="id"
+                placeholder="${attrPlaceholderFor('id', 'e.g., STATE_NAME')}"
+                value="${escapeHtml(a.id || '')}" />
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Attribute Label</label>
+              <input class="dataset-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="label"
+                placeholder="${attrPlaceholderFor('label', 'Human-friendly label')}"
+                value="${escapeHtml(a.label || '')}" />
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Attribute Type</label>
+              <input class="dataset-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="type"
+                placeholder="${attrPlaceholderFor('type', 'string / integer / enumerated / ...')}"
+                value="${escapeHtml(a.type || '')}" />
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Attribute Definition</label>
+              <textarea class="dataset-edit-input"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
+                placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(a.definition || '')}</textarea>
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Example Expected Value</label>
+              <input class="dataset-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="expected_value"
+                placeholder="${attrPlaceholderFor('expected_value', 'Optional example')}"
+                value="${escapeHtml(a.expected_value || '')}" />
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Allowed values (JSON array) — only if type = enumerated</label>
+              <textarea class="dataset-edit-input"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
+                placeholder='${attrPlaceholderFor(
+                  'values',
+                  '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
+                )}'>${escapeHtml(a.values_json || '')}</textarea>
+            </div>
+
+            <div class="dataset-edit-row">
+              <label class="dataset-edit-label">Notes / context (optional)</label>
+              <textarea class="dataset-edit-input"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
+                placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(a.notes || '')}</textarea>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Remove new attribute handlers
+    newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const idx = Number(b.getAttribute('data-remove-new-attr'));
+        if (Number.isNaN(idx)) return;
+        draft.new_attributes.splice(idx, 1);
+        renderNewAttributesForms();
+      });
+    });
+  }
+
+  if (addExistingBtn) {
+    addExistingBtn.addEventListener('click', () => {
+      const raw = String(existingAttrInput?.value || '').trim();
+      if (!raw) return;
+      const exists = Catalog.getAttributeById(raw);
+      if (!exists) {
+        alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
+        return;
+      }
+      draft.attribute_ids = draft.attribute_ids || [];
+      if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
+      if (existingAttrInput) existingAttrInput.value = '';
+      renderSelectedAttrChips();
+    });
+  }
+
+  if (addNewAttrBtn) {
+    addNewAttrBtn.addEventListener('click', () => {
+      draft.new_attributes = draft.new_attributes || [];
+      draft.new_attributes.push(makeNewAttrDraft());
+      renderNewAttributesForms();
+    });
+  }
+
+  // Initial paints
+  renderSelectedAttrChips();
+  renderNewAttributesForms();
 
     // Bounce + stagger cards (same feel as detail pages)
     staggerCards(datasetDetailEl);
@@ -1138,6 +1382,71 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Build the dataset object (remove empty values)
+        // 1) Collect new attribute drafts from the UI (so typing is captured)
+        const newAttrInputs = datasetDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
+        newAttrInputs.forEach((el) => {
+          const idx = Number(el.getAttribute('data-new-attr-idx'));
+          const k = el.getAttribute('data-new-attr-key');
+          if (Number.isNaN(idx) || !k) return;
+          if (!draft.new_attributes || !draft.new_attributes[idx]) return;
+          draft.new_attributes[idx][k] = String(el.value || '');
+        });
+
+        // 2) Validate + build new attribute objects
+        const newAttributesOut = [];
+        const newAttrIds = [];
+        (draft.new_attributes || []).forEach((a, i) => {
+          const aid = String(a.id || '').trim();
+          if (!aid) {
+            alert(`New attribute #${i + 1} is missing an Attribute ID.`);
+            return;
+          }
+
+          // If it already exists, force user to add it as an existing attribute instead
+          if (Catalog.getAttributeById(aid)) {
+            alert(`New attribute ID "${aid}" already exists. Add it as an existing attribute instead.`);
+            return;
+          }
+
+          const type = String(a.type || '').trim();
+          let values = undefined;
+          if (type === 'enumerated') {
+            const rawVals = String(a.values_json || '').trim();
+            if (rawVals) {
+              const parsed = tryParseJson(rawVals);
+              if (parsed && parsed.__parse_error__) {
+                alert(`Enumerated values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
+                return;
+              }
+              if (parsed && !Array.isArray(parsed)) {
+                alert(`Enumerated values for "${aid}" must be a JSON array.`);
+                return;
+              }
+              values = parsed || [];
+            } else {
+              values = [];
+            }
+          }
+
+          const attrObj = compactObject({
+            id: aid,
+            label: String(a.label || '').trim() || undefined,
+            type: type || undefined,
+            definition: String(a.definition || '').trim() || undefined,
+            expected_value: String(a.expected_value || '').trim() || undefined,
+            values,
+          });
+
+          newAttributesOut.push(attrObj);
+          newAttrIds.push(aid);
+        });
+
+        // 3) Combine existing + new attribute IDs (de-dupe)
+        const existingIds = Array.from(
+          new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
+        );
+        const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
+
         const datasetObj = compactObject({
           id,
           title: out.title,
@@ -1156,9 +1465,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           data_standard: out.data_standard,
           projection: out.projection,
           notes: out.notes,
+          attribute_ids: combinedAttrIds.length ? combinedAttrIds : undefined,
         });
 
-        const issueUrl = buildGithubIssueUrlForNewDataset(datasetObj);
+        const issueUrl = buildGithubIssueUrlForNewDataset(datasetObj, newAttributesOut);
 
         // Return UI to normal dataset view immediately
         goBackToLastDatasetOrList();

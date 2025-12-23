@@ -1003,6 +1003,10 @@ textarea.dataset-edit-input {
   border-color: var(--accent);
 }
 
+#newDatasetAttributesCard h3 {
+  margin-top: 0;
+}
+
  /* Respect users who prefer less motion */
  @media (prefers-reduced-motion: reduce) {
    * { animation: none !important; transition: none !important; }
