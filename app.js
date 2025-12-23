@@ -10,6 +10,24 @@
    el.classList.add('fx-enter');
  }
 
+
+ // Adds stagger classes to the first N cards inside a panel
+ function staggerCards(panelEl, maxCards = 9) {
+   if (!panelEl) return;
+   const cards = panelEl.querySelectorAll('.card, .detail-section');
+   // clear old delay classes
+   cards.forEach((c) => {
+     for (let i = 1; i <= 9; i++) c.classList.remove(`fx-d${i}`);
+   });
+   // assign new delay classes
+   cards.forEach((c, idx) => {
+     const n = Math.min(idx + 1, maxCards);
+     c.classList.add(`fx-d${n}`);
+   });
+ }
+
+
+
  function setActiveListButton(listRootEl, predicateFn) {
    if (!listRootEl) return;
    const btns = listRootEl.querySelectorAll('button.list-item-button');
@@ -494,6 +512,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
+    // Bounce + stagger cards (same feel as detail pages)
+    staggerCards(datasetDetailEl);
+    animatePanel(datasetDetailEl);
+
     // Breadcrumb
     const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
     if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
@@ -674,6 +696,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     hostEl.innerHTML = html;
     hostEl.classList.remove('hidden');
+
+    // Bounce + stagger cards (same feel as detail pages)
+    staggerCards(hostEl);
+    animatePanel(hostEl);
 
     // Breadcrumb root
     const rootBtn = hostEl.querySelector('button[data-breadcrumb="attributes"]');
@@ -909,6 +935,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
+
+    // Bounce + stagger cards (same feel as detail pages)
+    staggerCards(datasetDetailEl);
+    animatePanel(datasetDetailEl);
 
     // Breadcrumb root
     const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
@@ -1347,7 +1377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-   // animate on render
+   // animate on render (and stagger cards after HTML is set)
    animatePanel(datasetDetailEl);
 
     const geomIconHtml = getGeometryIconHTML(dataset.geometry_type || '', 'geom-icon-inline');
@@ -1450,6 +1480,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
+
+   // Apply stagger after content exists, then re-trigger bounce
+   staggerCards(datasetDetailEl);
+   animatePanel(datasetDetailEl);
 
     const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
     if (editBtn) {
@@ -1603,7 +1637,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-   // animate on render
+   // animate on render (stagger will be applied after innerHTML set)
    animatePanel(attributeDetailEl);
 
     const datasets = Catalog.getDatasetsForAttribute(attrId);
@@ -1687,6 +1721,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
+
+   // Apply stagger after content exists, then re-trigger bounce
+   staggerCards(attributeDetailEl);
+   animatePanel(attributeDetailEl);
 
     const editAttrBtn = attributeDetailEl.querySelector('button[data-edit-attribute]');
     if (editAttrBtn) {

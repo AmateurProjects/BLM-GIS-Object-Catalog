@@ -305,12 +305,36 @@ input[type="search"]:focus {
 
  /* Re-triggerable detail transition (JS toggles .fx-enter) */
  .detail-panel.fx-enter {
-   animation: panelIn 180ms ease-out;
+   animation: panelIn 320ms cubic-bezier(0.2, 0.9, 0.2, 1);
  }
  @keyframes panelIn {
-   from { opacity: 0; transform: translateY(6px); }
-   to   { opacity: 1; transform: translateY(0); }
+   0%   { opacity: 0; transform: translateY(10px) scale(0.985); }
+   55%  { opacity: 1; transform: translateY(-2px) scale(1.01); }
+   100% { opacity: 1; transform: translateY(0) scale(1); }
  }
+
+
+ /* Card bounce-in (staggered) */
+ .detail-panel.fx-enter .card,
+ .detail-panel.fx-enter .detail-section {
+   animation: cardIn 420ms cubic-bezier(0.2, 0.95, 0.2, 1) both;
+ }
+ @keyframes cardIn {
+   0%   { opacity: 0; transform: translateY(10px) scale(0.985); }
+   60%  { opacity: 1; transform: translateY(-2px) scale(1.01); }
+   100% { opacity: 1; transform: translateY(0) scale(1); }
+ }
+
+ /* Stagger delay helpers (JS adds these classes) */
+ .fx-d1 { animation-delay: 40ms !important; }
+ .fx-d2 { animation-delay: 80ms !important; }
+ .fx-d3 { animation-delay: 120ms !important; }
+ .fx-d4 { animation-delay: 160ms !important; }
+ .fx-d5 { animation-delay: 200ms !important; }
+ .fx-d6 { animation-delay: 240ms !important; }
+ .fx-d7 { animation-delay: 280ms !important; }
+ .fx-d8 { animation-delay: 320ms !important; }
+ .fx-d9 { animation-delay: 360ms !important; }
 
 /* Children stay constrained in width but hug the left side */
 .detail-panel>* {
@@ -490,28 +514,6 @@ a:hover {
   margin-left: 0;
 }
 
- /* Button “spark” on press */
- .suggest-button::after,
- .primary-button::after,
- .btn.primary::after {
-   content: "";
-   position: absolute;
-   inset: -40%;
-   background: radial-gradient(circle, rgba(255,255,255,0.22), transparent 55%);
-   transform: scale(0);
-   transition: transform 220ms ease;
-   pointer-events: none;
- }
- .suggest-button:active,
- .primary-button:active,
- .btn.primary:active {
-   transform: translateY(1px);
- }
- .suggest-button:active::after,
- .primary-button:active::after,
- .btn.primary:active::after {
-   transform: scale(1);
- }
 
 /* Center the action buttons in the action card (dataset + attribute pages) */
 .card-actions {
