@@ -185,59 +185,97 @@ async function runUrlChecks(hostEl) {
   await Promise.all(workers);
 }
 
-// ====== ESRI MAP PREVIEW HELPERS ======
+// ====== ARCGIS REST PREVIEW HELPERS (static image + metadata + sample) ======
 
-let __esriApiPromise = null;
-
-function loadEsriJsApi() {
-  if (__esriApiPromise) return __esriApiPromise;
-
-  __esriApiPromise = new Promise((resolve, reject) => {
-    // If already loaded
-    if (window.require && window.require.toUrl) {
-      resolve();
-      return;
-    }
-
-    // Load JS API script once
-    const script = document.createElement('script');
-    script.src = 'https://js.arcgis.com/4.29/'; // pick a version and keep it stable
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load ArcGIS JS API'));
-    document.head.appendChild(script);
-
-    // Optional: load the default CSS
-    const cssId = 'arcgis-js-css';
-    if (!document.getElementById(cssId)) {
-      const link = document.createElement('link');
-      link.id = cssId;
-      link.rel = 'stylesheet';
-      link.href = 'https://js.arcgis.com/4.29/esri/themes/dark/main.css';
-      document.head.appendChild(link);
-    }
-  });
-
-  return __esriApiPromise;
-}
-
-// Try to infer the right layer type from a service URL
 function normalizeServiceUrl(url) {
   const u = String(url || '').trim();
   if (!u) return '';
-  // ArcGIS REST endpoints often end with /FeatureServer or /MapServer etc.
-  // Keep as-is; just strip trailing slashes.
   return u.replace(/\/+$/, '');
 }
 
-function maybeRenderPublicServiceMapPreview(hostEl, publicUrl) {
+function looksLikeArcGisService(url) {
+  const u = String(url || '').toUpperCase();
+  return u.includes('/ARCGIS/REST/SERVICES/') && (u.includes('/MAPSERVER') || u.includes('/FEATURESERVER'));
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 4500) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', signal: controller.signal });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function fetchServiceJson(serviceUrl) {
+  const base = normalizeServiceUrl(serviceUrl);
+  const u = base.includes('?') ? `${base}&f=pjson` : `${base}?f=pjson`;
+  return fetchJsonWithTimeout(u);
+}
+
+async function fetchLayerJson(serviceUrl, layerId = 0) {
+  const base = normalizeServiceUrl(serviceUrl);
+  const u = `${base}/${layerId}?f=pjson`;
+  return fetchJsonWithTimeout(u);
+}
+
+async function fetchSampleRows(serviceUrl, layerId = 0, n = 8) {
+  const base = normalizeServiceUrl(serviceUrl);
+  const params = new URLSearchParams({
+    where: '1=1',
+    outFields: '*',
+    returnGeometry: 'false',
+    resultRecordCount: String(n),
+    f: 'json',
+  });
+  const u = `${base}/${layerId}/query?${params.toString()}`;
+  return fetchJsonWithTimeout(u);
+}
+
+function buildExportImageUrl(mapServerUrl, extent) {
+  const base = normalizeServiceUrl(mapServerUrl);
+  const wkid = extent?.spatialReference?.wkid || 4326;
+  const bbox = [extent.xmin, extent.ymin, extent.xmax, extent.ymax].join(',');
+  const params = new URLSearchParams({
+    bbox,
+    bboxSR: String(wkid),
+    imageSR: String(wkid),
+    size: '1000,520',
+    format: 'png',
+    transparent: 'true',
+    f: 'image',
+  });
+  return `${base}/export?${params.toString()}`;
+}
+
+function renderKeyValueRows(obj) {
+  // simple helper to keep markup tidy
+  const rows = Object.entries(obj || {})
+    .filter(([_, v]) => v !== undefined && v !== null && String(v).trim() !== '')
+    .map(([k, v]) => `<div class="kv-row"><div class="kv-k">${escapeHtml(k)}</div><div class="kv-v">${escapeHtml(String(v))}</div></div>`);
+  return rows.join('');
+}
+
+function isUrlStatusOk(hostEl, url) {
+  const u = normalizeServiceUrl(url);
+  if (!u) return false;
+  const row =
+    hostEl.querySelector(`[data-url-check-row][data-url="${CSS.escape(u)}"]`) ||
+    hostEl.querySelector(`[data-url-check-row][data-url="${CSS.escape(url)}"]`);
+  const status = row ? row.getAttribute('data-url-status') : 'unknown';
+  return status === 'ok';
+}
+
+async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
   if (!hostEl) return;
 
-  const card = hostEl.querySelector('#datasetMapPreviewCard');
-  const statusEl = hostEl.querySelector('[data-map-preview-status]');
-  const viewEl = hostEl.querySelector('[data-map-preview-view]');
-
-  if (!card || !statusEl || !viewEl) return;
+  const card = hostEl.querySelector('#datasetPreviewCard');
+  const statusEl = hostEl.querySelector('[data-preview-status]');
+  const contentEl = hostEl.querySelector('[data-preview-content]');
+  if (!card || !statusEl || !contentEl) return;
 
   const url = normalizeServiceUrl(publicUrl);
   if (!url) {
@@ -245,86 +283,138 @@ function maybeRenderPublicServiceMapPreview(hostEl, publicUrl) {
     return;
   }
 
-  // Find the URL check row for Public Web Service and read its status.
-  const row = hostEl.querySelector(`[data-url-check-row][data-url="${CSS.escape(url)}"]`)
-    || hostEl.querySelector(`[data-url-check-row][data-url="${CSS.escape(publicUrl)}"]`);
-
-  const urlStatus = row ? row.getAttribute('data-url-status') : 'unknown';
-
-  if (urlStatus !== 'ok') {
-    statusEl.textContent =
-      urlStatus === 'bad'
-        ? 'Public Web Service appears unreachable/invalid — preview unavailable.'
-        : 'Public Web Service could not be verified — preview unavailable.';
+  if (!isUrlStatusOk(hostEl, url)) {
+    statusEl.textContent = 'Public Web Service is not verified as reachable — preview unavailable.';
     return;
   }
 
-  // Avoid re-creating the map if user re-renders same dataset quickly
-  if (viewEl.getAttribute('data-map-rendered') === '1') return;
+  if (!looksLikeArcGisService(url)) {
+    statusEl.textContent = 'Public Web Service is reachable, but not recognized as an ArcGIS REST Map/Feature service.';
+    contentEl.innerHTML = `
+      <div class="card" style="margin-top:0.75rem;">
+        <p><strong>Link:</strong> <a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a></p>
+      </div>
+    `;
+    return;
+  }
 
-  statusEl.textContent = 'Loading map preview…';
+  // avoid duplicate loads for same dataset re-render
+  if (contentEl.getAttribute('data-preview-rendered') === url) return;
+  contentEl.setAttribute('data-preview-rendered', url);
 
-  loadEsriJsApi()
-    .then(() => {
-      // ArcGIS JS API AMD require
-      window.require(
-        [
-          'esri/Map',
-          'esri/views/MapView',
-          'esri/layers/FeatureLayer',
-          'esri/layers/MapImageLayer',
-        ],
-        (Map, MapView, FeatureLayer, MapImageLayer) => {
-          // Pick layer type based on URL
-          let layer = null;
+  statusEl.textContent = 'Loading service preview…';
+  contentEl.innerHTML = '';
 
-          // Common patterns:
-          // - .../FeatureServer or .../FeatureServer/0
-          // - .../MapServer
-          // If it's a FeatureServer without a layer index, we can still try FeatureLayer(url)
-          const upper = url.toUpperCase();
-          if (upper.includes('/FEATURESERVER')) {
-            layer = new FeatureLayer({ url });
-          } else if (upper.includes('/MAPSERVER')) {
-            layer = new MapImageLayer({ url });
-          } else {
-            // Fallback: try FeatureLayer first (many services support it)
-            layer = new FeatureLayer({ url });
-          }
+  try {
+    const serviceJson = await fetchServiceJson(url);
 
-          const map = new Map({
-            basemap: 'dark-gray-vector',
-            layers: [layer],
-          });
+    // Choose a layer for fields/sample (default to first layer id if available)
+    const layerId = (serviceJson.layers && serviceJson.layers.length)
+      ? (serviceJson.layers[0].id ?? 0)
+      : 0;
 
-          viewEl.style.display = '';
-          viewEl.innerHTML = ''; // ensure empty
-          viewEl.setAttribute('data-map-rendered', '1');
+    // Static image works for MapServer. For FeatureServer, try to use /0 for export if URL ends with FeatureServer.
+    let exportUrl = '';
+    const upper = url.toUpperCase();
+    if (upper.includes('/MAPSERVER')) {
+      if (serviceJson.fullExtent) exportUrl = buildExportImageUrl(url, serviceJson.fullExtent);
+    } else if (upper.includes('/FEATURESERVER')) {
+      // Some FeatureServers also support export via the corresponding MapServer; if not, we just skip the image.
+      // We'll still show metadata/fields/sample.
+      exportUrl = '';
+    }
 
-          const view = new MapView({
-            container: viewEl,
-            map,
-            constraints: { snapToZoom: false },
-          });
+    // Layer fields + sample rows (best-effort)
+    let layerJson = null;
+    let sampleJson = null;
+    try { layerJson = await fetchLayerJson(url, layerId); } catch {}
+    try { sampleJson = await fetchSampleRows(url, layerId, 8); } catch {}
 
-          // Once layer loads, zoom to its extent if possible
-          layer.when(() => {
-            if (layer.fullExtent) {
-              view.goTo(layer.fullExtent.expand(1.2)).catch(() => {});
-            } else {
-              statusEl.textContent = 'Map preview loaded.';
-            }
-          });
+    // Build content
+    const meta = {
+      'Service': serviceJson.mapName || serviceJson.name || '',
+      'Type': upper.includes('/MAPSERVER') ? 'MapServer' : (upper.includes('/FEATURESERVER') ? 'FeatureServer' : ''),
+      'WKID': serviceJson.spatialReference?.wkid || serviceJson.fullExtent?.spatialReference?.wkid || '',
+      'Layers': Array.isArray(serviceJson.layers) ? String(serviceJson.layers.length) : '',
+      'Capabilities': serviceJson.capabilities || '',
+    };
 
-          statusEl.textContent = 'Map preview loaded.';
-        }
-      );
-    })
-    .catch((err) => {
-      console.error(err);
-      statusEl.textContent = 'Failed to load map preview.';
-    });
+    let html = '';
+
+    // Image (if available)
+    if (exportUrl) {
+      html += `
+        <div class="card" style="margin-top:0.75rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">Map extent preview</div>
+          <img src="${escapeHtml(exportUrl)}" alt="Map preview"
+               style="width:100%; height:auto; border-radius:12px; display:block;" />
+          <div style="margin-top:0.5rem; color:var(--text-muted); font-size:0.95rem;">
+            Rendered from the service’s full extent.
+          </div>
+        </div>
+      `;
+    }
+
+    // Metadata
+    html += `
+      <div class="card" style="margin-top:0.75rem;">
+        <div style="font-weight:600; margin-bottom:0.5rem;">Service summary</div>
+        <div class="kv">${renderKeyValueRows(meta)}</div>
+        <div style="margin-top:0.5rem;">
+          <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Open service</a>
+        </div>
+      </div>
+    `;
+
+    // Fields summary
+    if (layerJson && Array.isArray(layerJson.fields) && layerJson.fields.length) {
+      const topFields = layerJson.fields.slice(0, 14);
+      html += `
+        <div class="card" style="margin-top:0.75rem;">
+          <div style="font-weight:600; margin-bottom:0.5rem;">Fields (layer ${escapeHtml(String(layerId))})</div>
+          <div style="color:var(--text-muted); margin-bottom:0.5rem;">Showing ${topFields.length} of ${layerJson.fields.length}</div>
+          <ul style="margin:0; padding-left:1.1rem;">
+            ${topFields.map(f => `<li><code>${escapeHtml(f.name)}</code>${f.alias ? ` — ${escapeHtml(f.alias)}` : ''} <span style="color:var(--text-muted);">(${escapeHtml(f.type || '')})</span></li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Sample table
+    if (sampleJson && Array.isArray(sampleJson.features) && sampleJson.features.length) {
+      const rows = sampleJson.features.map(ft => ft.attributes || {}).slice(0, 8);
+      const cols = Object.keys(rows[0] || {}).slice(0, 8); // keep table compact
+      if (cols.length) {
+        html += `
+          <div class="card" style="margin-top:0.75rem;">
+            <div style="font-weight:600; margin-bottom:0.5rem;">Sample records (layer ${escapeHtml(String(layerId))})</div>
+            <div style="overflow:auto;">
+              <table>
+                <thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+                <tbody>
+                  ${rows.map(r => `<tr>${cols.map(c => `<td>${escapeHtml(String(r[c] ?? ''))}</td>`).join('')}</tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    contentEl.innerHTML = html;
+    statusEl.textContent = 'Preview loaded.';
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Failed to load preview (service JSON blocked or unavailable).';
+    contentEl.innerHTML = `
+      <div class="card" style="margin-top:0.75rem;">
+        <p>We could not fetch service details in-browser. You can still open the link:</p>
+        <p><a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener">${escapeHtml(publicUrl)}</a></p>
+      </div>
+    `;
+  }
 }
+
 
 
 
@@ -2090,13 +2180,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
 `;
 
++
++// --- Public Web Service preview card (renders after URL checks) ---
++html += `
++  <div class="card card-map-preview" id="datasetPreviewCard">
++    <h3>Public Web Service preview</h3>
++    <div class="map-preview-status" data-preview-status>
++      Checking Public Web Service…
++    </div>
++    <div class="map-preview-content" data-preview-content></div>
++  </div>
++`;
+
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
 // Check URL status icons (async)
 runUrlChecks(datasetDetailEl).then(() => {
-  maybeRenderPublicServiceMapPreview(datasetDetailEl, dataset.public_web_service);
+  maybeRenderPublicServicePreviewCard(datasetDetailEl, dataset.public_web_service);
+ });
 });
 
 
@@ -2131,17 +2234,6 @@ runUrlChecks(datasetDetailEl).then(() => {
         downloadTextFile(script, `${ds.id}_schema_arcpy.py`);
       });
     }
-  
-    // --- Map preview card (renders later if URL check is OK) ---
-  html += `
-    <div class="card card-map-preview" id="datasetMapPreviewCard">
-      <h3>Map preview</h3>
-      <div class="map-preview-status" data-map-preview-status>
-        Checking Public Web Service…
-      </div>
-      <div class="map-preview-view" data-map-preview-view style="display:none;"></div>
-    </div>
-    `;
   }
 
   function renderInlineAttributeDetail(attrId) {
