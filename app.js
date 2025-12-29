@@ -2180,17 +2180,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
 `;
 
-+
-+// --- Public Web Service preview card (renders after URL checks) ---
-+html += `
-+  <div class="card card-map-preview" id="datasetPreviewCard">
-+    <h3>Public Web Service preview</h3>
-+    <div class="map-preview-status" data-preview-status>
-+      Checking Public Web Service…
-+    </div>
-+    <div class="map-preview-content" data-preview-content></div>
-+  </div>
-+`;
+
+// --- Public Web Service preview card (renders after URL checks) ---
+html += `
+  <div class="card card-map-preview" id="datasetPreviewCard">
+    <h3>Public Web Service preview</h3>
+    <div class="map-preview-status" data-preview-status>
+      Checking Public Web Service…
+    </div>
+    <div class="map-preview-content" data-preview-content></div>
+  </div>
+`;
 
 
     datasetDetailEl.innerHTML = html;
@@ -2199,8 +2199,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Check URL status icons (async)
 runUrlChecks(datasetDetailEl).then(() => {
   maybeRenderPublicServicePreviewCard(datasetDetailEl, dataset.public_web_service);
- });
 });
+
 
 
     const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
