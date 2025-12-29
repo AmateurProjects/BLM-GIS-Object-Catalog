@@ -185,8 +185,146 @@ async function runUrlChecks(hostEl) {
   await Promise.all(workers);
 }
 
+// ====== ESRI MAP PREVIEW HELPERS ======
 
+let __esriApiPromise = null;
 
+function loadEsriJsApi() {
+  if (__esriApiPromise) return __esriApiPromise;
+
+  __esriApiPromise = new Promise((resolve, reject) => {
+    // If already loaded
+    if (window.require && window.require.toUrl) {
+      resolve();
+      return;
+    }
+
+    // Load JS API script once
+    const script = document.createElement('script');
+    script.src = 'https://js.arcgis.com/4.29/'; // pick a version and keep it stable
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load ArcGIS JS API'));
+    document.head.appendChild(script);
+
+    // Optional: load the default CSS
+    const cssId = 'arcgis-js-css';
+    if (!document.getElementById(cssId)) {
+      const link = document.createElement('link');
+      link.id = cssId;
+      link.rel = 'stylesheet';
+      link.href = 'https://js.arcgis.com/4.29/esri/themes/dark/main.css';
+      document.head.appendChild(link);
+    }
+  });
+
+  return __esriApiPromise;
+}
+
+// Try to infer the right layer type from a service URL
+function normalizeServiceUrl(url) {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  // ArcGIS REST endpoints often end with /FeatureServer or /MapServer etc.
+  // Keep as-is; just strip trailing slashes.
+  return u.replace(/\/+$/, '');
+}
+
+function maybeRenderPublicServiceMapPreview(hostEl, publicUrl) {
+  if (!hostEl) return;
+
+  const card = hostEl.querySelector('#datasetMapPreviewCard');
+  const statusEl = hostEl.querySelector('[data-map-preview-status]');
+  const viewEl = hostEl.querySelector('[data-map-preview-view]');
+
+  if (!card || !statusEl || !viewEl) return;
+
+  const url = normalizeServiceUrl(publicUrl);
+  if (!url) {
+    statusEl.textContent = 'No Public Web Service provided for this dataset.';
+    return;
+  }
+
+  // Find the URL check row for Public Web Service and read its status.
+  const row = hostEl.querySelector(`[data-url-check-row][data-url="${CSS.escape(url)}"]`)
+    || hostEl.querySelector(`[data-url-check-row][data-url="${CSS.escape(publicUrl)}"]`);
+
+  const urlStatus = row ? row.getAttribute('data-url-status') : 'unknown';
+
+  if (urlStatus !== 'ok') {
+    statusEl.textContent =
+      urlStatus === 'bad'
+        ? 'Public Web Service appears unreachable/invalid — preview unavailable.'
+        : 'Public Web Service could not be verified — preview unavailable.';
+    return;
+  }
+
+  // Avoid re-creating the map if user re-renders same dataset quickly
+  if (viewEl.getAttribute('data-map-rendered') === '1') return;
+
+  statusEl.textContent = 'Loading map preview…';
+
+  loadEsriJsApi()
+    .then(() => {
+      // ArcGIS JS API AMD require
+      window.require(
+        [
+          'esri/Map',
+          'esri/views/MapView',
+          'esri/layers/FeatureLayer',
+          'esri/layers/MapImageLayer',
+        ],
+        (Map, MapView, FeatureLayer, MapImageLayer) => {
+          // Pick layer type based on URL
+          let layer = null;
+
+          // Common patterns:
+          // - .../FeatureServer or .../FeatureServer/0
+          // - .../MapServer
+          // If it's a FeatureServer without a layer index, we can still try FeatureLayer(url)
+          const upper = url.toUpperCase();
+          if (upper.includes('/FEATURESERVER')) {
+            layer = new FeatureLayer({ url });
+          } else if (upper.includes('/MAPSERVER')) {
+            layer = new MapImageLayer({ url });
+          } else {
+            // Fallback: try FeatureLayer first (many services support it)
+            layer = new FeatureLayer({ url });
+          }
+
+          const map = new Map({
+            basemap: 'dark-gray-vector',
+            layers: [layer],
+          });
+
+          viewEl.style.display = '';
+          viewEl.innerHTML = ''; // ensure empty
+          viewEl.setAttribute('data-map-rendered', '1');
+
+          const view = new MapView({
+            container: viewEl,
+            map,
+            constraints: { snapToZoom: false },
+          });
+
+          // Once layer loads, zoom to its extent if possible
+          layer.when(() => {
+            if (layer.fullExtent) {
+              view.goTo(layer.fullExtent.expand(1.2)).catch(() => {});
+            } else {
+              statusEl.textContent = 'Map preview loaded.';
+            }
+          });
+
+          statusEl.textContent = 'Map preview loaded.';
+        }
+      );
+    })
+    .catch((err) => {
+      console.error(err);
+      statusEl.textContent = 'Failed to load map preview.';
+    });
+}
 
 
 
@@ -1957,7 +2095,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     datasetDetailEl.classList.remove('hidden');
 
 // Check URL status icons (async)
-runUrlChecks(datasetDetailEl);
+runUrlChecks(datasetDetailEl).then(() => {
+  maybeRenderPublicServiceMapPreview(datasetDetailEl, dataset.public_web_service);
+});
+
 
     const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
     if (editBtn) {
@@ -1990,6 +2131,17 @@ runUrlChecks(datasetDetailEl);
         downloadTextFile(script, `${ds.id}_schema_arcpy.py`);
       });
     }
+  
+    // --- Map preview card (renders later if URL check is OK) ---
+  html += `
+    <div class="card card-map-preview" id="datasetMapPreviewCard">
+      <h3>Map preview</h3>
+      <div class="map-preview-status" data-map-preview-status>
+        Checking Public Web Service…
+      </div>
+      <div class="map-preview-view" data-map-preview-view style="display:none;"></div>
+    </div>
+    `;
   }
 
   function renderInlineAttributeDetail(attrId) {

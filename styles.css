@@ -1011,3 +1011,17 @@ textarea.dataset-edit-input {
  @media (prefers-reduced-motion: reduce) {
    * { animation: none !important; transition: none !important; }
  }
+
+.card-map-preview .map-preview-view {
+  height: 360px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-map-preview .map-preview-status {
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+
+
