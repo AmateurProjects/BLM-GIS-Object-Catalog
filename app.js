@@ -1,54 +1,50 @@
 // app.js
 
 // ====== UI FX HELPERS ======
- function animatePanel(el, durationMs = 650) {
-   if (!el) return;
+function animatePanel(el, durationMs = 650) {
+  if (!el) return;
 
-   // Hide scrollbars globally during the animation (prevents transient page scrollbars)
-   document.documentElement.classList.add('fx-no-scroll');
-   document.body.classList.add('fx-no-scroll');
-   el.classList.add('fx-animating');
+  // Hide scrollbars globally during the animation (prevents transient page scrollbars)
+  document.documentElement.classList.add('fx-no-scroll');
+  document.body.classList.add('fx-no-scroll');
+  el.classList.add('fx-animating');
 
-   // Re-trigger CSS animation by toggling a class
-   el.classList.remove('fx-enter');
-   void el.offsetWidth; // Force reflow so the browser restarts the animation
-   el.classList.add('fx-enter');
+  // Re-trigger CSS animation by toggling a class
+  el.classList.remove('fx-enter');
+  void el.offsetWidth; // Force reflow so the browser restarts the animation
+  el.classList.add('fx-enter');
 
-   // Always clean up (animationend may fire on child cards, not on the panel itself)
-   window.setTimeout(() => {
-     el.classList.remove('fx-animating');
-     document.documentElement.classList.remove('fx-no-scroll');
-     document.body.classList.remove('fx-no-scroll');
-   }, durationMs);
- }
+  // Always clean up (animationend may fire on child cards, not on the panel itself)
+  window.setTimeout(() => {
+    el.classList.remove('fx-animating');
+    document.documentElement.classList.remove('fx-no-scroll');
+    document.body.classList.remove('fx-no-scroll');
+  }, durationMs);
+}
 
+// Adds stagger classes to the first N cards inside a panel
+function staggerCards(panelEl, maxCards = 9) {
+  if (!panelEl) return;
+  const cards = panelEl.querySelectorAll('.card, .detail-section');
+  // clear old delay classes
+  cards.forEach((c) => {
+    for (let i = 1; i <= 9; i++) c.classList.remove(`fx-d${i}`);
+  });
+  // assign new delay classes
+  cards.forEach((c, idx) => {
+    const n = Math.min(idx + 1, maxCards);
+    c.classList.add(`fx-d${n}`);
+  });
+}
 
- // Adds stagger classes to the first N cards inside a panel
- function staggerCards(panelEl, maxCards = 9) {
-   if (!panelEl) return;
-   const cards = panelEl.querySelectorAll('.card, .detail-section');
-   // clear old delay classes
-   cards.forEach((c) => {
-     for (let i = 1; i <= 9; i++) c.classList.remove(`fx-d${i}`);
-   });
-   // assign new delay classes
-   cards.forEach((c, idx) => {
-     const n = Math.min(idx + 1, maxCards);
-     c.classList.add(`fx-d${n}`);
-   });
- }
-
-
-
- function setActiveListButton(listRootEl, predicateFn) {
-   if (!listRootEl) return;
-   const btns = listRootEl.querySelectorAll('button.list-item-button');
-   btns.forEach((b) => {
-     const isActive = predicateFn(b);
-     b.classList.toggle('is-active', isActive);
-   });
- }
-
+function setActiveListButton(listRootEl, predicateFn) {
+  if (!listRootEl) return;
+  const btns = listRootEl.querySelectorAll('button.list-item-button');
+  btns.forEach((b) => {
+    const isActive = predicateFn(b);
+    b.classList.toggle('is-active', isActive);
+  });
+}
 
 // ====== URL STATUS CHECK HELPERS ======
 const URL_CHECK = {
@@ -95,7 +91,7 @@ async function checkUrlStatus(url) {
 
   try {
     // Try HEAD first (fast + minimal payload)
-    let resp = await fetch(url, {
+    const resp = await fetch(url, {
       method: 'HEAD',
       mode: 'cors',
       redirect: 'follow',
@@ -103,9 +99,8 @@ async function checkUrlStatus(url) {
       cache: 'no-store',
     });
 
-    // If CORS blocks reading status, some browsers throw; if not, use status.
     if (resp && typeof resp.status === 'number') {
-      const s = (resp.status >= 200 && resp.status < 400) ? 'ok' : 'bad';
+      const s = resp.status >= 200 && resp.status < 400 ? 'ok' : 'bad';
       setCachedUrlStatus(url, s);
       return s;
     }
@@ -114,18 +109,19 @@ async function checkUrlStatus(url) {
   } catch (e1) {
     // Fallback: no-cors GET gives opaque response (still indicates network likely worked)
     try {
-      let resp2 = await fetch(url, {
+      const resp2 = await fetch(url, {
         method: 'GET',
         mode: 'no-cors',
         redirect: 'follow',
         signal: controller.signal,
         cache: 'no-store',
       });
-      // opaque response => cannot verify status, but request likely reached the server
-      if (resp2 && resp2.type === 'opaque') return 'unknown';
-      // if somehow we got a normal response here, treat 2xx/3xx as ok
+      if (resp2 && resp2.type === 'opaque') {
+        setCachedUrlStatus(url, 'unknown');
+        return 'unknown';
+      }
       if (resp2 && typeof resp2.status === 'number') {
-        const s2 = (resp2.status >= 200 && resp2.status < 400) ? 'ok' : 'bad';
+        const s2 = resp2.status >= 200 && resp2.status < 400 ? 'ok' : 'bad';
         setCachedUrlStatus(url, s2);
         return s2;
       }
@@ -252,7 +248,6 @@ function buildExportImageUrl(mapServerUrl, extent) {
 }
 
 function renderKeyValueRows(obj) {
-  // simple helper to keep markup tidy
   const rows = Object.entries(obj || {})
     .filter(([_, v]) => v !== undefined && v !== null && String(v).trim() !== '')
     .map(([k, v]) => `<div class="kv-row"><div class="kv-k">${escapeHtml(k)}</div><div class="kv-v">${escapeHtml(String(v))}</div></div>`);
@@ -308,29 +303,23 @@ async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
   try {
     const serviceJson = await fetchServiceJson(url);
 
-    // Choose a layer for fields/sample (default to first layer id if available)
     const layerId = (serviceJson.layers && serviceJson.layers.length)
       ? (serviceJson.layers[0].id ?? 0)
       : 0;
 
-    // Static image works for MapServer. For FeatureServer, try to use /0 for export if URL ends with FeatureServer.
     let exportUrl = '';
     const upper = url.toUpperCase();
     if (upper.includes('/MAPSERVER')) {
       if (serviceJson.fullExtent) exportUrl = buildExportImageUrl(url, serviceJson.fullExtent);
     } else if (upper.includes('/FEATURESERVER')) {
-      // Some FeatureServers also support export via the corresponding MapServer; if not, we just skip the image.
-      // We'll still show metadata/fields/sample.
       exportUrl = '';
     }
 
-    // Layer fields + sample rows (best-effort)
     let layerJson = null;
     let sampleJson = null;
     try { layerJson = await fetchLayerJson(url, layerId); } catch {}
     try { sampleJson = await fetchSampleRows(url, layerId, 8); } catch {}
 
-    // Build content
     const meta = {
       'Service': serviceJson.mapName || serviceJson.name || '',
       'Type': upper.includes('/MAPSERVER') ? 'MapServer' : (upper.includes('/FEATURESERVER') ? 'FeatureServer' : ''),
@@ -341,7 +330,6 @@ async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
 
     let html = '';
 
-    // Image (if available)
     if (exportUrl) {
       html += `
         <div class="card" style="margin-top:0.75rem;">
@@ -355,7 +343,6 @@ async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
       `;
     }
 
-    // Metadata
     html += `
       <div class="card" style="margin-top:0.75rem;">
         <div style="font-weight:600; margin-bottom:0.5rem;">Service summary</div>
@@ -366,7 +353,6 @@ async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
       </div>
     `;
 
-    // Fields summary
     if (layerJson && Array.isArray(layerJson.fields) && layerJson.fields.length) {
       const topFields = layerJson.fields.slice(0, 14);
       html += `
@@ -380,10 +366,9 @@ async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
       `;
     }
 
-    // Sample table
     if (sampleJson && Array.isArray(sampleJson.features) && sampleJson.features.length) {
       const rows = sampleJson.features.map(ft => ft.attributes || {}).slice(0, 8);
-      const cols = Object.keys(rows[0] || {}).slice(0, 8); // keep table compact
+      const cols = Object.keys(rows[0] || {}).slice(0, 8);
       if (cols.length) {
         html += `
           <div class="card" style="margin-top:0.75rem;">
@@ -415,15 +400,11 @@ async function maybeRenderPublicServicePreviewCard(hostEl, publicUrl) {
   }
 }
 
-
-
-
 // ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
 // Repo layout: /index.html, /app.js, /styles.css, /data/catalog.json
 
 // >>>>> SET THIS to your GitHub repo's "new issue" URL base
-// Example: 'https://github.com/blm-gis/public-lands-data-catalog/issues/new'
 const GITHUB_NEW_ISSUE_BASE =
   'https://github.com/AmateurProjects/Public-Lands-Data-Catalog/issues/new';
 
@@ -431,6 +412,7 @@ const GITHUB_NEW_ISSUE_BASE =
 const Catalog = (function () {
   let cache = null;
   let indexesBuilt = false;
+
   let attributeById = {};
   let datasetById = {};
   let datasetsByAttributeId = {};
@@ -453,14 +435,14 @@ const Catalog = (function () {
     datasetById = {};
     datasetsByAttributeId = {};
 
-    // Index attributes
-    (cache.attributes || []).forEach((attr) => {
-      if (attr.id) attributeById[attr.id] = attr;
+    // Attributes index
+    (cache.attributes || []).forEach((a) => {
+      if (a && a.id) attributeById[a.id] = a;
     });
 
-    // Index datasets + reverse index of attribute -> datasets
+    // Datasets index + reverse index attribute -> datasets
     (cache.datasets || []).forEach((ds) => {
-      if (ds.id) datasetById[ds.id] = ds;
+      if (ds && ds.id) datasetById[ds.id] = ds;
 
       (ds.attribute_ids || []).forEach((attrId) => {
         if (!datasetsByAttributeId[attrId]) datasetsByAttributeId[attrId] = [];
@@ -479,25 +461,25 @@ const Catalog = (function () {
     return datasetById[id] || null;
   }
 
-  function getAttributesForDataset(dataset) {
-    if (!dataset || !dataset.attribute_ids) return [];
-    return dataset.attribute_ids.map((id) => attributeById[id]).filter(Boolean);
+  function getAttributesForDataset(ds) {
+    if (!ds || !ds.attribute_ids) return [];
+    return ds.attribute_ids.map((id) => attributeById[id]).filter(Boolean);
   }
 
   function getDatasetsForAttribute(attrId) {
     return datasetsByAttributeId[attrId] || [];
   }
 
-  function buildGithubIssueUrlForDataset(dataset) {
-    const title = encodeURIComponent(`Dataset change request: ${dataset.id}`);
+  function buildGithubIssueUrlForDataset(ds) {
+    const title = encodeURIComponent(`Dataset change request: ${ds.id}`);
     const bodyLines = [
-      `Please describe the requested change for dataset \`${dataset.id}\` (\`${dataset.title || ''}\`).`,
+      `Please describe the requested change for dataset \`${ds.id}\` (\`${ds.title || ''}\`).`,
       '',
       '---',
       '',
       'Current dataset JSON:',
       '```json',
-      JSON.stringify(dataset, null, 2),
+      JSON.stringify(ds, null, 2),
       '```',
     ];
     const body = encodeURIComponent(bodyLines.join('\n'));
@@ -548,16 +530,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const datasetDetailEl = document.getElementById('datasetDetail');
   const attributeDetailEl = document.getElementById('attributeDetail');
 
-  // Track last viewed dataset so "Cancel" (and similar actions) can return you to where you were.
+  // Track last viewed dataset so "Cancel" can return you to where you were.
   let lastSelectedDatasetId = null;
-
-
-  // NOTE: goBackToAttributesListOrFirst() is defined later in Helpers.
-
 
   // --- Edit Fields for Suggest Dataset Change functionality ---
   // NOTE: DATASET_EDIT_FIELDS drives BOTH "Suggest change" and "Submit new dataset" pages
-
   const DATASET_EDIT_FIELDS = [
     { key: 'title', label: 'Title', type: 'text' },
     { key: 'description', label: 'Description', type: 'textarea' },
@@ -585,17 +562,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Edit Fields for Suggest Attribute Change functionality ---
   const ATTRIBUTE_EDIT_FIELDS = [
     { key: 'label', label: 'Attribute Label', type: 'text' },
-    { key: 'type', label: 'Attribute Type', type: 'text' }, // you can later make this a select
+    { key: 'type', label: 'Attribute Type', type: 'text' },
     { key: 'definition', label: 'Attribute Definition', type: 'textarea' },
     { key: 'expected_value', label: 'Example Expected Value', type: 'text' },
     { key: 'values', label: 'Allowed values (JSON array) — for enumerated types', type: 'json' },
   ];
 
-
   // --- Helpers (shared) ---
   function compactObject(obj) {
     const out = {};
-    Object.keys(obj).forEach((k) => {
+    Object.keys(obj || {}).forEach((k) => {
       const v = obj[k];
       if (v === undefined || v === null) return;
       if (Array.isArray(v) && v.length === 0) return;
@@ -674,9 +650,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       bodyLines.push('- No changes detected.');
     } else {
       changes.forEach((c) => {
-        bodyLines.push(
-          `- **${c.key}**: \`${JSON.stringify(c.from)}\` → \`${JSON.stringify(c.to)}\``
-        );
+        bodyLines.push(`- **${c.key}**: \`${JSON.stringify(c.from)}\` → \`${JSON.stringify(c.to)}\``);
       });
     }
 
@@ -724,17 +698,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       '```',
     ];
 
-  if (Array.isArray(newAttributes) && newAttributes.length) {
-    bodyLines.push(
-      '',
-      '---',
-      '',
-      '### Proposed NEW attributes JSON (add under `attributes`)',
-      '```json',
-      JSON.stringify(newAttributes, null, 2),
-      '```'
-    );
-  }
+    if (Array.isArray(newAttributes) && newAttributes.length) {
+      bodyLines.push(
+        '',
+        '---',
+        '',
+        '### Proposed NEW attributes JSON (add under `attributes`)',
+        '```json',
+        JSON.stringify(newAttributes, null, 2),
+        '```'
+      );
+    }
 
     const body = encodeURIComponent(bodyLines.join('\n'));
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
@@ -753,9 +727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       bodyLines.push('- No changes detected.');
     } else {
       changes.forEach((c) => {
-        bodyLines.push(
-          `- **${c.key}**: \`${JSON.stringify(c.from)}\` → \`${JSON.stringify(c.to)}\``
-        );
+        bodyLines.push(`- **${c.key}**: \`${JSON.stringify(c.from)}\` → \`${JSON.stringify(c.to)}\``);
       });
     }
 
@@ -807,7 +779,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `${GITHUB_NEW_ISSUE_BASE}?title=${title}&body=${body}`;
   }
 
+  // ===========================
+  // TAB SWITCHING
+  // ===========================
+  function showDatasetsView() {
+    datasetsView.classList.remove('hidden');
+    attributesView.classList.add('hidden');
+    datasetsTabBtn.classList.add('active');
+    attributesTabBtn.classList.remove('active');
+  }
 
+  function showAttributesView() {
+    attributesView.classList.remove('hidden');
+    datasetsView.classList.add('hidden');
+    attributesTabBtn.classList.add('active');
+    datasetsTabBtn.classList.remove('active');
+  }
+
+  if (datasetsTabBtn) datasetsTabBtn.addEventListener('click', showDatasetsView);
+  if (attributesTabBtn) attributesTabBtn.addEventListener('click', showAttributesView);
 
   // --- Edit mode renderer ---
 
@@ -825,58 +815,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Breadcrumb
     html += `
-    <nav class="breadcrumb">
-      <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
-      <span class="breadcrumb-separator">/</span>
-      <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
-    </nav>
-  `;
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">${escapeHtml(dataset.title || dataset.id)}</span>
+      </nav>
+    `;
 
     html += `<h2>Editing: ${escapeHtml(dataset.title || dataset.id)}</h2>`;
     if (dataset.description) html += `<p>${escapeHtml(dataset.description)}</p>`;
 
-    // Form container
     html += `<div class="card card-meta" id="datasetEditCard">`;
     html += `<div class="dataset-edit-actions">
       <button type="button" class="btn" data-edit-cancel>Cancel</button>
       <button type="button" class="btn primary" data-edit-submit>Submit suggestion</button>
     </div>`;
 
-    // Fields
     DATASET_EDIT_FIELDS.forEach((f) => {
       const val = draft[f.key];
 
       if (f.type === 'textarea') {
         html += `
-        <div class="dataset-edit-row">
-          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
-          <textarea class="dataset-edit-input" data-edit-key="${escapeHtml(f.key)}">${escapeHtml(
-          val || ''
-        )}</textarea>
-        </div>
-      `;
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <textarea class="dataset-edit-input" data-edit-key="${escapeHtml(f.key)}">${escapeHtml(val || '')}</textarea>
+          </div>
+        `;
       } else {
-        const displayVal =
-          f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
+        const displayVal = f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
         html += `
-        <div class="dataset-edit-row">
-          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
-          <input class="dataset-edit-input" type="text" data-edit-key="${escapeHtml(
-          f.key
-        )}" value="${escapeHtml(displayVal)}" />
-        </div>
-      `;
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <input class="dataset-edit-input" type="text" data-edit-key="${escapeHtml(f.key)}" value="${escapeHtml(displayVal)}" />
+          </div>
+        `;
       }
     });
 
     html += `</div>`;
 
-    // Keep attributes section unchanged (read-only), as requested
+    // Keep attributes section unchanged (read-only)
     html += `
-    <div class="card-row">
-      <div class="card card-attributes">
-        <h3>Attributes</h3>
-  `;
+      <div class="card-row">
+        <div class="card card-attributes">
+          <h3>Attributes</h3>
+    `;
 
     if (!attrs.length) {
       html += '<p>No attributes defined for this dataset.</p>';
@@ -884,36 +867,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       html += '<ul>';
       attrs.forEach((attr) => {
         html += `
-        <li>
-          <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
-            ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
-          </button>
-        </li>`;
+          <li>
+            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+            </button>
+          </li>`;
       });
       html += '</ul>';
     }
 
     html += `
+        </div>
+        <div class="card card-inline-attribute" id="inlineAttributeDetail">
+          <h3>Attribute details</h3>
+          <p>Select an attribute from the list to see its properties here without leaving this dataset.</p>
+        </div>
       </div>
-      <div class="card card-inline-attribute" id="inlineAttributeDetail">
-        <h3>Attribute details</h3>
-        <p>Select an attribute from the list to see its properties here without leaving this dataset.</p>
-      </div>
-    </div>
-  `;
+    `;
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
-    // Bounce + stagger cards (same feel as detail pages)
+    // Animate ONLY when entering edit mode
     staggerCards(datasetDetailEl);
     animatePanel(datasetDetailEl);
 
-    // Breadcrumb
     const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
     if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
 
-    // Inline attribute hooks
     const attrButtons = datasetDetailEl.querySelectorAll('button[data-attr-id]');
     attrButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -922,11 +903,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    // Cancel -> back to normal view
     const cancelBtn = datasetDetailEl.querySelector('button[data-edit-cancel]');
     if (cancelBtn) cancelBtn.addEventListener('click', () => renderDatasetDetail(datasetId));
 
-    // Submit -> collect values, compute diff, open issue
     const submitBtn = datasetDetailEl.querySelector('button[data-edit-submit]');
     if (submitBtn) {
       submitBtn.addEventListener('click', () => {
@@ -952,32 +931,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Return UI to normal view right away
         renderDatasetDetail(datasetId);
 
-        // Then open the GitHub issue in a new tab
+        // Then open GitHub issue
         window.open(issueUrl, '_blank', 'noopener');
-
       });
     }
   }
 
-  // --- NEW ATTRIBUTE "editable page" (replaces the modal) ---
   function renderNewAttributeCreateForm(prefill = {}) {
-    // Use attribute detail panel when we are on the Attributes tab;
-    // otherwise fall back to dataset detail panel (rare).
     const hostEl = attributeDetailEl || datasetDetailEl;
     if (!hostEl) return;
 
     const NEW_ATTR_PLACEHOLDERS =
-      (catalogData &&
-        catalogData.ui &&
-        catalogData.ui.placeholders &&
-        catalogData.ui.placeholders.new_attribute) ||
-      {};
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
 
     function placeholderFor(key, fallback = '') {
       return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
     }
 
-    // draft supports both single + bulk modes
     const draft = {
       mode: 'single', // 'single' | 'bulk'
       id: '',
@@ -994,7 +964,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    // Breadcrumb (Attributes)
     html += `
       <nav class="breadcrumb">
         <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
@@ -1006,7 +975,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<h2>Add a new attribute</h2>`;
     html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
 
-    // Mode toggle
     html += `
       <div class="card card-meta">
         <div class="dataset-edit-actions">
@@ -1019,10 +987,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
-    // Single form card
     html += `<div class="card card-attribute-meta" id="newAttrSingleCard" ${draft.mode === 'bulk' ? 'style="display:none"' : ''}>`;
 
-    // Attribute ID first (required)
     html += `
       <div class="dataset-edit-row">
         <label class="dataset-edit-label">Attribute ID (required)</label>
@@ -1032,9 +998,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
-    // Use your existing field list so the “feel” matches edit mode
     ATTRIBUTE_EDIT_FIELDS.forEach((f) => {
-      // note: your attribute object uses expected_value but the edit fields key is expected_value already
       const k = f.key;
       let val = '';
       if (k === 'values') val = draft.values_json || '';
@@ -1060,7 +1024,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // Notes
     html += `
       <div class="dataset-edit-row">
         <label class="dataset-edit-label">Notes / context (optional)</label>
@@ -1071,7 +1034,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     html += `</div>`;
 
-    // Bulk form card
     html += `<div class="card card-attribute-meta" id="newAttrBulkCard" ${draft.mode === 'single' ? 'style="display:none"' : ''}>`;
     html += `
       <div class="dataset-edit-row">
@@ -1090,19 +1052,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     hostEl.innerHTML = html;
     hostEl.classList.remove('hidden');
 
-    // Bounce + stagger cards (same feel as detail pages)
+    // Animate ONLY when entering create page
     staggerCards(hostEl);
     animatePanel(hostEl);
 
-    // Breadcrumb root
     const rootBtn = hostEl.querySelector('button[data-breadcrumb="attributes"]');
     if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
 
-    // Cancel -> back to list/first attribute
     const cancelBtn = hostEl.querySelector('button[data-new-attr-cancel]');
     if (cancelBtn) cancelBtn.addEventListener('click', goBackToAttributesListOrFirst);
 
-    // Mode switching
     const modeBtns = hostEl.querySelectorAll('button[data-new-attr-mode]');
     const singleCard = hostEl.querySelector('#newAttrSingleCard');
     const bulkCard = hostEl.querySelector('#newAttrBulkCard');
@@ -1119,11 +1078,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    // Submit -> validate, build payload, open issue, then return UI to normal view
     const submitBtn = hostEl.querySelector('button[data-new-attr-submit]');
     if (submitBtn) {
       submitBtn.addEventListener('click', () => {
-        // determine mode from which card is visible
         const isBulk = bulkCard && bulkCard.style.display !== 'none';
 
         let attributesPayload = [];
@@ -1216,7 +1173,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const issueUrl = buildGithubIssueUrlForNewAttributes(payload);
 
-        // Return UI to normal attribute view immediately
         goBackToAttributesListOrFirst();
 
         const w = window.open(issueUrl, '_blank', 'noopener');
@@ -1225,26 +1181,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-    // --- NEW DATASET "editable page" (replaces the modal) ---
-   function renderNewDatasetCreateForm(prefill = {}) {
+  function renderNewDatasetCreateForm(prefill = {}) {
     if (!datasetDetailEl) return;
 
-    // Placeholder strings come from data/catalog.json so you can edit without touching JS
     const NEW_DATASET_PLACEHOLDERS =
-      (catalogData &&
-        catalogData.ui &&
-        catalogData.ui.placeholders &&
-        catalogData.ui.placeholders.new_dataset) ||
-      {};
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) || {};
 
     function placeholderFor(key, fallback = '') {
       return escapeHtml(NEW_DATASET_PLACEHOLDERS[key] || fallback || '');
     }
 
-// NOTE: goBackToLastDatasetOrList() is defined in Helpers above.
-
-
-    // Start with a blank draft; allow optional prefill (future use)
     const draft = {
       id: '',
       title: '',
@@ -1264,15 +1210,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       projection: '',
       notes: '',
       // NEW: attribute selection/creation
-      attribute_ids: [],       // existing attribute IDs selected
-      new_attributes: [],      // array of new attribute draft objects
-
+      attribute_ids: [],
+      new_attributes: [],
       ...deepClone(prefill || {}),
     };
 
     let html = '';
 
-    // Breadcrumb
     html += `
       <nav class="breadcrumb">
         <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
@@ -1292,7 +1236,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
-    // Dataset ID (required) — shown first
     html += `
       <div class="dataset-edit-row">
         <label class="dataset-edit-label">Dataset ID (required)</label>
@@ -1302,7 +1245,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
-    // Render the rest using the same field list you use for edit mode
     DATASET_EDIT_FIELDS.forEach((f) => {
       const val = draft[f.key];
 
@@ -1315,8 +1257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         `;
       } else {
-        const displayVal =
-          f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
+        const displayVal = f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
         html += `
           <div class="dataset-edit-row">
             <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
@@ -1330,253 +1271,235 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     html += `</div>`;
 
-  // ---------------------------
-  // Attributes section (existing + new)
-  // ---------------------------
+    // ---------------------------
+    // Attributes section (existing + new)
+    // ---------------------------
+    const attrOptions = (allAttributes || [])
+      .map((a) => {
+        const id = a.id || '';
+        const label = a.label ? ` — ${a.label}` : '';
+        return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
+      })
+      .join('');
 
-  // Datalist options for existing attributes
-  const attrOptions = (allAttributes || [])
-    .map((a) => {
-      const id = a.id || '';
-      const label = a.label ? ` — ${a.label}` : '';
-      return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
-    })
-    .join('');
+    html += `
+      <div class="card card-meta" id="newDatasetAttributesCard">
+        <h3>Attributes</h3>
+        <p class="modal-help" style="margin-top:0.25rem;">
+          Add existing attributes, or create new ones inline. New attributes will be included in the GitHub issue.
+        </p>
 
-  html += `
-    <div class="card card-meta" id="newDatasetAttributesCard">
-      <h3>Attributes</h3>
-      <p class="modal-help" style="margin-top:0.25rem;">
-        Add existing attributes, or create new ones inline. New attributes will be included in the GitHub issue.
-      </p>
-
-      <div class="dataset-edit-row">
-        <label class="dataset-edit-label">Add existing attribute (search by ID)</label>
-        <div style="display:flex; gap:0.5rem; align-items:center;">
-          <input class="dataset-edit-input" style="flex:1;" type="text"
-            list="existingAttributesDatalist"
-            data-new-ds-existing-attr-input
-            placeholder="Start typing an attribute ID..." />
-          <button type="button" class="btn" data-new-ds-add-existing-attr>Add</button>
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">Add existing attribute (search by ID)</label>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input class="dataset-edit-input" style="flex:1;" type="text"
+              list="existingAttributesDatalist"
+              data-new-ds-existing-attr-input
+              placeholder="Start typing an attribute ID..." />
+            <button type="button" class="btn" data-new-ds-add-existing-attr>Add</button>
+          </div>
+          <datalist id="existingAttributesDatalist">
+            ${attrOptions}
+          </datalist>
         </div>
-        <datalist id="existingAttributesDatalist">
-          ${attrOptions}
-        </datalist>
-      </div>
 
-      <div class="dataset-edit-row">
-        <label class="dataset-edit-label">Selected attributes</label>
-        <div data-new-ds-selected-attrs style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
-      </div>
-
-      <div class="dataset-edit-row">
-        <label class="dataset-edit-label">Create new attribute</label>
-        <div>
-          <button type="button" class="btn" data-new-ds-add-new-attr>+ Add new attribute</button>
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">Selected attributes</label>
+          <div data-new-ds-selected-attrs style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
         </div>
+
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">Create new attribute</label>
+          <div>
+            <button type="button" class="btn" data-new-ds-add-new-attr>+ Add new attribute</button>
+          </div>
+        </div>
+
+        <div data-new-ds-new-attrs></div>
       </div>
-
-      <div data-new-ds-new-attrs></div>
-    </div>
-  `;
-
+    `;
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
-  // ---------- Attributes UI wiring ----------
+    // ---------- Attributes UI wiring ----------
+    const selectedAttrsEl = datasetDetailEl.querySelector('[data-new-ds-selected-attrs]');
+    const existingAttrInput = datasetDetailEl.querySelector('[data-new-ds-existing-attr-input]');
+    const addExistingBtn = datasetDetailEl.querySelector('button[data-new-ds-add-existing-attr]');
+    const addNewAttrBtn = datasetDetailEl.querySelector('button[data-new-ds-add-new-attr]');
+    const newAttrsHost = datasetDetailEl.querySelector('[data-new-ds-new-attrs]');
 
-  const selectedAttrsEl = datasetDetailEl.querySelector('[data-new-ds-selected-attrs]');
-  const existingAttrInput = datasetDetailEl.querySelector('[data-new-ds-existing-attr-input]');
-  const addExistingBtn = datasetDetailEl.querySelector('button[data-new-ds-add-existing-attr]');
-  const addNewAttrBtn = datasetDetailEl.querySelector('button[data-new-ds-add-new-attr]');
-  const newAttrsHost = datasetDetailEl.querySelector('[data-new-ds-new-attrs]');
-
-  const NEW_ATTR_PLACEHOLDERS =
-    (catalogData &&
-      catalogData.ui &&
-      catalogData.ui.placeholders &&
-      catalogData.ui.placeholders.new_attribute) ||
-    {};
-  function attrPlaceholderFor(key, fallback = '') {
-    return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
-  }
-
-  function renderSelectedAttrChips() {
-    if (!selectedAttrsEl) return;
-    const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
-    draft.attribute_ids = ids;
-
-    selectedAttrsEl.innerHTML = ids.length
-      ? ids
-          .map(
-            (id) => `
-              <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
-                <span>${escapeHtml(id)}</span>
-                <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(id)}">✕</button>
-              </span>
-            `
-          )
-          .join('')
-      : `<span style="color: var(--text-muted);">None selected yet.</span>`;
-
-    // remove handlers
-    selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const id = b.getAttribute('data-remove-attr-id');
-        draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
-        renderSelectedAttrChips();
-      });
-    });
-  }
-
-  function makeNewAttrDraft() {
-    return {
-      id: '',
-      label: '',
-      type: '',
-      definition: '',
-      expected_value: '',
-      values_json: '',
-      notes: '',
-    };
-  }
-
-  function renderNewAttributesForms() {
-    if (!newAttrsHost) return;
-    const arr = draft.new_attributes || [];
-    if (!arr.length) {
-      newAttrsHost.innerHTML = '';
-      return;
+    const NEW_ATTR_PLACEHOLDERS =
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
+    function attrPlaceholderFor(key, fallback = '') {
+      return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
     }
 
-    newAttrsHost.innerHTML = arr
-      .map((a, idx) => {
-        const safeIdx = String(idx);
-        return `
-          <div class="card" style="margin-top:0.75rem;" data-new-attr-card data-new-attr-idx="${safeIdx}">
-            <div class="dataset-edit-actions" style="margin-bottom:0.75rem;">
-              <strong style="align-self:center;">New attribute #${idx + 1}</strong>
-              <span style="flex:1"></span>
-              <button type="button" class="btn" data-remove-new-attr="${safeIdx}">Remove</button>
-            </div>
+    function renderSelectedAttrChips() {
+      if (!selectedAttrsEl) return;
+      const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
+      draft.attribute_ids = ids;
 
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Attribute ID (required)</label>
-              <input class="dataset-edit-input" type="text"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="id"
-                placeholder="${attrPlaceholderFor('id', 'e.g., STATE_NAME')}"
-                value="${escapeHtml(a.id || '')}" />
-            </div>
+      selectedAttrsEl.innerHTML = ids.length
+        ? ids
+            .map(
+              (id) => `
+                <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
+                  <span>${escapeHtml(id)}</span>
+                  <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(id)}">✕</button>
+                </span>
+              `
+            )
+            .join('')
+        : `<span style="color: var(--text-muted);">None selected yet.</span>`;
 
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Attribute Label</label>
-              <input class="dataset-edit-input" type="text"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="label"
-                placeholder="${attrPlaceholderFor('label', 'Human-friendly label')}"
-                value="${escapeHtml(a.label || '')}" />
-            </div>
-
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Attribute Type</label>
-              <input class="dataset-edit-input" type="text"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="type"
-                placeholder="${attrPlaceholderFor('type', 'string / integer / enumerated / ...')}"
-                value="${escapeHtml(a.type || '')}" />
-            </div>
-
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Attribute Definition</label>
-              <textarea class="dataset-edit-input"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
-                placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(a.definition || '')}</textarea>
-            </div>
-
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Example Expected Value</label>
-              <input class="dataset-edit-input" type="text"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="expected_value"
-                placeholder="${attrPlaceholderFor('expected_value', 'Optional example')}"
-                value="${escapeHtml(a.expected_value || '')}" />
-            </div>
-
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Allowed values (JSON array) — only if type = enumerated</label>
-              <textarea class="dataset-edit-input"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
-                placeholder='${attrPlaceholderFor(
-                  'values',
-                  '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
-                )}'>${escapeHtml(a.values_json || '')}</textarea>
-            </div>
-
-            <div class="dataset-edit-row">
-              <label class="dataset-edit-label">Notes / context (optional)</label>
-              <textarea class="dataset-edit-input"
-                data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
-                placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(a.notes || '')}</textarea>
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-
-    // Remove new attribute handlers
-    newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const idx = Number(b.getAttribute('data-remove-new-attr'));
-        if (Number.isNaN(idx)) return;
-        draft.new_attributes.splice(idx, 1);
-        renderNewAttributesForms();
+      selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const id = b.getAttribute('data-remove-attr-id');
+          draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
+          renderSelectedAttrChips();
+        });
       });
-    });
-  }
+    }
 
-  if (addExistingBtn) {
-    addExistingBtn.addEventListener('click', () => {
-      const raw = String(existingAttrInput?.value || '').trim();
-      if (!raw) return;
-      const exists = Catalog.getAttributeById(raw);
-      if (!exists) {
-        alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
+    function makeNewAttrDraft() {
+      return {
+        id: '',
+        label: '',
+        type: '',
+        definition: '',
+        expected_value: '',
+        values_json: '',
+        notes: '',
+      };
+    }
+
+    function renderNewAttributesForms() {
+      if (!newAttrsHost) return;
+      const arr = draft.new_attributes || [];
+      if (!arr.length) {
+        newAttrsHost.innerHTML = '';
         return;
       }
-      draft.attribute_ids = draft.attribute_ids || [];
-      if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
-      if (existingAttrInput) existingAttrInput.value = '';
-      renderSelectedAttrChips();
-    });
-  }
 
-  if (addNewAttrBtn) {
-    addNewAttrBtn.addEventListener('click', () => {
-      draft.new_attributes = draft.new_attributes || [];
-      draft.new_attributes.push(makeNewAttrDraft());
-      renderNewAttributesForms();
-    });
-  }
+      newAttrsHost.innerHTML = arr
+        .map((a, idx) => {
+          const safeIdx = String(idx);
+          return `
+            <div class="card" style="margin-top:0.75rem;" data-new-attr-card data-new-attr-idx="${safeIdx}">
+              <div class="dataset-edit-actions" style="margin-bottom:0.75rem;">
+                <strong style="align-self:center;">New attribute #${idx + 1}</strong>
+                <span style="flex:1"></span>
+                <button type="button" class="btn" data-remove-new-attr="${safeIdx}">Remove</button>
+              </div>
 
-  // Initial paints
-  renderSelectedAttrChips();
-  renderNewAttributesForms();
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Attribute ID (required)</label>
+                <input class="dataset-edit-input" type="text"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="id"
+                  placeholder="${attrPlaceholderFor('id', 'e.g., STATE_NAME')}"
+                  value="${escapeHtml(a.id || '')}" />
+              </div>
 
-    // Bounce + stagger cards (same feel as detail pages)
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Attribute Label</label>
+                <input class="dataset-edit-input" type="text"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="label"
+                  placeholder="${attrPlaceholderFor('label', 'Human-friendly label')}"
+                  value="${escapeHtml(a.label || '')}" />
+              </div>
+
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Attribute Type</label>
+                <input class="dataset-edit-input" type="text"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="type"
+                  placeholder="${attrPlaceholderFor('type', 'string / integer / enumerated / ...')}"
+                  value="${escapeHtml(a.type || '')}" />
+              </div>
+
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Attribute Definition</label>
+                <textarea class="dataset-edit-input"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
+                  placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(a.definition || '')}</textarea>
+              </div>
+
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Example Expected Value</label>
+                <input class="dataset-edit-input" type="text"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="expected_value"
+                  placeholder="${attrPlaceholderFor('expected_value', 'Optional example')}"
+                  value="${escapeHtml(a.expected_value || '')}" />
+              </div>
+
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Allowed values (JSON array) — only if type = enumerated</label>
+                <textarea class="dataset-edit-input"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
+                  placeholder='${attrPlaceholderFor(
+                    'values',
+                    '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
+                  )}'>${escapeHtml(a.values_json || '')}</textarea>
+              </div>
+
+              <div class="dataset-edit-row">
+                <label class="dataset-edit-label">Notes / context (optional)</label>
+                <textarea class="dataset-edit-input"
+                  data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
+                  placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(a.notes || '')}</textarea>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+
+      newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const idx = Number(b.getAttribute('data-remove-new-attr'));
+          if (Number.isNaN(idx)) return;
+          draft.new_attributes.splice(idx, 1);
+          renderNewAttributesForms();
+        });
+      });
+    }
+
+    if (addExistingBtn) {
+      addExistingBtn.addEventListener('click', () => {
+        const raw = String(existingAttrInput?.value || '').trim();
+        if (!raw) return;
+        const exists = Catalog.getAttributeById(raw);
+        if (!exists) {
+          alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
+          return;
+        }
+        draft.attribute_ids = draft.attribute_ids || [];
+        if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
+        if (existingAttrInput) existingAttrInput.value = '';
+        renderSelectedAttrChips();
+      });
+    }
+
+    if (addNewAttrBtn) {
+      addNewAttrBtn.addEventListener('click', () => {
+        draft.new_attributes = draft.new_attributes || [];
+        draft.new_attributes.push(makeNewAttrDraft());
+        renderNewAttributesForms();
+      });
+    }
+
+    renderSelectedAttrChips();
+    renderNewAttributesForms();
+
+    // Animate ONLY when entering create page
     staggerCards(datasetDetailEl);
     animatePanel(datasetDetailEl);
 
-    // Breadcrumb root
     const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
     if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
 
-    // Cancel: return to “normal” dataset view (first dataset) or just show list
     const cancelBtn = datasetDetailEl.querySelector('button[data-new-ds-cancel]');
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-      goBackToLastDatasetOrList();
-      });
-    }
+    if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastDatasetOrList);
 
-    // Submit: validate, build payload, open issue, then return UI to normal view
     const submitBtn = datasetDetailEl.querySelector('button[data-new-ds-submit]');
     if (submitBtn) {
       submitBtn.addEventListener('click', () => {
@@ -1600,17 +1523,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        // If ID already exists, confirm
         const exists = Catalog.getDatasetById(id);
         if (exists) {
-          const proceed = confirm(
-            `A dataset with ID "${id}" already exists in the catalog. Open an issue anyway?`
-          );
+          const proceed = confirm(`A dataset with ID "${id}" already exists in the catalog. Open an issue anyway?`);
           if (!proceed) return;
         }
 
-        // Build the dataset object (remove empty values)
-        // 1) Collect new attribute drafts from the UI (so typing is captured)
+        // collect new attribute drafts from UI
         const newAttrInputs = datasetDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
         newAttrInputs.forEach((el) => {
           const idx = Number(el.getAttribute('data-new-attr-idx'));
@@ -1620,17 +1539,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           draft.new_attributes[idx][k] = String(el.value || '');
         });
 
-        // 2) Validate + build new attribute objects
         const newAttributesOut = [];
         const newAttrIds = [];
-        (draft.new_attributes || []).forEach((a, i) => {
+
+        // NOTE: any validation alert returns from handler, so stop submission
+        for (let i = 0; i < (draft.new_attributes || []).length; i++) {
+          const a = draft.new_attributes[i];
           const aid = String(a.id || '').trim();
           if (!aid) {
             alert(`New attribute #${i + 1} is missing an Attribute ID.`);
             return;
           }
-
-          // If it already exists, force user to add it as an existing attribute instead
           if (Catalog.getAttributeById(aid)) {
             alert(`New attribute ID "${aid}" already exists. Add it as an existing attribute instead.`);
             return;
@@ -1667,12 +1586,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           newAttributesOut.push(attrObj);
           newAttrIds.push(aid);
-        });
+        }
 
-        // 3) Combine existing + new attribute IDs (de-dupe)
-        const existingIds = Array.from(
-          new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
-        );
+        const existingIds = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
         const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
 
         const datasetObj = compactObject({
@@ -1698,7 +1614,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const issueUrl = buildGithubIssueUrlForNewDataset(datasetObj, newAttributesOut);
 
-        // Return UI to normal dataset view immediately
         goBackToLastDatasetOrList();
 
         const w = window.open(issueUrl, '_blank', 'noopener');
@@ -1706,7 +1621,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   }
-
 
   function renderAttributeEditForm(attrId) {
     if (!attributeDetailEl) return;
@@ -1721,17 +1635,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     let html = '';
 
     html += `
-    <nav class="breadcrumb">
-      <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
-      <span class="breadcrumb-separator">/</span>
-      <span class="breadcrumb-current">${escapeHtml(attribute.id)}</span>
-    </nav>
-  `;
+      <nav class="breadcrumb">
+        <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">${escapeHtml(attribute.id)}</span>
+      </nav>
+    `;
 
     html += `<h2>Editing: ${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
 
     html += `<div class="card card-attribute-meta" id="attributeEditCard">`;
-
     html += `<div class="dataset-edit-actions">
       <button type="button" class="btn" data-edit-attr-cancel>Cancel</button>
       <button type="button" class="btn primary" data-edit-attr-submit>Submit suggestion</button>
@@ -1740,75 +1653,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     ATTRIBUTE_EDIT_FIELDS.forEach((f) => {
       let val = draft[f.key];
 
-      // For enumerated values, we edit as JSON text
       if (f.type === 'json') {
         val = val === undefined ? '' : JSON.stringify(val, null, 2);
         html += `
-        <div class="dataset-edit-row">
-          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
-          <textarea class="dataset-edit-input" data-edit-attr-key="${escapeHtml(f.key)}">${escapeHtml(
-          val
-        )}</textarea>
-        </div>
-      `;
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <textarea class="dataset-edit-input" data-edit-attr-key="${escapeHtml(f.key)}">${escapeHtml(val)}</textarea>
+          </div>
+        `;
         return;
       }
 
       if (f.type === 'textarea') {
         html += `
-        <div class="dataset-edit-row">
-          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
-          <textarea class="dataset-edit-input" data-edit-attr-key="${escapeHtml(f.key)}">${escapeHtml(
-          val || ''
-        )}</textarea>
-        </div>
-      `;
+          <div class="dataset-edit-row">
+            <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+            <textarea class="dataset-edit-input" data-edit-attr-key="${escapeHtml(f.key)}">${escapeHtml(val || '')}</textarea>
+          </div>
+        `;
         return;
       }
 
       html += `
-      <div class="dataset-edit-row">
-        <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
-        <input class="dataset-edit-input" type="text" data-edit-attr-key="${escapeHtml(
-        f.key
-      )}" value="${escapeHtml(val === undefined ? '' : String(val))}" />
-      </div>
-    `;
+        <div class="dataset-edit-row">
+          <label class="dataset-edit-label">${escapeHtml(f.label)}</label>
+          <input class="dataset-edit-input" type="text" data-edit-attr-key="${escapeHtml(f.key)}"
+                 value="${escapeHtml(val === undefined ? '' : String(val))}" />
+        </div>
+      `;
     });
 
     html += `</div>`;
 
-    // Keep “Allowed values” preview if it exists (optional but nice)
     if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
       html += '<div class="card card-enumerated">';
       html += '<h3>Current allowed values (read-only preview)</h3>';
       html += `
-      <table>
-        <thead>
-          <tr><th>Code</th><th>Label</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-    `;
+        <table>
+          <thead>
+            <tr><th>Code</th><th>Label</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+      `;
       attribute.values.forEach((v) => {
         const code = v.code !== undefined ? String(v.code) : '';
         const label = v.label || '';
         const desc = v.description || '';
         html += `
-        <tr>
-          <td>${escapeHtml(code)}</td>
-          <td>${escapeHtml(label)}</td>
-          <td>${escapeHtml(desc)}</td>
-        </tr>
-      `;
+          <tr>
+            <td>${escapeHtml(code)}</td>
+            <td>${escapeHtml(label)}</td>
+            <td>${escapeHtml(desc)}</td>
+          </tr>
+        `;
       });
       html += `
-        </tbody>
-      </table>
-    `;
+          </tbody>
+        </table>
+      `;
       html += '</div>';
     }
 
-    // Keep datasets list unchanged (read-only), like your normal view
     html += '<div class="card card-attribute-datasets">';
     html += '<h3>Datasets using this attribute</h3>';
     if (!datasets.length) {
@@ -1817,11 +1722,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       html += '<ul>';
       datasets.forEach((ds) => {
         html += `
-        <li>
-          <button type="button" class="link-button" data-dataset-id="${escapeHtml(ds.id)}">
-            ${escapeHtml(ds.title || ds.id)}
-          </button>
-        </li>`;
+          <li>
+            <button type="button" class="link-button" data-dataset-id="${escapeHtml(ds.id)}">
+              ${escapeHtml(ds.title || ds.id)}
+            </button>
+          </li>`;
       });
       html += '</ul>';
     }
@@ -1830,15 +1735,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
 
-    // Animate ONLY when entering edit mode (not when browsing existing attributes)
+    // Animate ONLY when entering edit mode
     staggerCards(attributeDetailEl);
     animatePanel(attributeDetailEl);
 
-    // Breadcrumb root
     const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
     if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
 
-    // Dataset navigation still works
     const dsButtons = attributeDetailEl.querySelectorAll('button[data-dataset-id]');
     dsButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1848,11 +1751,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    // Cancel -> normal view
     const cancelBtn = attributeDetailEl.querySelector('button[data-edit-attr-cancel]');
     if (cancelBtn) cancelBtn.addEventListener('click', () => renderAttributeDetail(attrId));
 
-    // Submit -> collect, validate JSON for values, diff, open issue, return to normal view
     const submitBtn = attributeDetailEl.querySelector('button[data-edit-attr-submit]');
     if (submitBtn) {
       submitBtn.addEventListener('click', () => {
@@ -1885,15 +1786,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const issueUrl = buildGithubIssueUrlForEditedAttribute(attrId, origCompact, updated, changes);
 
-        // return UI to normal view immediately
         renderAttributeDetail(attrId);
 
         window.open(issueUrl, '_blank', 'noopener');
       });
     }
   }
-
-
 
   // --- Load catalog once ---
   let catalog;
@@ -1912,11 +1810,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const allAttributes = catalog.attributes || [];
 
   // ===========================
-  // DATASET SUBMISSION MODAL
+  // BUTTONS (new dataset/attribute)
   // ===========================
   const newDatasetBtn = document.getElementById('newDatasetBtn');
-  
-  // Replace modal behavior with an editable page in the detail panel
   if (newDatasetBtn) {
     newDatasetBtn.addEventListener('click', () => {
       showDatasetsView();
@@ -1924,38 +1820,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ===========================
-  // ATTRIBUTE SUBMISSION MODAL
-  // ===========================
   const newAttributeBtn = document.getElementById('newAttributeBtn');
-
   if (newAttributeBtn) {
     newAttributeBtn.addEventListener('click', () => {
-       // Replace old modal behavior with the new editable page
-       showAttributesView();
-       renderNewAttributeCreateForm();
+      showAttributesView();
+      renderNewAttributeCreateForm();
     });
   }
-
-  // ===========================
-  // TAB SWITCHING
-  // ===========================
-  function showDatasetsView() {
-    datasetsView.classList.remove('hidden');
-    attributesView.classList.add('hidden');
-    datasetsTabBtn.classList.add('active');
-    attributesTabBtn.classList.remove('active');
-  }
-
-  function showAttributesView() {
-    attributesView.classList.remove('hidden');
-    datasetsView.classList.add('hidden');
-    attributesTabBtn.classList.add('active');
-    datasetsTabBtn.classList.remove('active');
-  }
-
-  if (datasetsTabBtn) datasetsTabBtn.addEventListener('click', showDatasetsView);
-  if (attributesTabBtn) attributesTabBtn.addEventListener('click', showAttributesView);
 
   // ===========================
   // LIST RENDERING
@@ -1967,12 +1838,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filtered = !ft
       ? allDatasets
       : allDatasets.filter((ds) => {
-        const haystack = [ds.id, ds.title, ds.description, ds.agency_owner, ds.office_owner, ...(ds.topics || [])]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-        return haystack.includes(ft);
-      });
+          const haystack = [ds.id, ds.title, ds.description, ds.agency_owner, ds.office_owner, ...(ds.topics || [])]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(ft);
+        });
 
     if (!filtered.length) {
       datasetListEl.innerHTML = '<p>No datasets found.</p>';
@@ -2008,8 +1879,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     datasetListEl.innerHTML = '';
     datasetListEl.appendChild(list);
 
-   // keep active highlight in sync after re-render
-   setActiveListButton(datasetListEl, (b) => b.getAttribute('data-ds-id') === lastSelectedDatasetId);
+    setActiveListButton(datasetListEl, (b) => b.getAttribute('data-ds-id') === lastSelectedDatasetId);
   }
 
   function renderAttributeList(filterText = '') {
@@ -2019,9 +1889,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filtered = !ft
       ? allAttributes
       : allAttributes.filter((attr) => {
-        const haystack = [attr.id, attr.label, attr.definition].filter(Boolean).join(' ').toLowerCase();
-        return haystack.includes(ft);
-      });
+          const haystack = [attr.id, attr.label, attr.definition].filter(Boolean).join(' ').toLowerCase();
+          return haystack.includes(ft);
+        });
 
     if (!filtered.length) {
       attributeListEl.innerHTML = '<p>No attributes found.</p>';
@@ -2058,15 +1928,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderDatasetDetail(datasetId) {
     if (!datasetDetailEl) return;
 
-  // Browsing existing datasets should not animate.
-  // Also make sure no prior FX classes linger from edit/create flows.
-  datasetDetailEl.classList.remove('fx-enter', 'fx-animating');
+    // Browsing existing datasets should not animate.
+    datasetDetailEl.classList.remove('fx-enter', 'fx-animating');
 
-    // update "last selected dataset" state whenever we render a dataset detail
     lastSelectedDatasetId = datasetId;
-
-   // highlight active dataset in sidebar (if list is rendered)
-   setActiveListButton(datasetListEl, (b) => b.getAttribute('data-ds-id') === datasetId);
+    setActiveListButton(datasetListEl, (b) => b.getAttribute('data-ds-id') === datasetId);
 
     const dataset = Catalog.getDatasetById(datasetId);
     if (!dataset) {
@@ -2080,7 +1946,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    // Breadcrumb
     html += `
       <nav class="breadcrumb">
         <button type="button" class="breadcrumb-root" data-breadcrumb="datasets">Datasets</button>
@@ -2099,46 +1964,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<p><strong>Office Owner:</strong> ${escapeHtml(dataset.office_owner || '')}</p>`;
     html += `<p><strong>Contact Email:</strong> ${escapeHtml(dataset.contact_email || '')}</p>`;
 
-    html += `<p><strong>Topics:</strong> ${Array.isArray(dataset.topics)
-      ? dataset.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
-      : ''
-      }</p>`;
+    html += `<p><strong>Topics:</strong> ${
+      Array.isArray(dataset.topics)
+        ? dataset.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
+        : ''
+    }</p>`;
 
     html += `<p><strong>Update Frequency:</strong> ${escapeHtml(dataset.update_frequency || '')}</p>`;
     html += `<p><strong>Status:</strong> ${escapeHtml(dataset.status || '')}</p>`;
     html += `<p><strong>Access Level:</strong> ${escapeHtml(dataset.access_level || '')}</p>`;
 
- html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.public_web_service || '')}" data-url-status="idle">
-   <strong>Public Web Service:</strong>
-   <span class="url-status-icon" aria-hidden="true"></span>
-   ${dataset.public_web_service
-     ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
-     : ''
-   }
- </p>`;
+    html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.public_web_service || '')}" data-url-status="idle">
+      <strong>Public Web Service:</strong>
+      <span class="url-status-icon" aria-hidden="true"></span>
+      ${
+        dataset.public_web_service
+          ? `<a href="${dataset.public_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.public_web_service)}</a>`
+          : ''
+      }
+    </p>`;
 
- html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.internal_web_service || '')}" data-url-status="idle">
-   <strong>Internal Web Service:</strong>
-   <span class="url-status-icon" aria-hidden="true"></span>
-   ${dataset.internal_web_service
-     ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
-     : ''
-   }
- </p>`;
+    html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.internal_web_service || '')}" data-url-status="idle">
+      <strong>Internal Web Service:</strong>
+      <span class="url-status-icon" aria-hidden="true"></span>
+      ${
+        dataset.internal_web_service
+          ? `<a href="${dataset.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(dataset.internal_web_service)}</a>`
+          : ''
+      }
+    </p>`;
 
- html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.data_standard || '')}" data-url-status="idle">
-   <strong>Data Standard:</strong>
-   <span class="url-status-icon" aria-hidden="true"></span>
-   ${dataset.data_standard
-     ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
-     : ''
-   }
- </p>`;
+    html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(dataset.data_standard || '')}" data-url-status="idle">
+      <strong>Data Standard:</strong>
+      <span class="url-status-icon" aria-hidden="true"></span>
+      ${
+        dataset.data_standard
+          ? `<a href="${dataset.data_standard}" target="_blank" rel="noopener">${escapeHtml(dataset.data_standard)}</a>`
+          : ''
+      }
+    </p>`;
 
     if (dataset.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(dataset.notes)}</p>`;
     html += '</div>';
 
-    // Attributes + inline attribute details
     html += `
       <div class="card-row">
         <div class="card card-attributes">
@@ -2170,38 +2038,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
 
     html += `
-  <div class="card card-actions">
-    <button type="button" class="suggest-button" data-edit-dataset="${escapeHtml(dataset.id)}">
-      Suggest a change to this dataset
-    </button>
-    <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
-      Export ArcGIS schema (Python)
-    </button>
-  </div>
-`;
+      <div class="card card-actions">
+        <button type="button" class="suggest-button" data-edit-dataset="${escapeHtml(dataset.id)}">
+          Suggest a change to this dataset
+        </button>
+        <button type="button" class="export-button" data-export-schema="${escapeHtml(dataset.id)}">
+          Export ArcGIS schema (Python)
+        </button>
+      </div>
+    `;
 
-
-// --- Public Web Service preview card (renders after URL checks) ---
-html += `
-  <div class="card card-map-preview" id="datasetPreviewCard">
-    <h3>Public Web Service preview</h3>
-    <div class="map-preview-status" data-preview-status>
-      Checking Public Web Service…
-    </div>
-    <div class="map-preview-content" data-preview-content></div>
-  </div>
-`;
-
+    html += `
+      <div class="card card-map-preview" id="datasetPreviewCard">
+        <h3>Public Web Service preview</h3>
+        <div class="map-preview-status" data-preview-status>Checking Public Web Service…</div>
+        <div class="map-preview-content" data-preview-content></div>
+      </div>
+    `;
 
     datasetDetailEl.innerHTML = html;
     datasetDetailEl.classList.remove('hidden');
 
-// Check URL status icons (async)
-runUrlChecks(datasetDetailEl).then(() => {
-  maybeRenderPublicServicePreviewCard(datasetDetailEl, dataset.public_web_service);
-});
-
-
+    // Check URL status icons (async)
+    runUrlChecks(datasetDetailEl).then(() => {
+      maybeRenderPublicServicePreviewCard(datasetDetailEl, dataset.public_web_service);
+    });
 
     const editBtn = datasetDetailEl.querySelector('button[data-edit-dataset]');
     if (editBtn) {
@@ -2210,7 +2071,6 @@ runUrlChecks(datasetDetailEl).then(() => {
         renderDatasetEditForm(dsId);
       });
     }
-
 
     const rootBtn = datasetDetailEl.querySelector('button[data-breadcrumb="datasets"]');
     if (rootBtn) rootBtn.addEventListener('click', showDatasetsView);
@@ -2335,7 +2195,6 @@ runUrlChecks(datasetDetailEl).then(() => {
       btn.addEventListener('click', () => {
         const dsId = btn.getAttribute('data-dataset-id');
         showDatasetsView();
-        // keep lastSelectedDatasetId in sync on navigation
         lastSelectedDatasetId = dsId;
         renderDatasetDetail(dsId);
       });
@@ -2345,12 +2204,10 @@ runUrlChecks(datasetDetailEl).then(() => {
   function renderAttributeDetail(attrId) {
     if (!attributeDetailEl) return;
 
-  // Browsing existing attributes should not animate.
-  // Also make sure no prior FX classes linger from edit/create flows.
-  attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
+    // Browsing existing attributes should not animate.
+    attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
 
-   // highlight active attribute in sidebar (if list is rendered)
-   setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
+    setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
 
     const attribute = Catalog.getAttributeById(attrId);
     if (!attribute) {
@@ -2430,13 +2287,12 @@ runUrlChecks(datasetDetailEl).then(() => {
     html += '</div>';
 
     html += `
-  <div class="card card-actions">
-    <button type="button" class="suggest-button" data-edit-attribute="${escapeHtml(attribute.id)}">
-      Suggest a change to this attribute
-    </button>
-  </div>
-`;
-
+      <div class="card card-actions">
+        <button type="button" class="suggest-button" data-edit-attribute="${escapeHtml(attribute.id)}">
+          Suggest a change to this attribute
+        </button>
+      </div>
+    `;
 
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
@@ -2457,7 +2313,6 @@ runUrlChecks(datasetDetailEl).then(() => {
       btn.addEventListener('click', () => {
         const dsId = btn.getAttribute('data-dataset-id');
         showDatasetsView();
-        // keep lastSelectedDatasetId in sync on navigation
         lastSelectedDatasetId = dsId;
         renderDatasetDetail(dsId);
       });
@@ -2477,12 +2332,11 @@ runUrlChecks(datasetDetailEl).then(() => {
     attributeSearchInput.addEventListener('input', () => renderAttributeList(attributeSearchInput.value));
   }
 
-// Initial render: only render the active tab's detail (Datasets tab is active by default)
+  // Initial render: datasets tab is active by default
   if (allDatasets.length) {
     lastSelectedDatasetId = allDatasets[0].id;
     renderDatasetDetail(allDatasets[0].id);
   }
-// Attribute detail will render when user clicks the Attributes tab or an attribute link
 });
 
 // ====== UTILS ======
