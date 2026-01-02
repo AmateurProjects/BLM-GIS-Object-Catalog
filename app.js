@@ -951,7 +951,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const missingIds = attributesPayload.filter((a) => !a || typeof a !== 'object' || !a.id).length;
         if (missingIds) {
-          alert('One or more attribute objects are missing an "id" field.');
+          alert('One or more attribute objects are missing an "id" attribute.');
           return;
         }
 
@@ -978,7 +978,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!objectDetailEl) return;
 
     const NEW_OBJECT_PLACEHOLDERS =
-      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) || {};
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_object) ||
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) ||
+      {};
 
     function placeholderFor(key, fallback = '') {
       return escapeHtml(NEW_OBJECT_PLACEHOLDERS[key] || fallback || '');
@@ -1354,11 +1356,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (rawVals) {
               const parsed = tryParseJson(rawVals);
               if (parsed && parsed.__parse_error__) {
-                alert(`Enumerated values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
+                alert(`Allowed values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
                 return;
               }
               if (parsed && !Array.isArray(parsed)) {
-                alert(`Enumerated values for "${aid}" must be a JSON array.`);
+                alert(`Allowed values for "${aid}" must be a JSON array.`);
                 return;
               }
               values = parsed || [];
@@ -1901,7 +1903,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += '<h3>Attribute details</h3>';
     html += `<h4>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h4>`;
 
-    html += `<p><strong>Attribute Field Name:</strong> ${escapeHtml(attribute.id)}</p>`;
+    // ✅ "field" removed everywhere
+    html += `<p><strong>Attribute Name:</strong> ${escapeHtml(attribute.id)}</p>`;
     html += `<p><strong>Attribute Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
     html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
     html += `<p><strong>Attribute Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
@@ -2014,7 +2017,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
     html += '<div class="card card-attribute-meta">';
-    html += `<p><strong>Attribute Field Name:</strong> ${escapeHtml(attribute.id)}</p>`;
+
+    // ✅ "field" removed everywhere
+    html += `<p><strong>Attribute Name:</strong> ${escapeHtml(attribute.id)}</p>`;
     html += `<p><strong>Attribute Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
     html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
     html += `<p><strong>Attribute Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
@@ -2204,7 +2209,7 @@ function buildArcGisSchemaPython(obj, attrs) {
   const enumDomainComments = [];
 
   attrs.forEach((attr) => {
-    const attrInfo = mapAttributeToArcGisField(attr);
+    const attrInfo = mapAttributeToArcGisAttributeSpec(attr);
 
     const name = attr.id || '';
     const alias = attr.label || '';
@@ -2255,7 +2260,8 @@ function buildArcGisSchemaPython(obj, attrs) {
   return lines.join('\n');
 }
 
-function mapAttributeToArcGisField(attr) {
+// ✅ renamed: no "field" in the codebase naming
+function mapAttributeToArcGisAttributeSpec(attr) {
   const t = (attr.type || '').toLowerCase();
   switch (t) {
     case 'string':
