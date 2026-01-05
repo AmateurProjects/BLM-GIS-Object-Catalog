@@ -46,141 +46,6 @@ function setActiveListButton(listRootEl, predicateFn) {
   });
 }
 
-// ====== URL STATUS CHECK HELPERS ======
-const URL_CHECK = {
-  timeoutMs: 3500,
-  concurrency: 3,
-};
-
-// Cache URL check results for this browser session (page lifetime)
-// url -> { status: "ok"|"bad"|"unknown", ts: number }
-const urlStatusCache = new Map();
-
-function getCachedUrlStatus(url) {
-  if (!url) return null;
-  return urlStatusCache.get(url) || null;
-}
-
-function setCachedUrlStatus(url, status) {
-  if (!url) return;
-  urlStatusCache.set(url, { status, ts: Date.now() });
-}
-
-function setUrlStatus(rowEl, status, titleText) {
-  if (!rowEl) return;
-  rowEl.setAttribute('data-url-status', status);
-  const icon = rowEl.querySelector('.url-status-icon');
-  if (icon) icon.title = titleText || '';
-}
-
-// Tries to determine if a URL is reachable.
-// Returns: "ok" | "bad" | "unknown"
-async function checkUrlStatus(url) {
-  if (!url) return 'bad';
-  const cached = getCachedUrlStatus(url);
-  if (cached && cached.status) return cached.status;
-  try {
-    const u = new URL(url);
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return 'bad';
-  } catch {
-    return 'bad';
-  }
-
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), URL_CHECK.timeoutMs);
-
-  try {
-    // Try HEAD first (fast + minimal payload)
-    const resp = await fetch(url, {
-      method: 'HEAD',
-      mode: 'cors',
-      redirect: 'follow',
-      signal: controller.signal,
-      cache: 'no-store',
-    });
-
-    if (resp && typeof resp.status === 'number') {
-      const s = resp.status >= 200 && resp.status < 400 ? 'ok' : 'bad';
-      setCachedUrlStatus(url, s);
-      return s;
-    }
-    setCachedUrlStatus(url, 'unknown');
-    return 'unknown';
-  } catch (e1) {
-    // Fallback: no-cors GET gives opaque response (still indicates network likely worked)
-    try {
-      const resp2 = await fetch(url, {
-        method: 'GET',
-        mode: 'no-cors',
-        redirect: 'follow',
-        signal: controller.signal,
-        cache: 'no-store',
-      });
-      if (resp2 && resp2.type === 'opaque') {
-        setCachedUrlStatus(url, 'unknown');
-        return 'unknown';
-      }
-      if (resp2 && typeof resp2.status === 'number') {
-        const s2 = resp2.status >= 200 && resp2.status < 400 ? 'ok' : 'bad';
-        setCachedUrlStatus(url, s2);
-        return s2;
-      }
-      setCachedUrlStatus(url, 'unknown');
-      return 'unknown';
-    } catch (e2) {
-      setCachedUrlStatus(url, 'bad');
-      return 'bad';
-    }
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-async function runUrlChecks(hostEl) {
-  if (!hostEl) return;
-  const rows = Array.from(hostEl.querySelectorAll('[data-url-check-row]'));
-  if (!rows.length) return;
-
-  // If cached, paint immediately. Otherwise mark as checking.
-  const toCheck = [];
-  rows.forEach((row) => {
-    const url = row.getAttribute('data-url') || '';
-    if (!url) {
-      setUrlStatus(row, 'bad', 'Missing/invalid URL');
-      return;
-    }
-    const cached = getCachedUrlStatus(url);
-    if (cached && cached.status) {
-      const title =
-        cached.status === 'ok'
-          ? 'Link looks reachable (cached)'
-          : cached.status === 'bad'
-          ? 'Link appears unreachable/invalid (cached)'
-          : 'Cannot verify (cached), click to test';
-      setUrlStatus(row, cached.status, title);
-    } else {
-      setUrlStatus(row, 'checking', 'Checking link…');
-      toCheck.push(row);
-    }
-  });
-
-  if (!toCheck.length) return;
-
-  let idx = 0;
-  const workers = new Array(URL_CHECK.concurrency).fill(0).map(async () => {
-    while (idx < toCheck.length) {
-      const row = toCheck[idx++];
-      const url = row.getAttribute('data-url') || '';
-      const result = await checkUrlStatus(url);
-      if (result === 'ok') setUrlStatus(row, 'ok', 'Link looks reachable');
-      else if (result === 'bad') setUrlStatus(row, 'bad', 'Link appears unreachable/invalid');
-      else setUrlStatus(row, 'unknown', 'Cannot verify (CORS/blocked), click to test');
-    }
-  });
-
-  await Promise.all(workers);
-}
-
 // ====== CONFIG ======
 const CATALOG_URL = 'data/catalog.json';
 // Repo layout: /index.html, /app.js, /styles.css, /data/catalog.json
@@ -346,6 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     { key: 'status', label: 'Status', type: 'text' },
     { key: 'access_level', label: 'Access Level', type: 'text' },
 
+    // Change 4 applies to Object *page*; we keep these fields in edit/create forms for now.
     { key: 'public_web_service', label: 'Public Web Service', type: 'text' },
     { key: 'internal_web_service', label: 'Internal Web Service', type: 'text' },
     { key: 'data_standard', label: 'Data Standard', type: 'text' },
@@ -606,7 +472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    // Breadcrumb
+    // Breadcrumb (kept for edit mode)
     html += `
       <nav class="breadcrumb">
         <button type="button" class="breadcrumb-root" data-breadcrumb="objects">Objects</button>
@@ -1382,7 +1248,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           newAttrIds.push(aid);
         }
 
-        const existingIds = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
+        const existingIds = Array.from(
+          new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
+        );
         const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
 
         const objectObj = compactObject({
@@ -1740,16 +1608,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="objects">Objects</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">${escapeHtml(obj.title || obj.id)}</span>
-      </nav>
-    `;
-
+    // Change 3: remove breadcrumb entirely from object detail page
     html += `<h2>${escapeHtml(obj.title || obj.id)}</h2>`;
-    if (obj.description) html += `<p>${escapeHtml(obj.description)}</p>`;
+
+    // Change 6: add "Definition" label before description
+    if (obj.description) {
+      html += `<p><strong>Definition:</strong> ${escapeHtml(obj.description)}</p>`;
+    }
 
     html += '<div class="card card-meta">';
     html += `<p><strong>Database Object Name:</strong> ${escapeHtml(obj.objname || '')}</p>`;
@@ -1768,35 +1633,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += `<p><strong>Status:</strong> ${escapeHtml(obj.status || '')}</p>`;
     html += `<p><strong>Access Level:</strong> ${escapeHtml(obj.access_level || '')}</p>`;
 
-    html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(obj.public_web_service || '')}" data-url-status="idle">
-      <strong>Public Web Service:</strong>
-      <span class="url-status-icon" aria-hidden="true"></span>
-      ${
-        obj.public_web_service
-          ? `<a href="${obj.public_web_service}" target="_blank" rel="noopener">${escapeHtml(obj.public_web_service)}</a>`
-          : ''
-      }
-    </p>`;
+    // Change 4: remove Public Web Service and Internal Web Service from object page
 
-    html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(obj.internal_web_service || '')}" data-url-status="idle">
-      <strong>Internal Web Service:</strong>
-      <span class="url-status-icon" aria-hidden="true"></span>
-      ${
-        obj.internal_web_service
-          ? `<a href="${obj.internal_web_service}" target="_blank" rel="noopener">${escapeHtml(obj.internal_web_service)}</a>`
-          : ''
-      }
-    </p>`;
-
-    html += `<p class="url-check-row" data-url-check-row data-url="${escapeHtml(obj.data_standard || '')}" data-url-status="idle">
-      <strong>Data Standard:</strong>
-      <span class="url-status-icon" aria-hidden="true"></span>
-      ${
+    // Keep Data Standard (no URL icons/checking per Change 5)
+    if (obj.data_standard) {
+      html += `<p><strong>Data Standard:</strong> <a href="${obj.data_standard}" target="_blank" rel="noopener">${escapeHtml(
         obj.data_standard
-          ? `<a href="${obj.data_standard}" target="_blank" rel="noopener">${escapeHtml(obj.data_standard)}</a>`
-          : ''
-      }
-    </p>`;
+      )}</a></p>`;
+    }
 
     if (obj.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(obj.notes)}</p>`;
     html += '</div>';
@@ -1842,13 +1686,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
-    // NOTE: Public Web Service Preview and all preview sub-cards intentionally removed.
-
     objectDetailEl.innerHTML = html;
     objectDetailEl.classList.remove('hidden');
-
-    // Check URL status icons (async)
-    runUrlChecks(objectDetailEl);
 
     const editBtn = objectDetailEl.querySelector('button[data-edit-object]');
     if (editBtn) {
@@ -1857,9 +1696,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderObjectEditForm(objId);
       });
     }
-
-    const rootBtn = objectDetailEl.querySelector('button[data-breadcrumb="objects"]');
-    if (rootBtn) rootBtn.addEventListener('click', showObjectsView);
 
     const attrButtons = objectDetailEl.querySelectorAll('button[data-attr-id]');
     attrButtons.forEach((btn) => {
@@ -2183,7 +2019,7 @@ function buildArcGisSchemaPython(obj, attrs) {
   lines.push(`fc_name = "${objname}"`);
 
   const proj = obj.projection || '';
-  const epsgMatch = proj.match(/EPSG:(\d+)/i);
+  const epsgMatch = proj.match(/EPSG:(\\d+)/i);
 
   const geomType = (obj.geometry_type || 'POLYGON').toUpperCase();
   lines.push(`geometry_type = "${geomType}"  # e.g. "POINT", "POLYLINE", "POLYGON"`);
