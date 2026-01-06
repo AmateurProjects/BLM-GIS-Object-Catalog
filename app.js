@@ -702,9 +702,6 @@ const ATTRIBUTE_EDIT_FIELDS = [
     staggerCards(hostEl);
     animatePanel(hostEl);
 
-    const rootBtn = hostEl.querySelector('button[data-breadcrumb="attributes"]');
-    if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
-
     const cancelBtn = hostEl.querySelector('button[data-new-attr-cancel]');
     if (cancelBtn) cancelBtn.addEventListener('click', goBackToAttributesListOrFirst);
 
@@ -1904,57 +1901,6 @@ const ATTRIBUTE_EDIT_FIELDS = [
     `;
     html += '</div>';
   }
-
-  // Objects using attribute (unchanged)
-  html += '<div class="card card-attribute-objects">';
-  html += '<h3>Objects using this attribute</h3>';
-  if (!objects.length) {
-    html += '<p>No objects currently reference this attribute.</p>';
-  } else {
-    html += '<ul>';
-    objects.forEach((obj) => {
-      html += `
-        <li>
-          <button type="button" class="link-button" data-object-id="${escapeHtml(obj.id)}">
-            ${escapeHtml(obj.title || obj.id)}
-          </button>
-        </li>`;
-    });
-    html += '</ul>';
-  }
-  html += '</div>';
-
-  // Actions (unchanged)
-  html += `
-    <div class="card card-actions">
-      <button type="button" class="suggest-button" data-edit-attribute="${escapeHtml(attribute.id)}">
-        Suggest a change to this attribute
-      </button>
-    </div>
-  `;
-
-  attributeDetailEl.innerHTML = html;
-  attributeDetailEl.classList.remove('hidden');
-
-  const editAttrBtn = attributeDetailEl.querySelector('button[data-edit-attribute]');
-  if (editAttrBtn) {
-    editAttrBtn.addEventListener('click', () => {
-      const id = editAttrBtn.getAttribute('data-edit-attribute');
-      renderAttributeEditForm(id);
-    });
-  }
-
-  const objButtons = attributeDetailEl.querySelectorAll('button[data-object-id]');
-  objButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const objId = btn.getAttribute('data-object-id');
-      showObjectsView();
-      lastSelectedObjectId = objId;
-      renderObjectDetail(objId);
-    });
-  });
-}
-
 
     html += '<div class="card card-attribute-objects">';
     html += '<h3>Objects using this attribute</h3>';
