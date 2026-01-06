@@ -1588,135 +1588,145 @@ document.addEventListener('DOMContentLoaded', async () => {
   // DETAIL RENDERERS
   // ===========================
   function renderObjectDetail(objectId) {
-    if (!objectDetailEl) return;
+  if (!objectDetailEl) return;
 
-    // Browsing existing objects should not animate.
-    objectDetailEl.classList.remove('fx-enter', 'fx-animating');
+  // Browsing existing objects should not animate.
+  objectDetailEl.classList.remove('fx-enter', 'fx-animating');
 
-    lastSelectedObjectId = objectId;
-    setActiveListButton(objectListEl, (b) => b.getAttribute('data-obj-id') === objectId);
+  lastSelectedObjectId = objectId;
+  setActiveListButton(objectListEl, (b) => b.getAttribute('data-obj-id') === objectId);
 
-    const obj = Catalog.getObjectById(objectId);
-    if (!obj) {
-      objectDetailEl.classList.remove('hidden');
-      objectDetailEl.innerHTML = `<p>Object not found: ${escapeHtml(objectId)}</p>`;
-      return;
-    }
-
-    const geomIconHtml = getGeometryIconHTML(obj.geometry_type || '', 'geom-icon-inline');
-    const attrs = Catalog.getAttributesForObject(obj);
-
-    let html = '';
-
-    // Change 3: remove breadcrumb entirely from object detail page
-    html += `<h2>${escapeHtml(obj.title || obj.id)}</h2>`;
-
-    // Change 6: add "Definition" label before description
-    if (obj.description) {
-      html += `<p><strong>Definition:</strong> ${escapeHtml(obj.description)}</p>`;
-    }
-
-    html += '<div class="card card-meta">';
-    html += `<p><strong>Database Object Name:</strong> ${escapeHtml(obj.objname || '')}</p>`;
-    html += `<p><strong>Geometry Type:</strong> ${geomIconHtml}${escapeHtml(obj.geometry_type || '')}</p>`;
-    html += `<p><strong>Agency Owner:</strong> ${escapeHtml(obj.agency_owner || '')}</p>`;
-    html += `<p><strong>Office Owner:</strong> ${escapeHtml(obj.office_owner || '')}</p>`;
-    html += `<p><strong>Contact Email:</strong> ${escapeHtml(obj.contact_email || '')}</p>`;
-
-    html += `<p><strong>Topics:</strong> ${
-      Array.isArray(obj.topics)
-        ? obj.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
-        : ''
-    }</p>`;
-
-    html += `<p><strong>Update Frequency:</strong> ${escapeHtml(obj.update_frequency || '')}</p>`;
-    html += `<p><strong>Status:</strong> ${escapeHtml(obj.status || '')}</p>`;
-    html += `<p><strong>Access Level:</strong> ${escapeHtml(obj.access_level || '')}</p>`;
-
-    // Change 4: remove Public Web Service and Internal Web Service from object page
-
-    // Keep Data Standard (no URL icons/checking per Change 5)
-    if (obj.data_standard) {
-      html += `<p><strong>Data Standard:</strong> <a href="${obj.data_standard}" target="_blank" rel="noopener">${escapeHtml(
-        obj.data_standard
-      )}</a></p>`;
-    }
-
-    if (obj.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(obj.notes)}</p>`;
-    html += '</div>';
-
-    html += `
-      <div class="card-row">
-        <div class="card card-attributes">
-          <h3>Attributes</h3>
-    `;
-
-    if (!attrs.length) {
-      html += '<p>No attributes defined for this object.</p>';
-    } else {
-      html += '<ul>';
-      attrs.forEach((attr) => {
-        html += `
-          <li>
-            <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
-              ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
-            </button>
-          </li>`;
-      });
-      html += '</ul>';
-    }
-
-    html += `
-        </div>
-        <div class="card card-inline-attribute" id="inlineAttributeDetail">
-          <h3>Attribute details</h3>
-          <p>Select an attribute from the list to see its properties here without leaving this object.</p>
-        </div>
-      </div>
-    `;
-
-    html += `
-      <div class="card card-actions">
-        <button type="button" class="suggest-button" data-edit-object="${escapeHtml(obj.id)}">
-          Suggest a change to this object
-        </button>
-        <button type="button" class="export-button" data-export-schema="${escapeHtml(obj.id)}">
-          Export ArcGIS schema (Python)
-        </button>
-      </div>
-    `;
-
-    objectDetailEl.innerHTML = html;
+  const obj = Catalog.getObjectById(objectId);
+  if (!obj) {
     objectDetailEl.classList.remove('hidden');
-
-    const editBtn = objectDetailEl.querySelector('button[data-edit-object]');
-    if (editBtn) {
-      editBtn.addEventListener('click', () => {
-        const objId = editBtn.getAttribute('data-edit-object');
-        renderObjectEditForm(objId);
-      });
-    }
-
-    const attrButtons = objectDetailEl.querySelectorAll('button[data-attr-id]');
-    attrButtons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const attrId = btn.getAttribute('data-attr-id');
-        renderInlineAttributeDetail(attrId);
-      });
-    });
-
-    const exportBtn = objectDetailEl.querySelector('button[data-export-schema]');
-    if (exportBtn) {
-      exportBtn.addEventListener('click', () => {
-        const objId = exportBtn.getAttribute('data-export-schema');
-        const o = Catalog.getObjectById(objId);
-        if (!o) return;
-        const attrsForObj = Catalog.getAttributesForObject(o);
-        const script = buildArcGisSchemaPython(o, attrsForObj);
-        downloadTextFile(script, `${o.id}_schema_arcpy.py`);
-      });
-    }
+    objectDetailEl.innerHTML = `<p>Object not found: ${escapeHtml(objectId)}</p>`;
+    return;
   }
+
+  const geomIconHtml = getGeometryIconHTML(obj.geometry_type || '', 'geom-icon-inline');
+  const attrs = Catalog.getAttributesForObject(obj);
+
+  let html = '';
+
+  // Object page header
+  // (Keep title visible, but we now label it as "Name" in the meta card per your request.)
+  html += `<h2>${escapeHtml(obj.title || obj.id)}</h2>`;
+
+  // Definition (no change)
+  if (obj.description) {
+    html += `<p><strong>Definition:</strong> ${escapeHtml(obj.description)}</p>`;
+  }
+
+  html += '<div class="card card-meta">';
+
+  // ✅ Change "Title" to "Name" (and show it explicitly as a field)
+  html += `<p><strong>Name:</strong> ${escapeHtml(obj.title || obj.id)}</p>`;
+
+  // No change fields
+  html += `<p><strong>Database Object Name:</strong> ${escapeHtml(obj.objname || '')}</p>`;
+  html += `<p><strong>Geometry Type:</strong> ${geomIconHtml}${escapeHtml(obj.geometry_type || '')}</p>`;
+
+  // ❌ Removed per your table:
+  // - Agency Owner
+  // - Office Owner
+  // - Contact Email
+
+  html += `<p><strong>Topics:</strong> ${
+    Array.isArray(obj.topics)
+      ? obj.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
+      : ''
+  }</p>`;
+
+  html += `<p><strong>Update Frequency:</strong> ${escapeHtml(obj.update_frequency || '')}</p>`;
+  html += `<p><strong>Status:</strong> ${escapeHtml(obj.status || '')}</p>`;
+  html += `<p><strong>Access Level:</strong> ${escapeHtml(obj.access_level || '')}</p>`;
+
+  // Keep Data Standard (no change)
+  if (obj.data_standard) {
+    html += `<p><strong>Data Standard:</strong> <a href="${obj.data_standard}" target="_blank" rel="noopener">${escapeHtml(
+      obj.data_standard
+    )}</a></p>`;
+  }
+
+  if (obj.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(obj.notes)}</p>`;
+
+  html += '</div>';
+
+  // Attributes section (unchanged)
+  html += `
+    <div class="card-row">
+      <div class="card card-attributes">
+        <h3>Attributes</h3>
+  `;
+
+  if (!attrs.length) {
+    html += '<p>No attributes defined for this object.</p>';
+  } else {
+    html += '<ul>';
+    attrs.forEach((attr) => {
+      html += `
+        <li>
+          <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
+            ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
+          </button>
+        </li>`;
+    });
+    html += '</ul>';
+  }
+
+  html += `
+      </div>
+      <div class="card card-inline-attribute" id="inlineAttributeDetail">
+        <h3>Attribute details</h3>
+        <p>Select an attribute from the list to see its properties here without leaving this object.</p>
+      </div>
+    </div>
+  `;
+
+  // Actions (unchanged)
+  html += `
+    <div class="card card-actions">
+      <button type="button" class="suggest-button" data-edit-object="${escapeHtml(obj.id)}">
+        Suggest a change to this object
+      </button>
+      <button type="button" class="export-button" data-export-schema="${escapeHtml(obj.id)}">
+        Export ArcGIS schema (Python)
+      </button>
+    </div>
+  `;
+
+  objectDetailEl.innerHTML = html;
+  objectDetailEl.classList.remove('hidden');
+
+  const editBtn = objectDetailEl.querySelector('button[data-edit-object]');
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      const objId = editBtn.getAttribute('data-edit-object');
+      renderObjectEditForm(objId);
+    });
+  }
+
+  const attrButtons = objectDetailEl.querySelectorAll('button[data-attr-id]');
+  attrButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const attrId = btn.getAttribute('data-attr-id');
+      renderInlineAttributeDetail(attrId);
+    });
+  });
+
+  const exportBtn = objectDetailEl.querySelector('button[data-export-schema]');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const objId = exportBtn.getAttribute('data-export-schema');
+      const o = Catalog.getObjectById(objId);
+      if (!o) return;
+      const attrsForObj = Catalog.getAttributesForObject(o);
+      const script = buildArcGisSchemaPython(o, attrsForObj);
+      downloadTextFile(script, `${o.id}_schema_arcpy.py`);
+    });
+  }
+}
+
 
   function renderInlineAttributeDetail(attrId) {
     if (!objectDetailEl) return;
