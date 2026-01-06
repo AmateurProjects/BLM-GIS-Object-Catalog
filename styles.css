@@ -173,6 +173,14 @@ input[type="search"]:focus {
    ITEM LIST (object/attribute)
    ============================ */
 
+/* Code-like styling for Database Object Name in object list */
+.list-item-primary {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-main);
+}
+
 /* Object list: 2-line label (DB Object Name + Name) */
 .list-item-button {
   display: flex;
@@ -198,6 +206,7 @@ input[type="search"]:focus {
 .list-item-secondary {
   color: var(--text-muted);
   font-size: 0.9em;
+  margin-top: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
