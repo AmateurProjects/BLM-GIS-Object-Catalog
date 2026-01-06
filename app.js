@@ -1082,10 +1082,10 @@ const ATTRIBUTE_EDIT_FIELDS = [
                 <label class="object-edit-label">Allowed values (JSON array) — only if type = enumerated</label>
                 <textarea class="object-edit-input"
                   data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
-                  placeholder='${attrPlaceholderFor(
+                  placeholder="${attrPlaceholderFor(
                     'values',
                     '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
-                  )}'>${escapeHtml(a.values_json || '')}</textarea>
+                  )}">${escapeHtml(a.values_json || '')}</textarea>
               </div>
 
               <div class="object-edit-row">
