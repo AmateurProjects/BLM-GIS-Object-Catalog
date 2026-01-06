@@ -1524,9 +1524,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const geomIconHtml = getGeometryIconHTML(obj.geometry_type || '', 'geom-icon-list');
 
+      const primary = obj.objname || obj.id; // Database Object Name first
+      const secondary = obj.title || obj.id; // Name under it
+
       btn.innerHTML = `
         ${geomIconHtml}
-        <span class="list-item-label">${escapeHtml(obj.title || obj.id)}</span>
+          <span class="list-item-text">
+          <span class="list-item-primary">${escapeHtml(primary)}</span>
+          <span class="list-item-secondary">${escapeHtml(secondary)}</span>
+          </span>
       `;
 
       btn.addEventListener('click', () => {

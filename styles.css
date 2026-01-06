@@ -173,6 +173,36 @@ input[type="search"]:focus {
    ITEM LIST (object/attribute)
    ============================ */
 
+/* Object list: 2-line label (DB Object Name + Name) */
+.list-item-button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+}
+
+.list-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* enables ellipsis in flex layouts */
+  line-height: 1.15;
+}
+
+.list-item-primary {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item-secondary {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* The JS renders <ul><li class="list-item"><button class="list-item-button">… */
 #objectList,
 #attributeList {
