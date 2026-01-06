@@ -446,41 +446,6 @@ body.fx-no-scroll {
   text-align: left;
 }
 
-/* ============================
-   BREADCRUMB
-   ============================ */
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 0.4rem;
-}
-
-.breadcrumb-root {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent);
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.breadcrumb-root:hover {
-  color: var(--accent-hover);
-  text-decoration: underline;
-}
-
-.breadcrumb-separator {
-  opacity: 0.7;
-}
-
-.breadcrumb-current {
-  color: var(--text-main);
-  font-weight: 500;
-}
 
 /* ============================
    LINK-STYLED BUTTONS

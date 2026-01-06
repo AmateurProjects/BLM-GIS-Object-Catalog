@@ -472,15 +472,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    // Breadcrumb (kept for edit mode)
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="objects">Objects</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">${escapeHtml(obj.title || obj.id)}</span>
-      </nav>
-    `;
-
     html += `<h2>Editing: ${escapeHtml(obj.title || obj.id)}</h2>`;
     if (obj.description) html += `<p>${escapeHtml(obj.description)}</p>`;
 
@@ -551,9 +542,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     staggerCards(objectDetailEl);
     animatePanel(objectDetailEl);
 
-    const rootBtn = objectDetailEl.querySelector('button[data-breadcrumb="objects"]');
-    if (rootBtn) rootBtn.addEventListener('click', showObjectsView);
-
     const attrButtons = objectDetailEl.querySelectorAll('button[data-attr-id]');
     attrButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -622,14 +610,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     let html = '';
-
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">Add new attribute</span>
-      </nav>
-    `;
 
     html += `<h2>Add a new attribute</h2>`;
     html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
@@ -877,14 +857,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     let html = '';
-
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="objects">Objects</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">Submit new object</span>
-      </nav>
-    `;
 
     html += `<h2>Submit a new object</h2>`;
     html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
@@ -1155,9 +1127,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     staggerCards(objectDetailEl);
     animatePanel(objectDetailEl);
 
-    const rootBtn = objectDetailEl.querySelector('button[data-breadcrumb="objects"]');
-    if (rootBtn) rootBtn.addEventListener('click', showObjectsView);
-
     const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
     if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
 
@@ -1296,14 +1265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">${escapeHtml(attribute.id)}</span>
-      </nav>
-    `;
-
     html += `<h2>Editing: ${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
 
     html += `<div class="card card-attribute-meta" id="attributeEditCard">`;
@@ -1400,9 +1361,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Animate ONLY when entering edit mode
     staggerCards(attributeDetailEl);
     animatePanel(attributeDetailEl);
-
-    const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
-    if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
 
     const objButtons = attributeDetailEl.querySelectorAll('button[data-object-id]');
     objButtons.forEach((btn) => {
@@ -1859,14 +1817,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
-    html += `
-      <nav class="breadcrumb">
-        <button type="button" class="breadcrumb-root" data-breadcrumb="attributes">Attributes</button>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">${escapeHtml(attribute.id)}</span>
-      </nav>
-    `;
-
     html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
     html += '<div class="card card-attribute-meta">';
 
@@ -1945,9 +1895,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderAttributeEditForm(id);
       });
     }
-
-    const rootBtn = attributeDetailEl.querySelector('button[data-breadcrumb="attributes"]');
-    if (rootBtn) rootBtn.addEventListener('click', showAttributesView);
 
     const objButtons = attributeDetailEl.querySelectorAll('button[data-object-id]');
     objButtons.forEach((btn) => {
