@@ -1543,7 +1543,15 @@ const ATTRIBUTE_EDIT_FIELDS = [
       btn.type = 'button';
       btn.className = 'list-item-button';
       btn.setAttribute('data-attr-id', attr.id);
-      btn.textContent = `${attr.id} – ${attr.label || ''}`;
+      const primary = attr.label || attr.id; // Field Name first
+      const secondary = attr.id;            // Name (ID) under it
+
+      btn.innerHTML = `
+        <span class="list-item-text">
+        <span class="list-item-primary">${escapeHtml(primary)}</span>
+        <span class="list-item-secondary">${escapeHtml(secondary)}</span>
+        </span>
+      `;
 
       btn.addEventListener('click', () => {
         showAttributesView();
@@ -1556,6 +1564,9 @@ const ATTRIBUTE_EDIT_FIELDS = [
 
     attributeListEl.innerHTML = '';
     attributeListEl.appendChild(list);
+
+    setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === lastSelectedAttributeId);
+
   }
 
   // ===========================
@@ -1842,13 +1853,16 @@ const ATTRIBUTE_EDIT_FIELDS = [
   let html = '';
 
   // Header
-  html += `<h2>${escapeHtml(attribute.id)}${attribute.label ? ` – ${escapeHtml(attribute.label)}` : ''}</h2>`;
+  html += `<h2>${escapeHtml(attribute.id)}</h2>`;
+
+  if (attribute.definition) {
+  html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition)}</p>`;
+  }
 
   // Meta card (updated field names + order)
   html += '<div class="card card-attribute-meta">';
 
   html += `<p><strong>Name:</strong> ${escapeHtml(attribute.id)}</p>`; // was Attribute Name
-  html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`; // moved up
   html += `<p><strong>Field Name:</strong> ${escapeHtml(attribute.label || '')}</p>`; // was Attribute Label
   html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`; // no change
 
