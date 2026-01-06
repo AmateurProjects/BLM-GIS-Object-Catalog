@@ -220,13 +220,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   ];
 
   // --- Edit Fields for Suggest Attribute Change functionality ---
-  const ATTRIBUTE_EDIT_FIELDS = [
-    { key: 'label', label: 'Attribute Label', type: 'text' },
-    { key: 'type', label: 'Attribute Type', type: 'text' },
-    { key: 'definition', label: 'Attribute Definition', type: 'textarea' },
-    { key: 'expected_value', label: 'Example Expected Value', type: 'text' },
-    { key: 'values', label: 'Allowed values (JSON array) — for enumerated types', type: 'json' },
-  ];
+const ATTRIBUTE_EDIT_FIELDS = [
+  { key: 'label', label: 'Field Name', type: 'text' }, // was "Attribute Label"
+  { key: 'definition', label: 'Definition', type: 'textarea' }, // moved up + renamed
+  { key: 'type', label: 'Attribute Type', type: 'text' }, // no change
+  { key: 'expected_value', label: 'Expected Input', type: 'text' }, // was "Example Expected Value"
+
+  // Enumerations
+  { key: 'values', label: 'Allowed values (JSON array) — for enumerated types', type: 'json' },
+
+  // New fields
+  { key: 'status', label: 'Status', type: 'text' },
+  { key: 'data_standard', label: 'Data Standard', type: 'text' },
+  { key: 'notes', label: 'Notes', type: 'textarea' },
+];
 
   // --- Helpers (shared) ---
   function compactObject(obj) {
@@ -756,7 +763,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           const definition = getVal('definition');
           const label = getVal('label');
           const expectedValueRaw = getVal('expected_value');
+          const status = getVal('status');
+          const dataStandard = getVal('data_standard');
           notes = getVal('notes');
+
 
           let values = undefined;
           if (type === 'enumerated') {
@@ -784,6 +794,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             definition,
             expected_value: expectedValueRaw || undefined,
             values,
+            status: status || undefined,
+            data_standard: dataStandard || undefined,
+            notes: notes || undefined,
           });
 
           const exists = Catalog.getAttributeById(id);
@@ -1713,13 +1726,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     html += '<h3>Attribute details</h3>';
     html += `<h4>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h4>`;
 
-    // ✅ "field" removed everywhere
-    html += `<p><strong>Attribute Name:</strong> ${escapeHtml(attribute.id)}</p>`;
-    html += `<p><strong>Attribute Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
+    html += `<p><strong>Name:</strong> ${escapeHtml(attribute.id)}</p>`;
+    html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
+    html += `<p><strong>Field Name:</strong> ${escapeHtml(attribute.label || '')}</p>`;
     html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
-    html += `<p><strong>Attribute Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
+    
     if (attribute.expected_value !== undefined) {
-      html += `<p><strong>Example Expected Value:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
+      html += `<p><strong>Expected Input:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
+    }
+
+    if (attribute.status) {
+      html += `<p><strong>Status:</strong> ${escapeHtml(attribute.status)}</p>`;
+    } 
+
+    if (attribute.data_standard) {
+      html += `<p><strong>Data Standard:</strong> <a href="${attribute.data_standard}" target="_blank" rel="noopener">${escapeHtml(
+        attribute.data_standard
+      )}</a></p>`;
+    }
+
+    if (attribute.notes) {
+      html += `<p><strong>Notes:</strong> ${escapeHtml(attribute.notes)}</p>`;
     }
 
     if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
@@ -1799,65 +1826,135 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderAttributeDetail(attrId) {
-    if (!attributeDetailEl) return;
+  if (!attributeDetailEl) return;
 
-    // Browsing existing attributes should not animate.
-    attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
+  // Browsing existing attributes should not animate.
+  attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
 
-    setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
+  setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
 
-    const attribute = Catalog.getAttributeById(attrId);
-    if (!attribute) {
-      attributeDetailEl.classList.remove('hidden');
-      attributeDetailEl.innerHTML = `<p>Attribute not found: ${escapeHtml(attrId)}</p>`;
-      return;
-    }
+  const attribute = Catalog.getAttributeById(attrId);
+  if (!attribute) {
+    attributeDetailEl.classList.remove('hidden');
+    attributeDetailEl.innerHTML = `<p>Attribute not found: ${escapeHtml(attrId)}</p>`;
+    return;
+  }
 
-    const objects = Catalog.getObjectsForAttribute(attrId);
+  const objects = Catalog.getObjectsForAttribute(attrId);
 
-    let html = '';
+  let html = '';
 
-    html += `<h2>${escapeHtml(attribute.id)} – ${escapeHtml(attribute.label || '')}</h2>`;
-    html += '<div class="card card-attribute-meta">';
+  // Header
+  html += `<h2>${escapeHtml(attribute.id)}${attribute.label ? ` – ${escapeHtml(attribute.label)}` : ''}</h2>`;
 
-    // ✅ "field" removed everywhere
-    html += `<p><strong>Attribute Name:</strong> ${escapeHtml(attribute.id)}</p>`;
-    html += `<p><strong>Attribute Label:</strong> ${escapeHtml(attribute.label || '')}</p>`;
-    html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
-    html += `<p><strong>Attribute Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
-    if (attribute.expected_value !== undefined) {
-      html += `<p><strong>Example Expected Value:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
-    }
+  // Meta card (updated field names + order)
+  html += '<div class="card card-attribute-meta">';
+
+  html += `<p><strong>Name:</strong> ${escapeHtml(attribute.id)}</p>`; // was Attribute Name
+  html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`; // moved up
+  html += `<p><strong>Field Name:</strong> ${escapeHtml(attribute.label || '')}</p>`; // was Attribute Label
+  html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`; // no change
+
+  if (attribute.expected_value !== undefined) {
+    html += `<p><strong>Expected Input:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
+  }
+
+  if (attribute.status) {
+    html += `<p><strong>Status:</strong> ${escapeHtml(attribute.status)}</p>`;
+  }
+
+  if (attribute.data_standard) {
+    html += `<p><strong>Data Standard:</strong> <a href="${attribute.data_standard}" target="_blank" rel="noopener">${escapeHtml(
+      attribute.data_standard
+    )}</a></p>`;
+  }
+
+  if (attribute.notes) {
+    html += `<p><strong>Notes:</strong> ${escapeHtml(attribute.notes)}</p>`;
+  }
+
+  html += '</div>';
+
+  // Enumerated values (unchanged)
+  if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
+    html += '<div class="card card-enumerated">';
+    html += '<h3>Allowed values</h3>';
+    html += `
+      <table>
+        <thead>
+          <tr><th>Code</th><th>Label</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+    `;
+    attribute.values.forEach((v) => {
+      const code = v.code !== undefined ? String(v.code) : '';
+      const label = v.label || '';
+      const desc = v.description || '';
+      html += `
+        <tr>
+          <td>${escapeHtml(code)}</td>
+          <td>${escapeHtml(label)}</td>
+          <td>${escapeHtml(desc)}</td>
+        </tr>
+      `;
+    });
+    html += `
+        </tbody>
+      </table>
+    `;
     html += '</div>';
+  }
 
-    if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
-      html += '<div class="card card-enumerated">';
-      html += '<h3>Allowed values</h3>';
+  // Objects using attribute (unchanged)
+  html += '<div class="card card-attribute-objects">';
+  html += '<h3>Objects using this attribute</h3>';
+  if (!objects.length) {
+    html += '<p>No objects currently reference this attribute.</p>';
+  } else {
+    html += '<ul>';
+    objects.forEach((obj) => {
       html += `
-        <table>
-          <thead>
-            <tr><th>Code</th><th>Label</th><th>Description</th></tr>
-          </thead>
-          <tbody>
-      `;
-      attribute.values.forEach((v) => {
-        const code = v.code !== undefined ? String(v.code) : '';
-        const label = v.label || '';
-        const desc = v.description || '';
-        html += `
-          <tr>
-            <td>${escapeHtml(code)}</td>
-            <td>${escapeHtml(label)}</td>
-            <td>${escapeHtml(desc)}</td>
-          </tr>
-        `;
-      });
-      html += `
-          </tbody>
-        </table>
-      `;
-      html += '</div>';
-    }
+        <li>
+          <button type="button" class="link-button" data-object-id="${escapeHtml(obj.id)}">
+            ${escapeHtml(obj.title || obj.id)}
+          </button>
+        </li>`;
+    });
+    html += '</ul>';
+  }
+  html += '</div>';
+
+  // Actions (unchanged)
+  html += `
+    <div class="card card-actions">
+      <button type="button" class="suggest-button" data-edit-attribute="${escapeHtml(attribute.id)}">
+        Suggest a change to this attribute
+      </button>
+    </div>
+  `;
+
+  attributeDetailEl.innerHTML = html;
+  attributeDetailEl.classList.remove('hidden');
+
+  const editAttrBtn = attributeDetailEl.querySelector('button[data-edit-attribute]');
+  if (editAttrBtn) {
+    editAttrBtn.addEventListener('click', () => {
+      const id = editAttrBtn.getAttribute('data-edit-attribute');
+      renderAttributeEditForm(id);
+    });
+  }
+
+  const objButtons = attributeDetailEl.querySelectorAll('button[data-object-id]');
+  objButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const objId = btn.getAttribute('data-object-id');
+      showObjectsView();
+      lastSelectedObjectId = objId;
+      renderObjectDetail(objId);
+    });
+  });
+}
+
 
     html += '<div class="card card-attribute-objects">';
     html += '<h3>Objects using this attribute</h3>';
