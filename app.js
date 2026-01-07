@@ -192,6 +192,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Track last viewed object so "Cancel" can return you to where you were.
   let lastSelectedObjectId = null;
 
+  // Track last viewed attribute so list highlight + "Cancel" behave predictably.
+  let lastSelectedAttributeId = null;
+
   // --- Edit Fields for Suggest Object Change functionality ---
   // NOTE: OBJECT_EDIT_FIELDS drives BOTH "Suggest change" and "Submit new object" pages
   const OBJECT_EDIT_FIELDS = [
@@ -1839,6 +1842,7 @@ const ATTRIBUTE_EDIT_FIELDS = [
   // Browsing existing attributes should not animate.
   attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
 
+  lastSelectedAttributeId = attrId;
   setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
 
   const attribute = Catalog.getAttributeById(attrId);
