@@ -1051,43 +1051,65 @@ const ATTRIBUTE_EDIT_FIELDS = [
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
-  // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
+    // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
   const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]');
   const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');
   const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
+  const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
 
-  // Track whether the user has manually edited the ID
-  let userTouchedId = false;
+  // We track the last value we auto-generated.
+  // If the user changes the ID to something else, we stop auto-overwriting.
+  let lastAutoId = '';
 
-  if (idInput) {
-    // If there is already a prefilled ID, consider it "touched"
-    if (String(idInput.value || '').trim()) userTouchedId = true;
-
-    idInput.addEventListener('input', () => {
-      userTouchedId = true;
-    });
-  }
-
-  function maybeSuggestId() {
-    if (!idInput) return;
-    if (userTouchedId) return; // don't overwrite user choice
-
-    // Build a small "draft" snapshot from current fields
+  function computeSuggestedId() {
     const draftNow = {
       title: nameInput ? nameInput.value : '',
       objname: objnameInput ? objnameInput.value : '',
-      description: objectDetailEl.querySelector('[data-new-obj-key="description"]')?.value || '',
+      description: descInput ? descInput.value : '',
     };
-
-    const suggested = suggestObjectIdFromDraft(draftNow);
-    if (suggested) idInput.value = suggested;
+    return suggestObjectIdFromDraft(draftNow);
   }
 
-  if (nameInput) nameInput.addEventListener('input', maybeSuggestId);
-  if (objnameInput) objnameInput.addEventListener('input', maybeSuggestId);
+  function maybeSuggestId(force = false) {
+    if (!idInput) return;
 
-  // Initial suggestion on first render (only if ID is blank)
-  maybeSuggestId();
+    const suggested = computeSuggestedId();
+    if (!suggested) return;
+
+    const current = String(idInput.value || '').trim();
+
+    // Only write the ID if:
+    // - it's empty, OR
+    // - it still equals our last auto value (meaning user hasn't overridden it), OR
+    // - force is true (optional future use)
+    const canOverwrite =
+      force || current === '' || (lastAutoId && current === lastAutoId);
+
+    if (canOverwrite) {
+      idInput.value = suggested;
+      lastAutoId = suggested;
+    }
+  }
+
+  // If the user types into the ID box and it no longer matches lastAutoId, we stop auto-updating.
+  if (idInput) {
+    idInput.addEventListener('input', () => {
+      const current = String(idInput.value || '').trim();
+      if (lastAutoId && current !== lastAutoId) {
+        // user override detected; lock out further autosuggest
+        lastAutoId = ''; // clearing means "manual mode"
+      }
+    });
+  }
+
+  // Update suggestion while the user edits Name/ObjName/Definition
+  if (nameInput) nameInput.addEventListener('input', () => maybeSuggestId(false));
+  if (objnameInput) objnameInput.addEventListener('input', () => maybeSuggestId(false));
+  if (descInput) descInput.addEventListener('input', () => maybeSuggestId(false));
+
+  // Initial suggestion on first render
+  maybeSuggestId(false);
+
 
 
   // ---------- Attributes UI wiring (UNCHANGED) ----------
