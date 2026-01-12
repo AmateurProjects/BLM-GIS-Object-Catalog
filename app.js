@@ -1051,6 +1051,45 @@ const ATTRIBUTE_EDIT_FIELDS = [
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
+  // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
+  const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]');
+  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');
+  const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
+
+  // Track whether the user has manually edited the ID
+  let userTouchedId = false;
+
+  if (idInput) {
+    // If there is already a prefilled ID, consider it "touched"
+    if (String(idInput.value || '').trim()) userTouchedId = true;
+
+    idInput.addEventListener('input', () => {
+      userTouchedId = true;
+    });
+  }
+
+  function maybeSuggestId() {
+    if (!idInput) return;
+    if (userTouchedId) return; // don't overwrite user choice
+
+    // Build a small "draft" snapshot from current fields
+    const draftNow = {
+      title: nameInput ? nameInput.value : '',
+      objname: objnameInput ? objnameInput.value : '',
+      description: objectDetailEl.querySelector('[data-new-obj-key="description"]')?.value || '',
+    };
+
+    const suggested = suggestObjectIdFromDraft(draftNow);
+    if (suggested) idInput.value = suggested;
+  }
+
+  if (nameInput) nameInput.addEventListener('input', maybeSuggestId);
+  if (objnameInput) objnameInput.addEventListener('input', maybeSuggestId);
+
+  // Initial suggestion on first render (only if ID is blank)
+  maybeSuggestId();
+
+
   // ---------- Attributes UI wiring (UNCHANGED) ----------
   const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
   const existingAttrInput = objectDetailEl.querySelector('[data-new-obj-existing-attr-input]');
@@ -2227,6 +2266,40 @@ function mapAttributeToArcGisAttributeSpec(attr) {
     default:
       return { type: 'TEXT', length: 255 };
   }
+}
+
+function slugifyObjectId(raw) {
+  // Make a safe catalog ID like: blm_rmp_boundaries
+  // - lowercase
+  // - convert spaces/dashes to underscores
+  // - remove non-alphanumerics (keep underscores)
+  // - collapse multiple underscores
+  // - trim underscores
+  return String(raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\.(?=[a-z0-9])/g, '_')          // dots -> underscores (e.g., SDE.NAME)
+    .replace(/[\s\-\/]+/g, '_')              // spaces/dashes/slashes -> underscores
+    .replace(/[^a-z0-9_]/g, '')              // remove everything else
+    .replace(/_+/g, '_')                     // collapse underscores
+    .replace(/^_+|_+$/g, '');                // trim underscores
+}
+
+function suggestObjectIdFromDraft(draft) {
+  // Prefer Name (title). Fallback to objname. Fallback to description.
+  const name = (draft && draft.title) || '';
+  const objname = (draft && draft.objname) || '';
+  const desc = (draft && draft.description) || '';
+
+  // If objname looks like "SDE.FOO_BAR", take the last token
+  let base = name;
+  if (!base && objname) {
+    const parts = String(objname).split('.');
+    base = parts[parts.length - 1] || objname;
+  }
+  if (!base) base = desc;
+
+  return slugifyObjectId(base);
 }
 
 function downloadTextFile(content, filename) {
