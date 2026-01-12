@@ -833,438 +833,526 @@ const ATTRIBUTE_EDIT_FIELDS = [
     }
   }
 
+  
   function renderNewObjectCreateForm(prefill = {}) {
-    if (!objectDetailEl) return;
+  if (!objectDetailEl) return;
 
-    const NEW_OBJECT_PLACEHOLDERS =
-      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_object) ||
-      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) ||
-      {};
+  const NEW_OBJECT_PLACEHOLDERS =
+    (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_object) ||
+    (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) ||
+    {};
 
-    function placeholderFor(key, fallback = '') {
-      return escapeHtml(NEW_OBJECT_PLACEHOLDERS[key] || fallback || '');
+  function placeholderFor(key, fallback = '') {
+    return escapeHtml(NEW_OBJECT_PLACEHOLDERS[key] || fallback || '');
+  }
+
+  const draft = {
+    // required
+    id: '',
+    // object-page fields
+    title: '',
+    description: '',
+    objname: '',
+    geometry_type: '',
+    topics: [],
+    update_frequency: '',
+    status: '',
+    access_level: '',
+    data_standard: '',
+    notes: '',
+    // attribute selection/creation
+    attribute_ids: [],
+    new_attributes: [],
+    ...deepClone(prefill || {}),
+  };
+
+  let html = '';
+
+  // Header (matches object page shape)
+  html += `<h2>Submit a new object</h2>`;
+  html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
+
+  // Actions (same pattern as your other create/edit pages)
+  html += `<div class="card card-meta" id="newObjectActionsCard">`;
+  html += `
+    <div class="object-edit-actions">
+      <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
+      <button type="button" class="btn primary" data-new-obj-submit>Submit suggestion</button>
+    </div>
+  `;
+  html += `</div>`;
+
+  // Definition (editable) – matches object page label "Definition"
+  // We'll render a top "Definition" textarea (as the object page shows definition above the meta card).
+  html += `
+    <div class="object-edit-row" style="margin-top:0.5rem;">
+      <label class="object-edit-label">Object ID (required)</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="id"
+             placeholder="${placeholderFor('id', 'e.g., blm_rmp_boundaries')}"
+             value="${escapeHtml(draft.id || '')}" />
+    </div>
+  `;
+
+  // Object page: Name is displayed in the meta card; here it's editable.
+  // Object page: Definition appears above the card; keep that placement, but editable.
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Definition:</label>
+      <textarea class="object-edit-input" data-new-obj-key="description"
+                placeholder="${placeholderFor('description', 'short definition of the object')}">${escapeHtml(
+    draft.description || ''
+  )}</textarea>
+    </div>
+  `;
+
+  // Meta card (matches object detail ordering + field names)
+  html += `<div class="card card-meta" id="newObjectMetaCard">`;
+
+  // Name
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Name:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="title"
+             placeholder="${placeholderFor('title', 'display name (if blank, UI will use ID)')}"
+             value="${escapeHtml(draft.title || '')}" />
+    </div>
+  `;
+
+  // Database Object Name
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Database Object Name:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="objname"
+             placeholder="${placeholderFor('objname', 'e.g., SDE.BLM_RMP_BOUNDARIES')}"
+             value="${escapeHtml(draft.objname || '')}" />
+    </div>
+  `;
+
+  // Geometry Type
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Geometry Type:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="geometry_type"
+             placeholder="${placeholderFor('geometry_type', 'POINT / POLYLINE / POLYGON / TABLE')}"
+             value="${escapeHtml(draft.geometry_type || '')}" />
+    </div>
+  `;
+
+  // Topics (same pill concept on object page; here editable CSV)
+  const topicsVal = Array.isArray(draft.topics) ? draft.topics.join(', ') : String(draft.topics || '');
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Topics:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="topics"
+             placeholder="${placeholderFor('topics', 'comma-separated topics')}"
+             value="${escapeHtml(topicsVal)}" />
+    </div>
+  `;
+
+  // Update Frequency
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Update Frequency:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="update_frequency"
+             placeholder="${placeholderFor('update_frequency', '')}"
+             value="${escapeHtml(draft.update_frequency || '')}" />
+    </div>
+  `;
+
+  // Status
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Status:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="status"
+             placeholder="${placeholderFor('status', '')}"
+             value="${escapeHtml(draft.status || '')}" />
+    </div>
+  `;
+
+  // Access Level
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Access Level:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="access_level"
+             placeholder="${placeholderFor('access_level', '')}"
+             value="${escapeHtml(draft.access_level || '')}" />
+    </div>
+  `;
+
+  // Data Standard (object page shows a link if present; here it’s an editable URL)
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Data Standard:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="data_standard"
+             placeholder="${placeholderFor('data_standard', 'https://...')}"
+             value="${escapeHtml(draft.data_standard || '')}" />
+    </div>
+  `;
+
+  // Notes
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Notes:</label>
+      <textarea class="object-edit-input" data-new-obj-key="notes"
+                placeholder="${placeholderFor('notes', '')}">${escapeHtml(draft.notes || '')}</textarea>
+    </div>
+  `;
+
+  html += `</div>`; // end meta card
+
+  // ---------------------------
+  // Attributes section (existing + new) — UNCHANGED
+  // ---------------------------
+  const attrOptions = (allAttributes || [])
+    .map((a) => {
+      const id = a.id || '';
+      const label = a.label ? ` — ${a.label}` : '';
+      return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
+    })
+    .join('');
+
+  html += `
+    <div class="card card-meta" id="newObjectAttributesCard">
+      <h3>Attributes</h3>
+      <p class="modal-help" style="margin-top:0.25rem;">
+        Add existing attributes, or create new ones inline. New attributes will be included in the GitHub issue.
+      </p>
+
+      <div class="object-edit-row">
+        <label class="object-edit-label">Add existing attribute (search by ID)</label>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <input class="object-edit-input" style="flex:1;" type="text"
+            list="existingAttributesDatalist"
+            data-new-obj-existing-attr-input
+            placeholder="Start typing an attribute ID..." />
+          <button type="button" class="btn" data-new-obj-add-existing-attr>Add</button>
+        </div>
+        <datalist id="existingAttributesDatalist">
+          ${attrOptions}
+        </datalist>
+      </div>
+
+      <div class="object-edit-row">
+        <label class="object-edit-label">Selected attributes</label>
+        <div data-new-obj-selected-attrs style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
+      </div>
+
+      <div class="object-edit-row">
+        <label class="object-edit-label">Create new attribute</label>
+        <div>
+          <button type="button" class="btn" data-new-obj-add-new-attr>+ Add new attribute</button>
+        </div>
+      </div>
+
+      <div data-new-obj-new-attrs></div>
+    </div>
+  `;
+
+  objectDetailEl.innerHTML = html;
+  objectDetailEl.classList.remove('hidden');
+
+  // ---------- Attributes UI wiring (UNCHANGED) ----------
+  const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
+  const existingAttrInput = objectDetailEl.querySelector('[data-new-obj-existing-attr-input]');
+  const addExistingBtn = objectDetailEl.querySelector('button[data-new-obj-add-existing-attr]');
+  const addNewAttrBtn = objectDetailEl.querySelector('button[data-new-obj-add-new-attr]');
+  const newAttrsHost = objectDetailEl.querySelector('[data-new-obj-new-attrs]');
+
+  const NEW_ATTR_PLACEHOLDERS =
+    (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
+  function attrPlaceholderFor(key, fallback = '') {
+    return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
+  }
+
+  function renderSelectedAttrChips() {
+    if (!selectedAttrsEl) return;
+    const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
+    draft.attribute_ids = ids;
+
+    selectedAttrsEl.innerHTML = ids.length
+      ? ids
+          .map(
+            (id) => `
+              <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
+                <span>${escapeHtml(id)}</span>
+                <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(
+                  id
+                )}">✕</button>
+              </span>
+            `
+          )
+          .join('')
+      : `<span style="color: var(--text-muted);">None selected yet.</span>`;
+
+    selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const id = b.getAttribute('data-remove-attr-id');
+        draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
+        renderSelectedAttrChips();
+      });
+    });
+  }
+
+  function makeNewAttrDraft() {
+    return {
+      id: '',
+      label: '',
+      type: '',
+      definition: '',
+      expected_value: '',
+      values_json: '',
+      notes: '',
+    };
+  }
+
+  function renderNewAttributesForms() {
+    if (!newAttrsHost) return;
+    const arr = draft.new_attributes || [];
+    if (!arr.length) {
+      newAttrsHost.innerHTML = '';
+      return;
     }
 
-    const draft = {
-      id: '',
-      title: '',
-      description: '',
-      objname: '',
-      topics: [],
-      agency_owner: '',
-      office_owner: '',
-      contact_email: '',
-      geometry_type: '',
-      update_frequency: '',
-      status: '',
-      access_level: '',
-      public_web_service: '',
-      internal_web_service: '',
-      data_standard: '',
-      projection: '',
-      notes: '',
-      // attribute selection/creation
-      attribute_ids: [],
-      new_attributes: [],
-      ...deepClone(prefill || {}),
-    };
+    newAttrsHost.innerHTML = arr
+      .map((a, idx) => {
+        const safeIdx = String(idx);
+        return `
+          <div class="card" style="margin-top:0.75rem;" data-new-attr-card data-new-attr-idx="${safeIdx}">
+            <div class="object-edit-actions" style="margin-bottom:0.75rem;">
+              <strong style="align-self:center;">New attribute #${idx + 1}</strong>
+              <span style="flex:1"></span>
+              <button type="button" class="btn" data-remove-new-attr="${safeIdx}">Remove</button>
+            </div>
 
-    let html = '';
+            <div class="object-edit-row">
+              <label class="object-edit-label">Attribute ID (required)</label>
+              <input class="object-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="id"
+                placeholder="${attrPlaceholderFor('id', 'e.g., STATE_NAME')}"
+                value="${escapeHtml(a.id || '')}" />
+            </div>
 
-    html += `<h2>Submit a new object</h2>`;
-    html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
+            <div class="object-edit-row">
+              <label class="object-edit-label">Attribute Label</label>
+              <input class="object-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="label"
+                placeholder="${attrPlaceholderFor('label', 'Human-friendly label')}"
+                value="${escapeHtml(a.label || '')}" />
+            </div>
 
-    html += `<div class="card card-meta" id="newObjectEditCard">`;
-    html += `
-      <div class="object-edit-actions">
-        <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
-        <button type="button" class="btn primary" data-new-obj-submit>Submit suggestion</button>
-      </div>
-    `;
+            <div class="object-edit-row">
+              <label class="object-edit-label">Attribute Type</label>
+              <input class="object-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="type"
+                placeholder="${attrPlaceholderFor('type', 'string / integer / enumerated / ...')}"
+                value="${escapeHtml(a.type || '')}" />
+            </div>
 
-    html += `
-      <div class="object-edit-row">
-        <label class="object-edit-label">Object ID (required)</label>
-        <input class="object-edit-input" type="text" data-new-obj-key="id"
-               placeholder="${placeholderFor('id', 'e.g., blm_rmp_boundaries')}"
-               value="${escapeHtml(draft.id || '')}" />
-      </div>
-    `;
+            <div class="object-edit-row">
+              <label class="object-edit-label">Attribute Definition</label>
+              <textarea class="object-edit-input"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
+                placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(
+          a.definition || ''
+        )}</textarea>
+            </div>
 
-    OBJECT_EDIT_FIELDS.forEach((f) => {
-      const val = draft[f.key];
+            <div class="object-edit-row">
+              <label class="object-edit-label">Example Expected Value</label>
+              <input class="object-edit-input" type="text"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="expected_value"
+                placeholder="${attrPlaceholderFor('expected_value', 'Optional example')}"
+                value="${escapeHtml(a.expected_value || '')}" />
+            </div>
 
-      if (f.type === 'textarea') {
-        html += `
-          <div class="object-edit-row">
-            <label class="object-edit-label">${escapeHtml(f.label)}</label>
-            <textarea class="object-edit-input" data-new-obj-key="${escapeHtml(f.key)}"
-                      placeholder="${placeholderFor(f.key)}">${escapeHtml(val || '')}</textarea>
+            <div class="object-edit-row">
+              <label class="object-edit-label">Allowed values (JSON array) — only if type = enumerated</label>
+              <textarea class="object-edit-input"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
+                placeholder="${attrPlaceholderFor(
+                  'values',
+                  '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
+                )}">${escapeHtml(a.values_json || '')}</textarea>
+            </div>
+
+            <div class="object-edit-row">
+              <label class="object-edit-label">Notes / context (optional)</label>
+              <textarea class="object-edit-input"
+                data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
+                placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(
+          a.notes || ''
+        )}</textarea>
+            </div>
           </div>
         `;
-      } else {
-        const displayVal = f.type === 'csv' && Array.isArray(val) ? val.join(', ') : (val || '');
-        html += `
-          <div class="object-edit-row">
-            <label class="object-edit-label">${escapeHtml(f.label)}</label>
-            <input class="object-edit-input" type="text" data-new-obj-key="${escapeHtml(f.key)}"
-                   placeholder="${placeholderFor(f.key)}"
-                   value="${escapeHtml(displayVal)}" />
-         </div>
-        `;
-      }
-    });
-
-    html += `</div>`;
-
-    // ---------------------------
-    // Attributes section (existing + new)
-    // ---------------------------
-    const attrOptions = (allAttributes || [])
-      .map((a) => {
-        const id = a.id || '';
-        const label = a.label ? ` — ${a.label}` : '';
-        return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
       })
       .join('');
 
-    html += `
-      <div class="card card-meta" id="newObjectAttributesCard">
-        <h3>Attributes</h3>
-        <p class="modal-help" style="margin-top:0.25rem;">
-          Add existing attributes, or create new ones inline. New attributes will be included in the GitHub issue.
-        </p>
-
-        <div class="object-edit-row">
-          <label class="object-edit-label">Add existing attribute (search by ID)</label>
-          <div style="display:flex; gap:0.5rem; align-items:center;">
-            <input class="object-edit-input" style="flex:1;" type="text"
-              list="existingAttributesDatalist"
-              data-new-obj-existing-attr-input
-              placeholder="Start typing an attribute ID..." />
-            <button type="button" class="btn" data-new-obj-add-existing-attr>Add</button>
-          </div>
-          <datalist id="existingAttributesDatalist">
-            ${attrOptions}
-          </datalist>
-        </div>
-
-        <div class="object-edit-row">
-          <label class="object-edit-label">Selected attributes</label>
-          <div data-new-obj-selected-attrs style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
-        </div>
-
-        <div class="object-edit-row">
-          <label class="object-edit-label">Create new attribute</label>
-          <div>
-            <button type="button" class="btn" data-new-obj-add-new-attr>+ Add new attribute</button>
-          </div>
-        </div>
-
-        <div data-new-obj-new-attrs></div>
-      </div>
-    `;
-
-    objectDetailEl.innerHTML = html;
-    objectDetailEl.classList.remove('hidden');
-
-    // ---------- Attributes UI wiring ----------
-    const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
-    const existingAttrInput = objectDetailEl.querySelector('[data-new-obj-existing-attr-input]');
-    const addExistingBtn = objectDetailEl.querySelector('button[data-new-obj-add-existing-attr]');
-    const addNewAttrBtn = objectDetailEl.querySelector('button[data-new-obj-add-new-attr]');
-    const newAttrsHost = objectDetailEl.querySelector('[data-new-obj-new-attrs]');
-
-    const NEW_ATTR_PLACEHOLDERS =
-      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
-    function attrPlaceholderFor(key, fallback = '') {
-      return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
-    }
-
-    function renderSelectedAttrChips() {
-      if (!selectedAttrsEl) return;
-      const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
-      draft.attribute_ids = ids;
-
-      selectedAttrsEl.innerHTML = ids.length
-        ? ids
-            .map(
-              (id) => `
-                <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
-                  <span>${escapeHtml(id)}</span>
-                  <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(id)}">✕</button>
-                </span>
-              `
-            )
-            .join('')
-        : `<span style="color: var(--text-muted);">None selected yet.</span>`;
-
-      selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
-        b.addEventListener('click', () => {
-          const id = b.getAttribute('data-remove-attr-id');
-          draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
-          renderSelectedAttrChips();
-        });
+    newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const idx = Number(b.getAttribute('data-remove-new-attr'));
+        if (Number.isNaN(idx)) return;
+        draft.new_attributes.splice(idx, 1);
+        renderNewAttributesForms();
       });
-    }
+    });
+  }
 
-    function makeNewAttrDraft() {
-      return {
-        id: '',
-        label: '',
-        type: '',
-        definition: '',
-        expected_value: '',
-        values_json: '',
-        notes: '',
-      };
-    }
+  if (addExistingBtn) {
+    addExistingBtn.addEventListener('click', () => {
+      const raw = String(existingAttrInput?.value || '').trim();
+      if (!raw) return;
+      const exists = Catalog.getAttributeById(raw);
+      if (!exists) {
+        alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
+        return;
+      }
+      draft.attribute_ids = draft.attribute_ids || [];
+      if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
+      if (existingAttrInput) existingAttrInput.value = '';
+      renderSelectedAttrChips();
+    });
+  }
 
-    function renderNewAttributesForms() {
-      if (!newAttrsHost) return;
-      const arr = draft.new_attributes || [];
-      if (!arr.length) {
-        newAttrsHost.innerHTML = '';
+  if (addNewAttrBtn) {
+    addNewAttrBtn.addEventListener('click', () => {
+      draft.new_attributes = draft.new_attributes || [];
+      draft.new_attributes.push(makeNewAttrDraft());
+      renderNewAttributesForms();
+    });
+  }
+
+  renderSelectedAttrChips();
+  renderNewAttributesForms();
+
+  // Animate ONLY when entering create page
+  staggerCards(objectDetailEl);
+  animatePanel(objectDetailEl);
+
+  const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
+  if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
+
+  const submitBtn = objectDetailEl.querySelector('button[data-new-obj-submit]');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      const out = {};
+
+      // collect the object-page fields + required ID
+      const inputs = objectDetailEl.querySelectorAll('[data-new-obj-key]');
+      inputs.forEach((el) => {
+        const k = el.getAttribute('data-new-obj-key');
+        const raw = el.value;
+
+        if (k === 'topics') {
+          out[k] = parseCsvList(raw);
+          return;
+        }
+        out[k] = String(raw || '').trim();
+      });
+
+      const id = String(out.id || '').trim();
+      if (!id) {
+        alert('Object ID is required.');
         return;
       }
 
-      newAttrsHost.innerHTML = arr
-        .map((a, idx) => {
-          const safeIdx = String(idx);
-          return `
-            <div class="card" style="margin-top:0.75rem;" data-new-attr-card data-new-attr-idx="${safeIdx}">
-              <div class="object-edit-actions" style="margin-bottom:0.75rem;">
-                <strong style="align-self:center;">New attribute #${idx + 1}</strong>
-                <span style="flex:1"></span>
-                <button type="button" class="btn" data-remove-new-attr="${safeIdx}">Remove</button>
-              </div>
+      const exists = Catalog.getObjectById(id);
+      if (exists) {
+        const proceed = confirm(`An object with ID "${id}" already exists in the catalog. Open an issue anyway?`);
+        if (!proceed) return;
+      }
 
-              <div class="object-edit-row">
-                <label class="object-edit-label">Attribute ID (required)</label>
-                <input class="object-edit-input" type="text"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="id"
-                  placeholder="${attrPlaceholderFor('id', 'e.g., STATE_NAME')}"
-                  value="${escapeHtml(a.id || '')}" />
-              </div>
-
-              <div class="object-edit-row">
-                <label class="object-edit-label">Attribute Label</label>
-                <input class="object-edit-input" type="text"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="label"
-                  placeholder="${attrPlaceholderFor('label', 'Human-friendly label')}"
-                  value="${escapeHtml(a.label || '')}" />
-              </div>
-
-              <div class="object-edit-row">
-                <label class="object-edit-label">Attribute Type</label>
-                <input class="object-edit-input" type="text"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="type"
-                  placeholder="${attrPlaceholderFor('type', 'string / integer / enumerated / ...')}"
-                  value="${escapeHtml(a.type || '')}" />
-              </div>
-
-              <div class="object-edit-row">
-                <label class="object-edit-label">Attribute Definition</label>
-                <textarea class="object-edit-input"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
-                  placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(a.definition || '')}</textarea>
-              </div>
-
-              <div class="object-edit-row">
-                <label class="object-edit-label">Example Expected Value</label>
-                <input class="object-edit-input" type="text"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="expected_value"
-                  placeholder="${attrPlaceholderFor('expected_value', 'Optional example')}"
-                  value="${escapeHtml(a.expected_value || '')}" />
-              </div>
-
-              <div class="object-edit-row">
-                <label class="object-edit-label">Allowed values (JSON array) — only if type = enumerated</label>
-                <textarea class="object-edit-input"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
-                  placeholder="${attrPlaceholderFor(
-                    'values',
-                    '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
-                  )}">${escapeHtml(a.values_json || '')}</textarea>
-              </div>
-
-              <div class="object-edit-row">
-                <label class="object-edit-label">Notes / context (optional)</label>
-                <textarea class="object-edit-input"
-                  data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
-                  placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(a.notes || '')}</textarea>
-              </div>
-            </div>
-          `;
-        })
-        .join('');
-
-      newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
-        b.addEventListener('click', () => {
-          const idx = Number(b.getAttribute('data-remove-new-attr'));
-          if (Number.isNaN(idx)) return;
-          draft.new_attributes.splice(idx, 1);
-          renderNewAttributesForms();
-        });
+      // collect new attribute drafts from UI (UNCHANGED)
+      const newAttrInputs = objectDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
+      newAttrInputs.forEach((el) => {
+        const idx = Number(el.getAttribute('data-new-attr-idx'));
+        const k = el.getAttribute('data-new-attr-key');
+        if (Number.isNaN(idx) || !k) return;
+        if (!draft.new_attributes || !draft.new_attributes[idx]) return;
+        draft.new_attributes[idx][k] = String(el.value || '');
       });
-    }
 
-    if (addExistingBtn) {
-      addExistingBtn.addEventListener('click', () => {
-        const raw = String(existingAttrInput?.value || '').trim();
-        if (!raw) return;
-        const exists = Catalog.getAttributeById(raw);
-        if (!exists) {
-          alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
+      const newAttributesOut = [];
+      const newAttrIds = [];
+
+      for (let i = 0; i < (draft.new_attributes || []).length; i++) {
+        const a = draft.new_attributes[i];
+        const aid = String(a.id || '').trim();
+        if (!aid) {
+          alert(`New attribute #${i + 1} is missing an Attribute ID.`);
           return;
         }
-        draft.attribute_ids = draft.attribute_ids || [];
-        if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
-        if (existingAttrInput) existingAttrInput.value = '';
-        renderSelectedAttrChips();
-      });
-    }
-
-    if (addNewAttrBtn) {
-      addNewAttrBtn.addEventListener('click', () => {
-        draft.new_attributes = draft.new_attributes || [];
-        draft.new_attributes.push(makeNewAttrDraft());
-        renderNewAttributesForms();
-      });
-    }
-
-    renderSelectedAttrChips();
-    renderNewAttributesForms();
-
-    // Animate ONLY when entering create page
-    staggerCards(objectDetailEl);
-    animatePanel(objectDetailEl);
-
-    const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
-    if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
-
-    const submitBtn = objectDetailEl.querySelector('button[data-new-obj-submit]');
-    if (submitBtn) {
-      submitBtn.addEventListener('click', () => {
-        const inputs = objectDetailEl.querySelectorAll('[data-new-obj-key]');
-        const out = {};
-
-        inputs.forEach((el) => {
-          const k = el.getAttribute('data-new-obj-key');
-          const raw = el.value;
-
-          if (k === 'topics') {
-            out[k] = parseCsvList(raw);
-            return;
-          }
-          out[k] = String(raw || '').trim();
-        });
-
-        const id = String(out.id || '').trim();
-        if (!id) {
-          alert('Object ID is required.');
+        if (Catalog.getAttributeById(aid)) {
+          alert(`New attribute ID "${aid}" already exists. Add it as an existing attribute instead.`);
           return;
         }
 
-        const exists = Catalog.getObjectById(id);
-        if (exists) {
-          const proceed = confirm(`An object with ID "${id}" already exists in the catalog. Open an issue anyway?`);
-          if (!proceed) return;
-        }
-
-        // collect new attribute drafts from UI
-        const newAttrInputs = objectDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
-        newAttrInputs.forEach((el) => {
-          const idx = Number(el.getAttribute('data-new-attr-idx'));
-          const k = el.getAttribute('data-new-attr-key');
-          if (Number.isNaN(idx) || !k) return;
-          if (!draft.new_attributes || !draft.new_attributes[idx]) return;
-          draft.new_attributes[idx][k] = String(el.value || '');
-        });
-
-        const newAttributesOut = [];
-        const newAttrIds = [];
-
-        for (let i = 0; i < (draft.new_attributes || []).length; i++) {
-          const a = draft.new_attributes[i];
-          const aid = String(a.id || '').trim();
-          if (!aid) {
-            alert(`New attribute #${i + 1} is missing an Attribute ID.`);
-            return;
-          }
-          if (Catalog.getAttributeById(aid)) {
-            alert(`New attribute ID "${aid}" already exists. Add it as an existing attribute instead.`);
-            return;
-          }
-
-          const type = String(a.type || '').trim();
-          let values = undefined;
-          if (type === 'enumerated') {
-            const rawVals = String(a.values_json || '').trim();
-            if (rawVals) {
-              const parsed = tryParseJson(rawVals);
-              if (parsed && parsed.__parse_error__) {
-                alert(`Allowed values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
-                return;
-              }
-              if (parsed && !Array.isArray(parsed)) {
-                alert(`Allowed values for "${aid}" must be a JSON array.`);
-                return;
-              }
-              values = parsed || [];
-            } else {
-              values = [];
+        const type = String(a.type || '').trim();
+        let values = undefined;
+        if (type === 'enumerated') {
+          const rawVals = String(a.values_json || '').trim();
+          if (rawVals) {
+            const parsed = tryParseJson(rawVals);
+            if (parsed && parsed.__parse_error__) {
+              alert(`Allowed values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
+              return;
             }
+            if (parsed && !Array.isArray(parsed)) {
+              alert(`Allowed values for "${aid}" must be a JSON array.`);
+              return;
+            }
+            values = parsed || [];
+          } else {
+            values = [];
           }
-
-          const attrObj = compactObject({
-            id: aid,
-            label: String(a.label || '').trim() || undefined,
-            type: type || undefined,
-            definition: String(a.definition || '').trim() || undefined,
-            expected_value: String(a.expected_value || '').trim() || undefined,
-            values,
-          });
-
-          newAttributesOut.push(attrObj);
-          newAttrIds.push(aid);
         }
 
-        const existingIds = Array.from(
-          new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
-        );
-        const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
-
-        const objectObj = compactObject({
-          id,
-          title: out.title,
-          description: out.description,
-          objname: out.objname,
-          geometry_type: out.geometry_type,
-          agency_owner: out.agency_owner,
-          office_owner: out.office_owner,
-          contact_email: out.contact_email,
-          topics: out.topics || [],
-          update_frequency: out.update_frequency,
-          status: out.status,
-          access_level: out.access_level,
-          public_web_service: out.public_web_service,
-          internal_web_service: out.internal_web_service,
-          data_standard: out.data_standard,
-          projection: out.projection,
-          notes: out.notes,
-          attribute_ids: combinedAttrIds.length ? combinedAttrIds : undefined,
+        const attrObj = compactObject({
+          id: aid,
+          label: String(a.label || '').trim() || undefined,
+          type: type || undefined,
+          definition: String(a.definition || '').trim() || undefined,
+          expected_value: String(a.expected_value || '').trim() || undefined,
+          values,
         });
 
-        const issueUrl = buildGithubIssueUrlForNewObject(objectObj, newAttributesOut);
+        newAttributesOut.push(attrObj);
+        newAttrIds.push(aid);
+      }
 
-        goBackToLastObjectOrList();
+      const existingIds = Array.from(
+        new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
+      );
+      const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
 
-        const w = window.open(issueUrl, '_blank', 'noopener');
-        if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
+      // Build object payload using ONLY the fields shown on the object page
+      const objectObj = compactObject({
+        id,
+        title: out.title, // Name
+        description: out.description, // Definition
+        objname: out.objname,
+        geometry_type: out.geometry_type,
+        topics: out.topics || [],
+        update_frequency: out.update_frequency,
+        status: out.status,
+        access_level: out.access_level,
+        data_standard: out.data_standard,
+        notes: out.notes,
+        attribute_ids: combinedAttrIds.length ? combinedAttrIds : undefined,
       });
-    }
+
+      const issueUrl = buildGithubIssueUrlForNewObject(objectObj, newAttributesOut);
+
+      goBackToLastObjectOrList();
+
+      const w = window.open(issueUrl, '_blank', 'noopener');
+      if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
+    });
   }
+}
+
+
+
 
   function renderAttributeEditForm(attrId) {
     if (!attributeDetailEl) return;
