@@ -882,14 +882,36 @@ const ATTRIBUTE_EDIT_FIELDS = [
   `;
   html += `</div>`;
 
-  // Definition (editable) – matches object page label "Definition"
-  // We'll render a top "Definition" textarea (as the object page shows definition above the meta card).
+  // --- Build a case-insensitive set of existing object IDs for live warnings ---
+  const existingObjectIds = new Set((allObjects || []).map((o) => String(o.id || '').trim().toLowerCase()));
+
+  // -----------------------------
+  // Name FIRST (swapped order)
+  // -----------------------------
   html += `
     <div class="object-edit-row" style="margin-top:0.5rem;">
-      <label class="object-edit-label">Object ID (required)</label>
+      <label class="object-edit-label">Name:</label>
+      <input class="object-edit-input" type="text" data-new-obj-key="title"
+             placeholder="${placeholderFor('title', 'display name (optional)')}"
+             value="${escapeHtml(draft.title || '')}" />
+    </div>
+  `;
+
+  // -----------------------------
+  // Object ID SECOND (auto-generated but editable)
+  // -----------------------------
+  html += `
+    <div class="object-edit-row">
+      <label class="object-edit-label">Object ID:</label>
       <input class="object-edit-input" type="text" data-new-obj-key="id"
-             placeholder="${placeholderFor('id', 'e.g., blm_rmp_boundaries')}"
+             placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
              value="${escapeHtml(draft.id || '')}" />
+      <div data-new-obj-id-hint style="margin-top:0.35rem; font-size:0.9rem; color:var(--text-muted);">
+        Object ID will be generated automatically from <strong>Name</strong>. You can edit it if you want.
+      </div>
+      <div data-new-obj-id-warning style="display:none; margin-top:0.35rem; font-size:0.9rem; color:#ff6b6b;">
+        ⚠️ This Object ID already exists in the catalog. Please edit it to make it unique.
+      </div>
     </div>
   `;
 
@@ -908,15 +930,6 @@ const ATTRIBUTE_EDIT_FIELDS = [
   // Meta card (matches object detail ordering + field names)
   html += `<div class="card card-meta" id="newObjectMetaCard">`;
 
-  // Name
-  html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Name:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="title"
-             placeholder="${placeholderFor('title', 'display name (if blank, UI will use ID)')}"
-             value="${escapeHtml(draft.title || '')}" />
-    </div>
-  `;
 
   // Database Object Name
   html += `
@@ -1057,6 +1070,32 @@ const ATTRIBUTE_EDIT_FIELDS = [
   const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
   const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
 
+  const idHintEl = objectDetailEl.querySelector('[data-new-obj-id-hint]');
+  const idWarnEl = objectDetailEl.querySelector('[data-new-obj-id-warning]');
+
+  function updateIdStatus() {
+    if (!idInput) return;
+    const idVal = String(idInput.value || '').trim().toLowerCase();
+    const exists = idVal && existingObjectIds.has(idVal);
+
+    if (idWarnEl) idWarnEl.style.display = exists ? '' : 'none';
+
+    // Optional: subtle hint update (keeps your message but can reflect the current state)
+    if (idHintEl) {
+      if (!idVal) {
+        idHintEl.innerHTML =
+          'Object ID will be generated automatically from <strong>Name</strong>. You can edit it if you want.';
+      } else if (exists) {
+        idHintEl.innerHTML =
+          'This Object ID is <strong>already used</strong>. Please adjust it to be unique.';
+      } else {
+        idHintEl.innerHTML =
+          'Looks good — Object ID is unique. (You can still edit it.)';
+      }
+    }
+  }
+
+
   // We track the last value we auto-generated.
   // If the user changes the ID to something else, we stop auto-overwriting.
   let lastAutoId = '';
@@ -1099,16 +1138,18 @@ const ATTRIBUTE_EDIT_FIELDS = [
         // user override detected; lock out further autosuggest
         lastAutoId = ''; // clearing means "manual mode"
       }
+      updateIdStatus();
     });
   }
 
   // Update suggestion while the user edits Name/ObjName/Definition
-  if (nameInput) nameInput.addEventListener('input', () => maybeSuggestId(false));
-  if (objnameInput) objnameInput.addEventListener('input', () => maybeSuggestId(false));
-  if (descInput) descInput.addEventListener('input', () => maybeSuggestId(false));
+  if (nameInput) nameInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
+  if (objnameInput) objnameInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
+  if (descInput) descInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
 
   // Initial suggestion on first render
   maybeSuggestId(false);
+  updateIdStatus();
 
 
 
@@ -1317,11 +1358,14 @@ const ATTRIBUTE_EDIT_FIELDS = [
         return;
       }
 
-      const exists = Catalog.getObjectById(id);
-      if (exists) {
-        const proceed = confirm(`An object with ID "${id}" already exists in the catalog. Open an issue anyway?`);
+        // Live warning check (case-insensitive, matches the UI warning)
+      if (existingObjectIds.has(id.toLowerCase())) {
+        // keeps your confirm behavior but ensures the user is explicitly warned even if they missed it
+        const proceed = confirm(`⚠️ Object ID "${id}" already exists in the catalog.\n\nDo you still want to open an issue?`);
         if (!proceed) return;
       }
+
+
 
       // collect new attribute drafts from UI (UNCHANGED)
       const newAttrInputs = objectDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
