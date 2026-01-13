@@ -1008,6 +1008,15 @@ textarea.object-edit-input {
   transform: none;
 }
 
+#newObjectCatalogIdCard strong {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+#newObjectCatalogIdCard .object-edit-input {
+  color: var(--text-muted);
+}
+
 /* ============================
    Reduced motion
    ============================ */
