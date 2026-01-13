@@ -1296,10 +1296,6 @@ function renderNewObjectCreateForm(prefill = {}) {
   renderSelectedAttrChips();
   renderNewAttributesForms();
 
-  // Animate ONLY when entering create page
-  staggerCards(objectDetailEl);
-  animatePanel(objectDetailEl);
-
   const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
   if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
 

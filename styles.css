@@ -820,12 +820,11 @@ textarea.object-edit-input {
 
 /* Option A: make inputs feel like "values" inside the meta card */
 .object-edit-inline {
-  width: auto;
-  min-width: 320px;
+  flex: 1 1 420px;     /* fill remaining row space */
+  min-width: 260px;    /* still readable when wrapping */
   max-width: 100%;
-  display: inline-block;
-  margin-left: 0.5rem;
-  vertical-align: middle;
+  display: block;      /* behave like a flex child */
+  margin-left: 0;      /* gap is handled by the flex row */
 }
 
 /* Make meta-card <p> rows align like your detail page label/value rhythm */
@@ -834,6 +833,12 @@ textarea.object-edit-input {
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+/* Ensure label has a consistent “left column” width */
+.card.card-meta p strong {
+  flex: 0 0 165px;
+  min-width: 165px;
 }
 
 /* Generic button helper used in edit pages */
@@ -859,6 +864,12 @@ textarea.object-edit-input {
   margin-top: 0.35rem;
   font-size: 0.95rem;
   line-height: 1.35rem;
+}
+
+/* Align hint/warning under the value column when the row is flex */
+.card.card-meta .form-hint,
+.card.card-meta .form-warning {
+  margin-left: 165px; /* matches the strong label width above */
 }
 
 .form-hint {
@@ -899,7 +910,20 @@ textarea.object-edit-input {
   .card-row .card-inline-attribute {
     flex: 1 1 auto;
   }
+
+  /* Option A2: let labels shrink naturally on small screens */
+  .card.card-meta p strong {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  /* Optional: remove indent on small screens */
+  .card.card-meta .form-hint,
+  .card.card-meta .form-warning {
+    margin-left: 0;
+  }
 }
+
 
 /* ============================
    Reduced motion
@@ -908,33 +932,3 @@ textarea.object-edit-input {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
-
-/* ============================
-   Option A (New Object page): inline field rhythm fixes
-   ============================ */
-
-/* Make label/value rows behave nicely in flex */
-.card.card-meta p strong {
-  flex: 0 0 165px;        /* consistent label column */
-  min-width: 165px;
-}
-
-/* Let the inline input actually take remaining space */
-.object-edit-inline {
-  flex: 1 1 420px;        /* grow, shrink, preferred width */
-  min-width: 260px;       /* prevents tiny input on wrap */
-  margin-left: 0;         /* gap is handled by flex row */
-}
-
-/* Improve alignment when rows wrap */
-.card.card-meta p {
-  align-items: flex-start; /* keeps labels aligned when textarea follows */
-}
-
-/* Keep the hint/warning visually tied to the Object ID row */
-.form-hint,
-.form-warning {
-  margin-left: 165px;      /* aligns under the value column */
-}
-
-@
