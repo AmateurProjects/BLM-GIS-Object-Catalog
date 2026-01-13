@@ -1091,6 +1091,83 @@ textarea.object-edit-input {
   grid-column: 1 / -1;
 }
 
+/* ============================
+   FIX: form hint/warning overflow + alignment in edit/create cards
+   (prevents trailing text beyond card + fixes odd button placement)
+   ============================ */
+
+/* 1) In form cards, DO NOT use the "165px" indent meant for <p><strong>...</strong> layouts */
+.card.card-meta .form-hint,
+.card.card-meta .form-warning,
+.card.card-attribute-meta .form-hint,
+.card.card-attribute-meta .form-warning {
+  margin-left: 0;            /* kill the paragraph-style indent */
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+/* 2) When hints/warnings are inside a grid row, force them into the value column */
+.object-edit-row .form-hint,
+.object-edit-row .form-warning {
+  grid-column: 2 / -1;
+  margin-left: 0;
+}
+
+/* 3) When hints/warnings are NOT wrapped in .object-edit-row (your objname warning is),
+      align them under the input column based on the grid label width (220px). */
+#newObjectMetaCard .form-hint,
+#newObjectMetaCard .form-warning,
+#newObjectCatalogIdCard .form-hint,
+#newObjectCatalogIdCard .form-warning {
+  padding-left: 220px;                 /* align under input column */
+  padding-right: 0;
+}
+
+/* If the viewport gets narrow, remove the left padding to avoid squeeze/cutoff */
+@media (max-width: 820px) {
+  #newObjectMetaCard .form-hint,
+  #newObjectMetaCard .form-warning,
+  #newObjectCatalogIdCard .form-hint,
+  #newObjectCatalogIdCard .form-warning {
+    padding-left: 0;
+  }
+}
+
+/* 4) Fix "Object ID" / inputs looking cut off: allow grid children to shrink */
+.object-edit-row {
+  width: 100%;
+}
+
+.object-edit-row > * {
+  min-width: 0;
+}
+
+.object-edit-input,
+.object-edit-inline {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 5) If your "Open existing object" button is placed directly after the warning,
+      align it under the input column too. */
+#newObjectMetaCard .form-warning + .btn,
+#newObjectMetaCard .form-warning + button.btn {
+  margin-left: 220px;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 820px) {
+  #newObjectMetaCard .form-warning + .btn,
+  #newObjectMetaCard .form-warning + button.btn {
+    margin-left: 0;
+  }
+}
+
+
 
 /* ============================
    Reduced motion
