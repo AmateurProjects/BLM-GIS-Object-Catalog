@@ -996,7 +996,17 @@ textarea.object-edit-input {
   flex: 1;
 }
 
+/* De-emphasize Catalog ID card */
+#newObjectCatalogIdCard {
+  background: rgba(255, 255, 255, 0.02);   /* darker than other cards */
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
 
+#newObjectCatalogIdCard:hover {
+  box-shadow: none;
+  transform: none;
+}
 
 /* ============================
    Reduced motion
