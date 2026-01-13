@@ -906,12 +906,14 @@ const ATTRIBUTE_EDIT_FIELDS = [
       <input class="object-edit-input" type="text" data-new-obj-key="id"
              placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
              value="${escapeHtml(draft.id || '')}" />
-      <div data-new-obj-id-hint style="margin-top:0.35rem; font-size:0.9rem; color:var(--text-muted);">
-        Object ID will be generated automatically from <strong>Name</strong>. You can edit it if you want.
+      
+      <div class="form-hint" data-new-obj-id-hint>
+        Object ID will be generated automatically from Name. Optionally, you can edit Object ID manually. This is used as a unique identifier for entries of this catalog.
       </div>
-      <div data-new-obj-id-warning style="display:none; margin-top:0.35rem; font-size:0.9rem; color:#ff6b6b;">
-        ⚠️ This Object ID already exists in the catalog. Please edit it to make it unique.
+      <div class="form-warning" data-new-obj-id-warning style="display:none;">
+        ⚠️ This Object ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
       </div>
+
     </div>
   `;
 
@@ -1073,26 +1075,19 @@ const ATTRIBUTE_EDIT_FIELDS = [
   const idHintEl = objectDetailEl.querySelector('[data-new-obj-id-hint]');
   const idWarnEl = objectDetailEl.querySelector('[data-new-obj-id-warning]');
 
+  const BASE_ID_HINT =
+    'Object ID will be generated automatically from Name. Optionally, you can edit Object ID manually. This is used as a unique identifier for entries of this catalog.';
+
   function updateIdStatus() {
     if (!idInput) return;
+
     const idVal = String(idInput.value || '').trim().toLowerCase();
     const exists = idVal && existingObjectIds.has(idVal);
 
     if (idWarnEl) idWarnEl.style.display = exists ? '' : 'none';
 
-    // Optional: subtle hint update (keeps your message but can reflect the current state)
-    if (idHintEl) {
-      if (!idVal) {
-        idHintEl.innerHTML =
-          'Object ID will be generated automatically from <strong>Name</strong>. You can edit it if you want.';
-      } else if (exists) {
-        idHintEl.innerHTML =
-          'This Object ID is <strong>already used</strong>. Please adjust it to be unique.';
-      } else {
-        idHintEl.innerHTML =
-          'Looks good — Object ID is unique. (You can still edit it.)';
-      }
-    }
+    // Keep the hint text consistent (per your requirement #1)
+    if (idHintEl) idHintEl.textContent = BASE_ID_HINT;
   }
 
 

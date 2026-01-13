@@ -790,11 +790,14 @@ code {
   margin-bottom: 10px;
 }
 
+/* Match detail panel label emphasis (like <strong>) */
 .object-edit-label {
-  color: var(--text-muted);
+  color: var(--text-main);
   padding-top: 6px;
+  font-weight: 600;
 }
 
+/* Inputs should feel like your cards */
 .object-edit-input {
   width: 100%;
   padding: 8px 10px;
@@ -807,6 +810,7 @@ code {
 .object-edit-input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(78, 163, 255, 0.18);
 }
 
 textarea.object-edit-input {
@@ -825,6 +829,26 @@ textarea.object-edit-input {
 
 .btn.primary {
   border-color: var(--accent);
+}
+
+/* ====== New Object: ID hint + warning layout ====== */
+.form-hint,
+.form-warning {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  line-height: 1.35rem;
+}
+
+.form-hint {
+  color: var(--text-muted);
+}
+
+.form-warning {
+  color: #ff6b6b;
 }
 
 /* Small-screen: keep edit forms usable */
