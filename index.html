@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <title>Bureau of Land Management: Object Catalog of the United States</title>
-  <meta name="description"
-    content="Enterprise geodatabase schema browser and documentation catalog for Bureau of Land Management database objects and attributes." />
+  <title>National Lands Data Catalog</title>
+  <meta
+    name="description"
+    content="Enterprise geodatabase schema browser and documentation catalog for database objects and attributes."
+  />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
   <header>
-    <!-- Change 1: New visible site title + stable id hook -->
-    <h1 id="siteTitle">Bureau of Land Management: Object Catalog of the United States</h1>
+    <h1 id="siteTitle">National Lands Data Catalog</h1>
 
-    <!-- Change 2: Buttons are already under the title; this keeps them left-aligned structurally -->
     <nav id="topNavTabs" aria-label="Primary navigation">
       <button id="objectsTab" class="tab-button active" type="button">Objects</button>
       <button id="attributesTab" class="tab-button" type="button">Attributes</button>
@@ -23,7 +22,6 @@
   </header>
 
   <main>
-    <!-- OBJECTS VIEW -->
     <section id="objectsView">
       <div class="sidebar">
         <div class="toolbar">
@@ -39,7 +37,6 @@
       <div id="objectDetail" class="detail-panel hidden"></div>
     </section>
 
-    <!-- ATTRIBUTES VIEW -->
     <section id="attributesView" class="hidden">
       <div class="sidebar">
         <div class="toolbar">
@@ -56,9 +53,6 @@
     </section>
   </main>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
-
 </html>
-
-<!-- forcing commit 7 -->

@@ -849,6 +849,17 @@ function renderNewObjectCreateForm(prefill = {}) {
     return escapeHtml(NEW_OBJECT_PLACEHOLDERS[key] || fallback || '');
   }
 
+  // --- Geometry normalization helpers (keeps dropdown values stable) ---
+  function normalizeGeometryType(raw) {
+    const g = String(raw || '').trim().toLowerCase();
+    if (!g) return '';
+    if (g === 'polygon' || g === 'area' || g === 'polygon/area') return 'polygon/area';
+    if (g === 'polyline' || g === 'line') return 'line';
+    if (g === 'point' || g === 'multipoint') return 'point';
+    if (g === 'table') return 'table';
+    return g;
+  }
+
   const draft = {
     // required
     id: '',
@@ -859,7 +870,8 @@ function renderNewObjectCreateForm(prefill = {}) {
     geometry_type: '',
     topics: [],
     update_frequency: '',
-    status: '',
+    // status is forced to "new" on submit new object
+    status: 'new',
     access_level: '',
     data_standard: '',
     notes: '',
@@ -869,57 +881,71 @@ function renderNewObjectCreateForm(prefill = {}) {
     ...deepClone(prefill || {}),
   };
 
+  // --- Case-insensitive maps for live warnings + navigation ---
+  const objectIdToObject = new Map(
+    (allObjects || [])
+      .filter((o) => o && o.id)
+      .map((o) => [String(o.id).trim().toLowerCase(), o])
+  );
+
+  const dbNameToObject = new Map(
+    (allObjects || [])
+      .filter((o) => o && o.objname)
+      .map((o) => [String(o.objname).trim().toLowerCase(), o])
+  );
+
+  const existingObjectIds = new Set(objectIdToObject.keys());
+  const existingDbObjNames = new Set(dbNameToObject.keys());
+
   let html = '';
 
-  // --- Build a case-insensitive set of existing object IDs for live warnings ---
-  const existingObjectIds = new Set((allObjects || []).map((o) => String(o.id || '').trim().toLowerCase()));
-
   // =========================================================
-  // HEADER CARD (boxed like other editable fields)
-  // - Change #1: "Name:" label, same font size as input
-  // - Change #2: helper text "Human-friendly object title"
-  // - Change #3: boxed header area
+  // HEADER CARD: Name + Definition (boxed like other fields)
   // =========================================================
   html += `
     <div class="card card-meta" id="newObjectHeaderCard">
-      <div class="object-title-edit">
-        <span class="object-title-label">Name:</span>
+      <div class="object-edit-row" style="margin-bottom:0.75rem;">
+        <label class="object-edit-label" style="font-size:1.2rem; font-weight:700; margin-bottom:0.35rem;">
+          Name:
+        </label>
+
         <input
-          class="object-title-input"
+          class="object-edit-input"
           type="text"
           data-new-obj-key="title"
-          placeholder="${escapeHtml('Human-friendly object title')}"
+          placeholder="${placeholderFor('title', 'Human-friendly object title')}"
           value="${escapeHtml(draft.title || '')}"
         />
+
+        <div class="form-hint" style="margin-top:0.35rem;">
+          Human-friendly object title
+        </div>
+      </div>
+
+      <div class="object-edit-row" style="margin-bottom:0;">
+        <label class="object-edit-label">Definition</label>
+        <textarea class="object-edit-input" data-new-obj-key="description"
+          placeholder="${placeholderFor('description', 'Short description of the object')}">${escapeHtml(
+            draft.description || ''
+          )}</textarea>
       </div>
     </div>
   `;
 
   // =========================================================
-  // DEFINITION CARD
-  // - Change #4: helper text "Short description of the object"
-  // =========================================================
-  html += `
-    <div class="card card-meta" id="newObjectDefinitionCard">
-      <p><strong>Definition:</strong></p>
-      <textarea class="object-edit-input" data-new-obj-key="description"
-        placeholder="${escapeHtml('Short description of the object')}">${escapeHtml(draft.description || '')}</textarea>
-    </div>
-  `;
-
-  // =========================================================
-  // CATALOG ID CARD (separate card)
-  // - Change #6: rename to "Catalog ID"
-  // - Change #7: new helper text
-  // - Change #8: put it in its own card ABOVE other meta fields
+  // CATALOG ID CARD (muted / optional)
   // =========================================================
   html += `
     <div class="card card-meta" id="newObjectCatalogIdCard">
-      <p><strong>Catalog ID:</strong>
+      <div class="object-edit-row" style="margin-bottom:0.5rem;">
+        <label class="object-edit-label" style="opacity:0.75;">
+          Catalog ID <span style="font-weight:400; opacity:0.75;">(optional)</span>
+        </label>
         <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="id"
           placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
-          value="${escapeHtml(draft.id || '')}" />
-      </p>
+          value="${escapeHtml(draft.id || '')}"
+          style="opacity:0.82;" />
+      </div>
 
       <div class="form-hint" data-new-obj-id-hint>
         Catalog ID is generated automatically from Name. Optionally, you may edit Catalog ID manually. This is used to maintain a unique identifier for each Catalog entry.
@@ -927,85 +953,118 @@ function renderNewObjectCreateForm(prefill = {}) {
 
       <div class="form-warning" data-new-obj-id-warning style="display:none;">
         ⚠️ This Catalog ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
+        <div style="margin-top:0.5rem;">
+          <button type="button" class="btn" data-new-obj-open-existing-by-id>
+            Open existing object
+          </button>
+        </div>
       </div>
     </div>
   `;
 
   // =========================================================
-  // META CARD (Database Object Name, Geometry Type, etc.)
-  // (Same content as before, minus the ID section)
+  // META CARD (Database objname, geometry, etc.)
   // =========================================================
   html += `<div class="card card-meta" id="newObjectMetaCard">`;
 
   // Database Object Name
   html += `
-    <p><strong>Database Object Name:</strong>
+    <div class="object-edit-row" style="margin-bottom:0.5rem;">
+      <label class="object-edit-label">Database Object Name</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="objname"
         placeholder="${placeholderFor('objname', 'e.g., SDE.BLM_RMP_BOUNDARIES')}"
         value="${escapeHtml(draft.objname || '')}" />
-    </p>
+    </div>
+
+    <div class="form-warning" data-new-obj-objname-warning style="display:none;">
+      ⚠️ This Database Object Name already exists in the catalog. Please suggest a change to the existing catalog object rather than submitting a duplicate.
+      <div style="margin-top:0.5rem;">
+        <button type="button" class="btn" data-new-obj-open-existing-by-objname>
+          Open existing object
+        </button>
+      </div>
+    </div>
   `;
 
-  // Geometry Type
+  // Geometry Type (validated select)
+  const geomVal = normalizeGeometryType(draft.geometry_type);
   html += `
-    <p><strong>Geometry Type:</strong>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="geometry_type"
-        placeholder="${placeholderFor('geometry_type', 'POINT / POLYLINE / POLYGON / TABLE')}"
-        value="${escapeHtml(draft.geometry_type || '')}" />
-    </p>
+    <div class="object-edit-row">
+      <label class="object-edit-label">Geometry Type</label>
+      <select class="object-edit-input object-edit-inline" data-new-obj-key="geometry_type">
+        <option value="" ${!geomVal ? 'selected' : ''}>Select…</option>
+        <option value="point" ${geomVal === 'point' ? 'selected' : ''}>point</option>
+        <option value="line" ${geomVal === 'line' ? 'selected' : ''}>line</option>
+        <option value="polygon/area" ${geomVal === 'polygon/area' ? 'selected' : ''}>polygon/area</option>
+        <option value="table" ${geomVal === 'table' ? 'selected' : ''}>table</option>
+      </select>
+    </div>
   `;
 
   // Topics (editable CSV)
   const topicsVal = Array.isArray(draft.topics) ? draft.topics.join(', ') : String(draft.topics || '');
   html += `
-    <p><strong>Topics:</strong>
+    <div class="object-edit-row">
+      <label class="object-edit-label">Topics</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="topics"
         placeholder="${placeholderFor('topics', 'comma-separated topics')}"
         value="${escapeHtml(topicsVal)}" />
-    </p>
+    </div>
   `;
 
   // Update Frequency
   html += `
-    <p><strong>Update Frequency:</strong>
+    <div class="object-edit-row">
+      <label class="object-edit-label">Update Frequency</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="update_frequency"
         placeholder="${placeholderFor('update_frequency', '')}"
         value="${escapeHtml(draft.update_frequency || '')}" />
-    </p>
+    </div>
   `;
 
-  // Status
+  // Status (fixed)
   html += `
-    <p><strong>Status:</strong>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="status"
-        placeholder="${placeholderFor('status', '')}"
-        value="${escapeHtml(draft.status || '')}" />
-    </p>
+    <div class="object-edit-row">
+      <label class="object-edit-label">Status</label>
+      <input class="object-edit-input object-edit-inline" type="text" value="new" readonly
+        style="opacity:0.75; cursor:not-allowed;" />
+    </div>
   `;
 
-  // Access Level
+  // Access Level (validated select)
+  const accessVal = String(draft.access_level || '').trim();
   html += `
-    <p><strong>Access Level:</strong>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="access_level"
-        placeholder="${placeholderFor('access_level', '')}"
-        value="${escapeHtml(draft.access_level || '')}" />
-    </p>
+    <div class="object-edit-row">
+      <label class="object-edit-label">Access Level</label>
+      <select class="object-edit-input object-edit-inline" data-new-obj-key="access_level">
+        <option value="" ${!accessVal ? 'selected' : ''}>Select…</option>
+        <option value="Data does not contain CUI" ${
+          accessVal === 'Data does not contain CUI' ? 'selected' : ''
+        }>Data does not contain CUI</option>
+        <option value="Data may contain CUI" ${
+          accessVal === 'Data may contain CUI' ? 'selected' : ''
+        }>Data may contain CUI</option>
+      </select>
+    </div>
   `;
 
   // Data Standard
   html += `
-    <p><strong>Data Standard:</strong>
+    <div class="object-edit-row">
+      <label class="object-edit-label">Data Standard</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="data_standard"
         placeholder="${placeholderFor('data_standard', 'https://...')}"
         value="${escapeHtml(draft.data_standard || '')}" />
-    </p>
+    </div>
   `;
 
   // Notes
   html += `
-    <p><strong>Notes:</strong></p>
-    <textarea class="object-edit-input" data-new-obj-key="notes"
-      placeholder="${placeholderFor('notes', '')}">${escapeHtml(draft.notes || '')}</textarea>
+    <div class="object-edit-row" style="margin-bottom:0;">
+      <label class="object-edit-label">Notes</label>
+      <textarea class="object-edit-input" data-new-obj-key="notes"
+        placeholder="${placeholderFor('notes', '')}">${escapeHtml(draft.notes || '')}</textarea>
+    </div>
   `;
 
   html += `</div>`; // end meta card
@@ -1059,8 +1118,7 @@ function renderNewObjectCreateForm(prefill = {}) {
   `;
 
   // =========================================================
-  // ACTIONS CARD MOVED TO BOTTOM
-  // - Change #5: move Cancel/Submit card to the very bottom
+  // ACTIONS CARD (MOVED TO BOTTOM)
   // =========================================================
   html += `
     <div class="card card-meta" id="newObjectActionsCard">
@@ -1072,6 +1130,7 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
+  // Render
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
@@ -1080,23 +1139,59 @@ function renderNewObjectCreateForm(prefill = {}) {
   animatePanel(objectDetailEl);
 
   // ---------- Auto-suggest Catalog ID from Name (and objname fallback) ----------
-  const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]');
-  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');
+  const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]'); // Catalog ID
+  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]'); // Name
   const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
   const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
 
   const idHintEl = objectDetailEl.querySelector('[data-new-obj-id-hint]');
   const idWarnEl = objectDetailEl.querySelector('[data-new-obj-id-warning]');
+  const objnameWarnEl = objectDetailEl.querySelector('[data-new-obj-objname-warning]');
 
   const BASE_ID_HINT =
     'Catalog ID is generated automatically from Name. Optionally, you may edit Catalog ID manually. This is used to maintain a unique identifier for each Catalog entry.';
 
   function updateIdStatus() {
     if (!idInput) return;
+
     const idVal = String(idInput.value || '').trim().toLowerCase();
     const exists = idVal && existingObjectIds.has(idVal);
+
     if (idWarnEl) idWarnEl.style.display = exists ? '' : 'none';
     if (idHintEl) idHintEl.textContent = BASE_ID_HINT;
+
+    const openBtn = objectDetailEl.querySelector('button[data-new-obj-open-existing-by-id]');
+    if (openBtn) {
+      openBtn.style.display = exists ? '' : 'none';
+      openBtn.onclick = () => {
+        const obj = objectIdToObject.get(idVal);
+        if (!obj) return;
+        showObjectsView();
+        lastSelectedObjectId = obj.id;
+        renderObjectDetail(obj.id);
+      };
+    }
+  }
+
+  function updateObjnameStatus() {
+    if (!objnameInput) return;
+
+    const v = String(objnameInput.value || '').trim().toLowerCase();
+    const exists = v && existingDbObjNames.has(v);
+
+    if (objnameWarnEl) objnameWarnEl.style.display = exists ? '' : 'none';
+
+    const openBtn = objectDetailEl.querySelector('button[data-new-obj-open-existing-by-objname]');
+    if (openBtn) {
+      openBtn.style.display = exists ? '' : 'none';
+      openBtn.onclick = () => {
+        const obj = dbNameToObject.get(v);
+        if (!obj) return;
+        showObjectsView();
+        lastSelectedObjectId = obj.id;
+        renderObjectDetail(obj.id);
+      };
+    }
   }
 
   let lastAutoId = '';
@@ -1127,9 +1222,7 @@ function renderNewObjectCreateForm(prefill = {}) {
   if (idInput) {
     idInput.addEventListener('input', () => {
       const current = String(idInput.value || '').trim();
-      if (lastAutoId && current !== lastAutoId) {
-        lastAutoId = ''; // manual mode
-      }
+      if (lastAutoId && current !== lastAutoId) lastAutoId = ''; // manual mode
       updateIdStatus();
     });
   }
@@ -1140,11 +1233,25 @@ function renderNewObjectCreateForm(prefill = {}) {
       updateIdStatus();
     });
   }
-  if (objnameInput) objnameInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
-  if (descInput) descInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
+
+  if (objnameInput) {
+    objnameInput.addEventListener('input', () => {
+      maybeSuggestId(false);
+      updateIdStatus();
+      updateObjnameStatus();
+    });
+  }
+
+  if (descInput) {
+    descInput.addEventListener('input', () => {
+      maybeSuggestId(false);
+      updateIdStatus();
+    });
+  }
 
   maybeSuggestId(false);
   updateIdStatus();
+  updateObjnameStatus();
 
   // ---------- Attributes UI wiring (UNCHANGED) ----------
   const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
@@ -1320,9 +1427,11 @@ function renderNewObjectCreateForm(prefill = {}) {
   renderSelectedAttrChips();
   renderNewAttributesForms();
 
+  // Cancel
   const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
   if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
 
+  // Submit
   const submitBtn = objectDetailEl.querySelector('button[data-new-obj-submit]');
   if (submitBtn) {
     submitBtn.addEventListener('click', () => {
@@ -1347,10 +1456,42 @@ function renderNewObjectCreateForm(prefill = {}) {
         return;
       }
 
-      // Live warning check (case-insensitive, matches the UI warning)
+      // Catalog ID duplicate check (case-insensitive)
       if (existingObjectIds.has(id.toLowerCase())) {
-        const proceed = confirm(`⚠️ Catalog ID "${id}" already exists in the catalog.\n\nDo you still want to open an issue?`);
+        const proceed = confirm(
+          `⚠️ Catalog ID "${id}" already exists in the catalog.\n\n` +
+            `You should suggest a change to the existing object instead of submitting a duplicate.\n\n` +
+            `Open an issue anyway?`
+        );
         if (!proceed) return;
+      }
+
+      // Database Object Name duplicate check (case-insensitive)
+      const objnameVal = String(out.objname || '').trim();
+      if (objnameVal && existingDbObjNames.has(objnameVal.toLowerCase())) {
+        const proceed = confirm(
+          `⚠️ Database Object Name "${objnameVal}" already exists in the catalog.\n\n` +
+            `You should suggest a change to the existing object instead of submitting a duplicate.\n\n` +
+            `Open an issue anyway?`
+        );
+        if (!proceed) return;
+      }
+
+      // Geometry type validation + normalization
+      const allowedGeom = new Set(['point', 'line', 'polygon/area', 'table']);
+      const geom = normalizeGeometryType(out.geometry_type);
+      if (!allowedGeom.has(geom)) {
+        alert('Geometry Type is required and must be one of: point, line, polygon/area, table.');
+        return;
+      }
+      out.geometry_type = geom;
+
+      // Access level validation
+      const allowedAccess = new Set(['Data does not contain CUI', 'Data may contain CUI']);
+      const access = String(out.access_level || '').trim();
+      if (!allowedAccess.has(access)) {
+        alert('Access Level is required and must be one of the two provided options.');
+        return;
       }
 
       // collect new attribute drafts from UI (UNCHANGED)
@@ -1425,7 +1566,7 @@ function renderNewObjectCreateForm(prefill = {}) {
         geometry_type: out.geometry_type,
         topics: out.topics || [],
         update_frequency: out.update_frequency,
-        status: out.status,
+        status: 'new', // FORCE
         access_level: out.access_level,
         data_standard: out.data_standard,
         notes: out.notes,

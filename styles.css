@@ -1017,6 +1017,81 @@ textarea.object-edit-input {
   color: var(--text-muted);
 }
 
+/* Ensure hint/warning text is left-aligned, wraps, and stays inside the card */
+#newObjectCatalogIdCard .form-hint,
+#newObjectCatalogIdCard .form-warning {
+  display: block;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* If your card content uses <p> with inline layout, force it to behave */
+#newObjectCatalogIdCard p {
+  margin-left: 0;
+  margin-right: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   New Object: Catalog ID card — align hint/warning to label,
+   prevent overflow, and keep the whole card "optional"
+   ========================================================= */
+
+#newObjectCatalogIdCard {
+  overflow: hidden; /* guarantees nothing visually bleeds past card edges */
+}
+
+/* Stop using the meta-card flex row layout in this card */
+#newObjectCatalogIdCard.card.card-meta p {
+  display: block;          /* overrides .card.card-meta p { display:flex } */
+  margin: 0;               /* remove default p margins */
+}
+
+/* Label on its own line, left aligned */
+#newObjectCatalogIdCard.card.card-meta p strong {
+  display: block;          /* overrides the "label column" behavior */
+  min-width: 0;            /* overrides min-width:165px */
+  flex: none;              /* defensive */
+  margin: 0 0 0.35rem 0;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Input should span full width, still muted/optional */
+#newObjectCatalogIdCard .object-edit-input {
+  width: 100%;
+  color: var(--text-muted);
+}
+
+/* Hint + warning: full-width, left aligned, inside card */
+#newObjectCatalogIdCard .form-hint,
+#newObjectCatalogIdCard .form-warning {
+  margin: 0.45rem 0 0 0 !important; /* nukes the global 165px indent */
+  padding: 0;                       /* no left/right padding that can push width */
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+
+/* If the hint/warning lives inside a grid row somewhere, keep it full width */
+#newObjectCatalogIdCard .object-edit-row .form-hint,
+#newObjectCatalogIdCard .object-edit-row .form-warning {
+  grid-column: 1 / -1;
+}
+
+
 /* ============================
    Reduced motion
    ============================ */
