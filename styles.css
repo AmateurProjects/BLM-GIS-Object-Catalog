@@ -818,6 +818,24 @@ textarea.object-edit-input {
   resize: vertical;
 }
 
+/* Option A: make inputs feel like "values" inside the meta card */
+.object-edit-inline {
+  width: auto;
+  min-width: 320px;
+  max-width: 100%;
+  display: inline-block;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Make meta-card <p> rows align like your detail page label/value rhythm */
+.card.card-meta p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* Generic button helper used in edit pages */
 .btn {
   padding: 8px 12px;
@@ -890,3 +908,33 @@ textarea.object-edit-input {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ============================
+   Option A (New Object page): inline field rhythm fixes
+   ============================ */
+
+/* Make label/value rows behave nicely in flex */
+.card.card-meta p strong {
+  flex: 0 0 165px;        /* consistent label column */
+  min-width: 165px;
+}
+
+/* Let the inline input actually take remaining space */
+.object-edit-inline {
+  flex: 1 1 420px;        /* grow, shrink, preferred width */
+  min-width: 260px;       /* prevents tiny input on wrap */
+  margin-left: 0;         /* gap is handled by flex row */
+}
+
+/* Improve alignment when rows wrap */
+.card.card-meta p {
+  align-items: flex-start; /* keeps labels aligned when textarea follows */
+}
+
+/* Keep the hint/warning visually tied to the Object ID row */
+.form-hint,
+.form-warning {
+  margin-left: 165px;      /* aligns under the value column */
+}
+
+@

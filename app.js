@@ -834,7 +834,7 @@ const ATTRIBUTE_EDIT_FIELDS = [
   }
 
   
-  function renderNewObjectCreateForm(prefill = {}) {
+function renderNewObjectCreateForm(prefill = {}) {
   if (!objectDetailEl) return;
 
   const NEW_OBJECT_PLACEHOLDERS =
@@ -868,155 +868,133 @@ const ATTRIBUTE_EDIT_FIELDS = [
 
   let html = '';
 
-  // Header (matches object page shape)
-  html += `<h2>Submit a new object</h2>`;
+  // Header (A2: live-updates to match Name)
+  html += `<h2 id="newObjectHeaderTitle">${escapeHtml(draft.title || 'New object')}</h2>`;
   html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
 
-  // Actions (same pattern as your other create/edit pages)
-  html += `<div class="card card-meta" id="newObjectActionsCard">`;
+  // Definition directly under header (mirrors object detail page)
   html += `
+    <p><strong>Definition:</strong></p>
+    <textarea class="object-edit-input" data-new-obj-key="description"
+      placeholder="${placeholderFor('description', 'short definition of the object')}">${escapeHtml(draft.description || '')}</textarea>
+  `;
+
+  // Actions (same pattern as your other create/edit pages)
+  html += `<div class="card card-meta" id="newObjectActionsCard">
     <div class="object-edit-actions">
       <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
       <button type="button" class="btn primary" data-new-obj-submit>Submit suggestion</button>
     </div>
-  `;
-  html += `</div>`;
+  </div>`;
 
   // --- Build a case-insensitive set of existing object IDs for live warnings ---
   const existingObjectIds = new Set((allObjects || []).map((o) => String(o.id || '').trim().toLowerCase()));
 
   // -----------------------------
-  // Name FIRST (swapped order)
+  // Meta card (Option A layout)
   // -----------------------------
-  html += `
-    <div class="object-edit-row" style="margin-top:0.5rem;">
-      <label class="object-edit-label">Name:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="title"
-             placeholder="${placeholderFor('title', 'display name (optional)')}"
-             value="${escapeHtml(draft.title || '')}" />
-    </div>
-  `;
-
-  // -----------------------------
-  // Object ID SECOND (auto-generated but editable)
-  // -----------------------------
-  html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Object ID:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="id"
-             placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
-             value="${escapeHtml(draft.id || '')}" />
-      
-      <div class="form-hint" data-new-obj-id-hint>
-        Object ID will be generated automatically from Name. Optionally, you can edit Object ID manually. This is used as a unique identifier for entries of this catalog.
-      </div>
-      <div class="form-warning" data-new-obj-id-warning style="display:none;">
-        ⚠️ This Object ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
-      </div>
-
-    </div>
-  `;
-
-  // Object page: Name is displayed in the meta card; here it's editable.
-  // Object page: Definition appears above the card; keep that placement, but editable.
-  html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Definition:</label>
-      <textarea class="object-edit-input" data-new-obj-key="description"
-                placeholder="${placeholderFor('description', 'short definition of the object')}">${escapeHtml(
-    draft.description || ''
-  )}</textarea>
-    </div>
-  `;
-
-  // Meta card (matches object detail ordering + field names)
   html += `<div class="card card-meta" id="newObjectMetaCard">`;
 
+  // Name
+  html += `
+    <p><strong>Name:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="title"
+        placeholder="${placeholderFor('title', 'display name (optional)')}"
+        value="${escapeHtml(draft.title || '')}" />
+    </p>
+  `;
+
+  // Object ID (keep your helper + warning + hooks)
+  html += `
+    <p><strong>Object ID:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="id"
+        placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
+        value="${escapeHtml(draft.id || '')}" />
+    </p>
+
+    <div class="form-hint" data-new-obj-id-hint>
+      Object ID will be generated automatically from Name. Optionally, you can edit Object ID manually. This is used as a unique identifier for entries of this catalog.
+    </div>
+    <div class="form-warning" data-new-obj-id-warning style="display:none;">
+      ⚠️ This Object ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
+    </div>
+  `;
 
   // Database Object Name
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Database Object Name:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="objname"
-             placeholder="${placeholderFor('objname', 'e.g., SDE.BLM_RMP_BOUNDARIES')}"
-             value="${escapeHtml(draft.objname || '')}" />
-    </div>
+    <p><strong>Database Object Name:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="objname"
+        placeholder="${placeholderFor('objname', 'e.g., SDE.BLM_RMP_BOUNDARIES')}"
+        value="${escapeHtml(draft.objname || '')}" />
+    </p>
   `;
 
   // Geometry Type
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Geometry Type:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="geometry_type"
-             placeholder="${placeholderFor('geometry_type', 'POINT / POLYLINE / POLYGON / TABLE')}"
-             value="${escapeHtml(draft.geometry_type || '')}" />
-    </div>
+    <p><strong>Geometry Type:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="geometry_type"
+        placeholder="${placeholderFor('geometry_type', 'POINT / POLYLINE / POLYGON / TABLE')}"
+        value="${escapeHtml(draft.geometry_type || '')}" />
+    </p>
   `;
 
-  // Topics (same pill concept on object page; here editable CSV)
+  // Topics (editable CSV)
   const topicsVal = Array.isArray(draft.topics) ? draft.topics.join(', ') : String(draft.topics || '');
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Topics:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="topics"
-             placeholder="${placeholderFor('topics', 'comma-separated topics')}"
-             value="${escapeHtml(topicsVal)}" />
-    </div>
+    <p><strong>Topics:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="topics"
+        placeholder="${placeholderFor('topics', 'comma-separated topics')}"
+        value="${escapeHtml(topicsVal)}" />
+    </p>
   `;
 
   // Update Frequency
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Update Frequency:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="update_frequency"
-             placeholder="${placeholderFor('update_frequency', '')}"
-             value="${escapeHtml(draft.update_frequency || '')}" />
-    </div>
+    <p><strong>Update Frequency:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="update_frequency"
+        placeholder="${placeholderFor('update_frequency', '')}"
+        value="${escapeHtml(draft.update_frequency || '')}" />
+    </p>
   `;
 
   // Status
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Status:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="status"
-             placeholder="${placeholderFor('status', '')}"
-             value="${escapeHtml(draft.status || '')}" />
-    </div>
+    <p><strong>Status:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="status"
+        placeholder="${placeholderFor('status', '')}"
+        value="${escapeHtml(draft.status || '')}" />
+    </p>
   `;
 
   // Access Level
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Access Level:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="access_level"
-             placeholder="${placeholderFor('access_level', '')}"
-             value="${escapeHtml(draft.access_level || '')}" />
-    </div>
+    <p><strong>Access Level:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="access_level"
+        placeholder="${placeholderFor('access_level', '')}"
+        value="${escapeHtml(draft.access_level || '')}" />
+    </p>
   `;
 
-  // Data Standard (object page shows a link if present; here it’s an editable URL)
+  // Data Standard
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Data Standard:</label>
-      <input class="object-edit-input" type="text" data-new-obj-key="data_standard"
-             placeholder="${placeholderFor('data_standard', 'https://...')}"
-             value="${escapeHtml(draft.data_standard || '')}" />
-    </div>
+    <p><strong>Data Standard:</strong>
+      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="data_standard"
+        placeholder="${placeholderFor('data_standard', 'https://...')}"
+        value="${escapeHtml(draft.data_standard || '')}" />
+    </p>
   `;
 
   // Notes
   html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Notes:</label>
-      <textarea class="object-edit-input" data-new-obj-key="notes"
-                placeholder="${placeholderFor('notes', '')}">${escapeHtml(draft.notes || '')}</textarea>
-    </div>
+    <p><strong>Notes:</strong></p>
+    <textarea class="object-edit-input" data-new-obj-key="notes"
+      placeholder="${placeholderFor('notes', '')}">${escapeHtml(draft.notes || '')}</textarea>
   `;
 
   html += `</div>`; // end meta card
 
   // ---------------------------
-  // Attributes section (existing + new) — UNCHANGED
+  // Attributes section (UNCHANGED)
   // ---------------------------
   const attrOptions = (allAttributes || [])
     .map((a) => {
@@ -1066,7 +1044,16 @@ const ATTRIBUTE_EDIT_FIELDS = [
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
-    // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
+  // ---------- Live header update (A2) ----------
+  const headerTitleEl = objectDetailEl.querySelector('#newObjectHeaderTitle');
+
+  function updateHeaderTitle() {
+    if (!headerTitleEl) return;
+    const nameNow = String(nameInput?.value || '').trim();
+    headerTitleEl.textContent = nameNow || 'New object';
+  }
+
+  // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
   const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]');
   const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');
   const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
@@ -1080,19 +1067,12 @@ const ATTRIBUTE_EDIT_FIELDS = [
 
   function updateIdStatus() {
     if (!idInput) return;
-
     const idVal = String(idInput.value || '').trim().toLowerCase();
     const exists = idVal && existingObjectIds.has(idVal);
-
     if (idWarnEl) idWarnEl.style.display = exists ? '' : 'none';
-
-    // Keep the hint text consistent (per your requirement #1)
     if (idHintEl) idHintEl.textContent = BASE_ID_HINT;
   }
 
-
-  // We track the last value we auto-generated.
-  // If the user changes the ID to something else, we stop auto-overwriting.
   let lastAutoId = '';
 
   function computeSuggestedId() {
@@ -1106,18 +1086,11 @@ const ATTRIBUTE_EDIT_FIELDS = [
 
   function maybeSuggestId(force = false) {
     if (!idInput) return;
-
     const suggested = computeSuggestedId();
     if (!suggested) return;
 
     const current = String(idInput.value || '').trim();
-
-    // Only write the ID if:
-    // - it's empty, OR
-    // - it still equals our last auto value (meaning user hasn't overridden it), OR
-    // - force is true (optional future use)
-    const canOverwrite =
-      force || current === '' || (lastAutoId && current === lastAutoId);
+    const canOverwrite = force || current === '' || (lastAutoId && current === lastAutoId);
 
     if (canOverwrite) {
       idInput.value = suggested;
@@ -1125,28 +1098,29 @@ const ATTRIBUTE_EDIT_FIELDS = [
     }
   }
 
-  // If the user types into the ID box and it no longer matches lastAutoId, we stop auto-updating.
   if (idInput) {
     idInput.addEventListener('input', () => {
       const current = String(idInput.value || '').trim();
       if (lastAutoId && current !== lastAutoId) {
-        // user override detected; lock out further autosuggest
-        lastAutoId = ''; // clearing means "manual mode"
+        lastAutoId = ''; // manual mode
       }
       updateIdStatus();
     });
   }
 
-  // Update suggestion while the user edits Name/ObjName/Definition
-  if (nameInput) nameInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
+  if (nameInput) {
+    nameInput.addEventListener('input', () => {
+      updateHeaderTitle();     // A2
+      maybeSuggestId(false);
+      updateIdStatus();
+    });
+  }
   if (objnameInput) objnameInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
   if (descInput) descInput.addEventListener('input', () => { maybeSuggestId(false); updateIdStatus(); });
 
-  // Initial suggestion on first render
   maybeSuggestId(false);
   updateIdStatus();
-
-
+  updateHeaderTitle();
 
   // ---------- Attributes UI wiring (UNCHANGED) ----------
   const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
@@ -1250,8 +1224,8 @@ const ATTRIBUTE_EDIT_FIELDS = [
               <textarea class="object-edit-input"
                 data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
                 placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(
-          a.definition || ''
-        )}</textarea>
+                  a.definition || ''
+                )}</textarea>
             </div>
 
             <div class="object-edit-row">
@@ -1277,8 +1251,8 @@ const ATTRIBUTE_EDIT_FIELDS = [
               <textarea class="object-edit-input"
                 data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
                 placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(
-          a.notes || ''
-        )}</textarea>
+                  a.notes || ''
+                )}</textarea>
             </div>
           </div>
         `;
@@ -1353,14 +1327,11 @@ const ATTRIBUTE_EDIT_FIELDS = [
         return;
       }
 
-        // Live warning check (case-insensitive, matches the UI warning)
+      // Live warning check (case-insensitive, matches the UI warning)
       if (existingObjectIds.has(id.toLowerCase())) {
-        // keeps your confirm behavior but ensures the user is explicitly warned even if they missed it
         const proceed = confirm(`⚠️ Object ID "${id}" already exists in the catalog.\n\nDo you still want to open an issue?`);
         if (!proceed) return;
       }
-
-
 
       // collect new attribute drafts from UI (UNCHANGED)
       const newAttrInputs = objectDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
@@ -1450,9 +1421,6 @@ const ATTRIBUTE_EDIT_FIELDS = [
     });
   }
 }
-
-
-
 
   function renderAttributeEditForm(attrId) {
     if (!attributeDetailEl) return;
