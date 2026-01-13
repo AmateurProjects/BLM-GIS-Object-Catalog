@@ -794,7 +794,7 @@ code {
 .object-edit-label {
   color: var(--text-main);
   padding-top: 6px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Inputs should feel like your cards */
@@ -849,6 +849,14 @@ textarea.object-edit-input {
 
 .form-warning {
   color: #ff6b6b;
+}
+
+
+/* IMPORTANT: .object-edit-row is a 2-column grid (label | input).
+   Without this, the hint/warning often gets placed in the left (label) column. */
+.object-edit-row .form-hint,
+.object-edit-row .form-warning {
+  grid-column: 2 / -1;
 }
 
 /* Small-screen: keep edit forms usable */
