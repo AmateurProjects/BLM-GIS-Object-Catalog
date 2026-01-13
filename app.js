@@ -833,7 +833,10 @@ const ATTRIBUTE_EDIT_FIELDS = [
     }
   }
 
-  
+// ----------------------------------------------------//
+// ----- BEGIN SUBMIT NEW OBJECT FORM FUNCTION --------//  
+// ----------------------------------------------------//
+
 function renderNewObjectCreateForm(prefill = {}) {
   if (!objectDetailEl) return;
 
@@ -868,41 +871,51 @@ function renderNewObjectCreateForm(prefill = {}) {
 
   let html = '';
 
-  // Header (A2: live-updates to match Name)
-  html += `<h2 id="newObjectHeaderTitle">${escapeHtml(draft.title || 'New object')}</h2>`;
-  html += `<p class="modal-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</p>`;
+  // =========================================================
+  // HEADER: Name editable (replaces static <h2>)
+  // =========================================================
+  html += `
+    <div class="object-title-edit">
+      <span class="object-title-label">Name</span>
+      <input
+        class="object-title-input"
+        type="text"
+        data-new-obj-key="title"
+        placeholder="${placeholderFor('title', 'display name (optional)')}"
+        value="${escapeHtml(draft.title || '')}"
+      />
+    </div>
+  `;
 
-  // Definition directly under header (mirrors object detail page)
+  // Definition directly under header (still editable)
   html += `
     <p><strong>Definition:</strong></p>
     <textarea class="object-edit-input" data-new-obj-key="description"
-      placeholder="${placeholderFor('description', 'short definition of the object')}">${escapeHtml(draft.description || '')}</textarea>
+      placeholder="${placeholderFor('description', 'short definition of the object')}">${escapeHtml(
+        draft.description || ''
+      )}</textarea>
   `;
 
-  // Actions (same pattern as your other create/edit pages)
-  html += `<div class="card card-meta" id="newObjectActionsCard">
-    <div class="object-edit-actions">
-      <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
-      <button type="button" class="btn primary" data-new-obj-submit>Submit suggestion</button>
+  // =========================================================
+  // ACTIONS CARD: move help text here + button label change
+  // =========================================================
+  html += `
+    <div class="card card-meta" id="newObjectActionsCard">
+      <div class="object-edit-actions">
+        <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
+        <button type="button" class="btn primary" data-new-obj-submit>Submit</button>
+      </div>
+      <div class="action-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</div>
     </div>
-  </div>`;
+  `;
 
   // --- Build a case-insensitive set of existing object IDs for live warnings ---
   const existingObjectIds = new Set((allObjects || []).map((o) => String(o.id || '').trim().toLowerCase()));
 
-  // -----------------------------
-  // Meta card (Option A layout)
-  // -----------------------------
+  // =========================================================
+  // META CARD (Option A layout) — NO Name field here anymore
+  // =========================================================
   html += `<div class="card card-meta" id="newObjectMetaCard">`;
-
-  // Name
-  html += `
-    <p><strong>Name:</strong>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="title"
-        placeholder="${placeholderFor('title', 'display name (optional)')}"
-        value="${escapeHtml(draft.title || '')}" />
-    </p>
-  `;
 
   // Object ID (keep your helper + warning + hooks)
   html += `
@@ -1044,18 +1057,13 @@ function renderNewObjectCreateForm(prefill = {}) {
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
-  // ---------- Live header update (A2) ----------
-  const headerTitleEl = objectDetailEl.querySelector('#newObjectHeaderTitle');
-
-  function updateHeaderTitle() {
-    if (!headerTitleEl) return;
-    const nameNow = String(nameInput?.value || '').trim();
-    headerTitleEl.textContent = nameNow || 'New object';
-  }
+  // Animate ONLY when entering create page
+  staggerCards(objectDetailEl);
+  animatePanel(objectDetailEl);
 
   // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
   const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]');
-  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');
+  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');       // now in header
   const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
   const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
 
@@ -1110,7 +1118,6 @@ function renderNewObjectCreateForm(prefill = {}) {
 
   if (nameInput) {
     nameInput.addEventListener('input', () => {
-      updateHeaderTitle();     // A2
       maybeSuggestId(false);
       updateIdStatus();
     });
@@ -1120,7 +1127,6 @@ function renderNewObjectCreateForm(prefill = {}) {
 
   maybeSuggestId(false);
   updateIdStatus();
-  updateHeaderTitle();
 
   // ---------- Attributes UI wiring (UNCHANGED) ----------
   const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
@@ -1395,7 +1401,7 @@ function renderNewObjectCreateForm(prefill = {}) {
       // Build object payload using ONLY the fields shown on the object page
       const objectObj = compactObject({
         id,
-        title: out.title, // Name
+        title: out.title, // Name (now from header)
         description: out.description, // Definition
         objname: out.objname,
         geometry_type: out.geometry_type,
@@ -1417,6 +1423,12 @@ function renderNewObjectCreateForm(prefill = {}) {
     });
   }
 }
+
+
+// ----------------------------------------------------//
+// ----- END SUBMIT NEW OBJECT FORM FUNCTION --------//  
+// ----------------------------------------------------//
+
 
   function renderAttributeEditForm(attrId) {
     if (!attributeDetailEl) return;
@@ -2338,5 +2350,3 @@ function downloadTextFile(content, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-//adding note to force commit

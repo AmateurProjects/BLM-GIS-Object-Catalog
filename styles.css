@@ -924,6 +924,57 @@ textarea.object-edit-input {
   }
 }
 
+/* ===== New Object page: editable header "Name" ===== */
+.object-title-edit {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.1rem 0 0.25rem;
+}
+
+.object-title-edit label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.object-title-input {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-main);
+  font-size: 1.35rem;      /* match .detail-panel h2 */
+  font-weight: 700;
+  line-height: 1.15;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius);
+}
+
+.object-title-input::placeholder {
+  color: rgba(230, 230, 230, 0.35);
+}
+
+.object-title-input:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.object-title-input:focus {
+  outline: none;
+  border-color: rgba(78, 163, 255, 0.35);
+  background: rgba(78, 163, 255, 0.05);
+  box-shadow: 0 0 0 2px rgba(78, 163, 255, 0.18);
+}
+
+/* Helper line inside the action card */
+.action-help {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 
 /* ============================
    Reduced motion
@@ -933,4 +984,3 @@ textarea.object-edit-input {
   * { animation: none !important; transition: none !important; }
 }
 
-/* delete this note */
