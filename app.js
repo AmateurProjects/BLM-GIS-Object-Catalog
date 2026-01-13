@@ -871,67 +871,71 @@ function renderNewObjectCreateForm(prefill = {}) {
 
   let html = '';
 
-  // =========================================================
-  // HEADER: Name editable (replaces static <h2>)
-  // =========================================================
-  html += `
-    <div class="object-title-edit">
-      <span class="object-title-label">Name</span>
-      <input
-        class="object-title-input"
-        type="text"
-        data-new-obj-key="title"
-        placeholder="${placeholderFor('title', 'display name (optional)')}"
-        value="${escapeHtml(draft.title || '')}"
-      />
-    </div>
-  `;
-
-  // Definition directly under header (still editable)
-  html += `
-    <p><strong>Definition:</strong></p>
-    <textarea class="object-edit-input" data-new-obj-key="description"
-      placeholder="${placeholderFor('description', 'short definition of the object')}">${escapeHtml(
-        draft.description || ''
-      )}</textarea>
-  `;
-
-  // =========================================================
-  // ACTIONS CARD: move help text here + button label change
-  // =========================================================
-  html += `
-    <div class="card card-meta" id="newObjectActionsCard">
-      <div class="object-edit-actions">
-        <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
-        <button type="button" class="btn primary" data-new-obj-submit>Submit</button>
-      </div>
-      <div class="action-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</div>
-    </div>
-  `;
-
   // --- Build a case-insensitive set of existing object IDs for live warnings ---
   const existingObjectIds = new Set((allObjects || []).map((o) => String(o.id || '').trim().toLowerCase()));
 
   // =========================================================
-  // META CARD (Option A layout) — NO Name field here anymore
+  // HEADER CARD (boxed like other editable fields)
+  // - Change #1: "Name:" label, same font size as input
+  // - Change #2: helper text "Human-friendly object title"
+  // - Change #3: boxed header area
   // =========================================================
-  html += `<div class="card card-meta" id="newObjectMetaCard">`;
-
-  // Object ID (keep your helper + warning + hooks)
   html += `
-    <p><strong>Object ID:</strong>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="id"
-        placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
-        value="${escapeHtml(draft.id || '')}" />
-    </p>
-
-    <div class="form-hint" data-new-obj-id-hint>
-      Object ID will be generated automatically from Name. Optionally, you can edit Object ID manually. This is used as a unique identifier for entries of this catalog.
-    </div>
-    <div class="form-warning" data-new-obj-id-warning style="display:none;">
-      ⚠️ This Object ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
+    <div class="card card-meta" id="newObjectHeaderCard">
+      <div class="object-title-edit">
+        <span class="object-title-label">Name:</span>
+        <input
+          class="object-title-input"
+          type="text"
+          data-new-obj-key="title"
+          placeholder="${escapeHtml('Human-friendly object title')}"
+          value="${escapeHtml(draft.title || '')}"
+        />
+      </div>
     </div>
   `;
+
+  // =========================================================
+  // DEFINITION CARD
+  // - Change #4: helper text "Short description of the object"
+  // =========================================================
+  html += `
+    <div class="card card-meta" id="newObjectDefinitionCard">
+      <p><strong>Definition:</strong></p>
+      <textarea class="object-edit-input" data-new-obj-key="description"
+        placeholder="${escapeHtml('Short description of the object')}">${escapeHtml(draft.description || '')}</textarea>
+    </div>
+  `;
+
+  // =========================================================
+  // CATALOG ID CARD (separate card)
+  // - Change #6: rename to "Catalog ID"
+  // - Change #7: new helper text
+  // - Change #8: put it in its own card ABOVE other meta fields
+  // =========================================================
+  html += `
+    <div class="card card-meta" id="newObjectCatalogIdCard">
+      <p><strong>Catalog ID:</strong>
+        <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="id"
+          placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
+          value="${escapeHtml(draft.id || '')}" />
+      </p>
+
+      <div class="form-hint" data-new-obj-id-hint>
+        Catalog ID is generated automatically from Name. Optionally, you may edit Catalog ID manually. This is used to maintain a unique identifier for each Catalog entry.
+      </div>
+
+      <div class="form-warning" data-new-obj-id-warning style="display:none;">
+        ⚠️ This Catalog ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
+      </div>
+    </div>
+  `;
+
+  // =========================================================
+  // META CARD (Database Object Name, Geometry Type, etc.)
+  // (Same content as before, minus the ID section)
+  // =========================================================
+  html += `<div class="card card-meta" id="newObjectMetaCard">`;
 
   // Database Object Name
   html += `
@@ -1054,6 +1058,20 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
+  // =========================================================
+  // ACTIONS CARD MOVED TO BOTTOM
+  // - Change #5: move Cancel/Submit card to the very bottom
+  // =========================================================
+  html += `
+    <div class="card card-meta" id="newObjectActionsCard">
+      <div class="object-edit-actions">
+        <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
+        <button type="button" class="btn primary" data-new-obj-submit>Submit</button>
+      </div>
+      <div class="action-help">This will open a pre-filled GitHub Issue for review/approval by the catalog owner.</div>
+    </div>
+  `;
+
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
@@ -1061,9 +1079,9 @@ function renderNewObjectCreateForm(prefill = {}) {
   staggerCards(objectDetailEl);
   animatePanel(objectDetailEl);
 
-  // ---------- Auto-suggest Object ID from Name (and objname fallback) ----------
+  // ---------- Auto-suggest Catalog ID from Name (and objname fallback) ----------
   const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]');
-  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');       // now in header
+  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]');
   const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
   const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
 
@@ -1071,7 +1089,7 @@ function renderNewObjectCreateForm(prefill = {}) {
   const idWarnEl = objectDetailEl.querySelector('[data-new-obj-id-warning]');
 
   const BASE_ID_HINT =
-    'Object ID will be generated automatically from Name. Optionally, you can edit Object ID manually. This is used as a unique identifier for entries of this catalog.';
+    'Catalog ID is generated automatically from Name. Optionally, you may edit Catalog ID manually. This is used to maintain a unique identifier for each Catalog entry.';
 
   function updateIdStatus() {
     if (!idInput) return;
@@ -1325,13 +1343,13 @@ function renderNewObjectCreateForm(prefill = {}) {
 
       const id = String(out.id || '').trim();
       if (!id) {
-        alert('Object ID is required.');
+        alert('Catalog ID is required.');
         return;
       }
 
       // Live warning check (case-insensitive, matches the UI warning)
       if (existingObjectIds.has(id.toLowerCase())) {
-        const proceed = confirm(`⚠️ Object ID "${id}" already exists in the catalog.\n\nDo you still want to open an issue?`);
+        const proceed = confirm(`⚠️ Catalog ID "${id}" already exists in the catalog.\n\nDo you still want to open an issue?`);
         if (!proceed) return;
       }
 
@@ -1401,7 +1419,7 @@ function renderNewObjectCreateForm(prefill = {}) {
       // Build object payload using ONLY the fields shown on the object page
       const objectObj = compactObject({
         id,
-        title: out.title, // Name (now from header)
+        title: out.title, // Name
         description: out.description, // Definition
         objname: out.objname,
         geometry_type: out.geometry_type,
@@ -2350,5 +2368,3 @@ function downloadTextFile(content, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-// forcing commit 7 //

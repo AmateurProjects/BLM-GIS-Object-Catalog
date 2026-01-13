@@ -975,6 +975,28 @@ textarea.object-edit-input {
   font-size: 0.9rem;
 }
 
+/* --- New Object: header card tweaks --- */
+#newObjectHeaderCard .object-title-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#newObjectHeaderCard .object-title-label {
+  font-size: 1.1rem;      /* match heading-ish size */
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+#newObjectHeaderCard .object-title-input {
+  font-size: 1.1rem;      /* same size as label */
+  font-weight: 600;
+  line-height: 1.2;
+  flex: 1;
+}
+
+
 
 /* ============================
    Reduced motion
