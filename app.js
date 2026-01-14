@@ -1152,12 +1152,54 @@ function renderNewObjectCreateForm(prefill = {}) {
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
 
-  // FIX: ensure edit form starts at the top
-  resetDetailScroll(objectDetailEl);
+  // === HARD FIX: always scroll the *real* scroll container to the top ===
+  function getScrollParent(el) {
+    let cur = el;
+    while (cur && cur !== document.body) {
+      const cs = window.getComputedStyle(cur);
+      const oy = cs.overflowY;
+      const canScroll = (oy === 'auto' || oy === 'scroll') && cur.scrollHeight > cur.clientHeight;
+      if (canScroll) return cur;
+      cur = cur.parentElement;
+    }
+    // fallback: the document scroller
+    return document.scrollingElement || document.documentElement;
+  }
+
+  function forcePanelToTop() {
+    const scroller = getScrollParent(objectDetailEl);
+    try { scroller.scrollTop = 0; } catch (e) {}
+    try { objectDetailEl.scrollTop = 0; } catch (e) {}
+
+    requestAnimationFrame(() => {
+      try { scroller.scrollTop = 0; } catch (e) {}
+      try { objectDetailEl.scrollTop = 0; } catch (e) {}
+    });
+
+    setTimeout(() => {
+      try { scroller.scrollTop = 0; } catch (e) {}
+      try { objectDetailEl.scrollTop = 0; } catch (e) {}
+    }, 50);
+
+    setTimeout(() => {
+      try { scroller.scrollTop = 0; } catch (e) {}
+      try { objectDetailEl.scrollTop = 0; } catch (e) {}
+    }, 250);
+  }
+
+  // IMPORTANT: do not restore any previous scroll for this page
+  // resetDetailScroll(objectDetailEl);
+
+  // Force top BEFORE animations
+  forcePanelToTop();
 
   // Animate ONLY when entering create page
   staggerCards(objectDetailEl);
   animatePanel(objectDetailEl);
+
+  // Force top AGAIN after animation/layout/focus side-effects
+  forcePanelToTop();
+
 
   // ---------- Auto-suggest Catalog ID from Name (and objname fallback) ----------
   const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]'); // Catalog ID
@@ -1605,31 +1647,7 @@ function renderNewObjectCreateForm(prefill = {}) {
     
   }
 
-  // === HARD FIX: ensure the "Submit new object" page always starts at the top ===
-  function forcePanelToTop() {
-    // objectDetailEl is your detail panel root (you already guard for it above)
-    objectDetailEl.scrollTop = 0;
 
-    // also force the nearest scroll container (some layouts scroll the parent)
-    const scroller = objectDetailEl.closest('.detail-panel') || objectDetailEl;
-    scroller.scrollTop = 0;
-
-    // if something focuses an input and the browser scrolls it, undo that too
-    requestAnimationFrame(() => {
-      objectDetailEl.scrollTop = 0;
-      scroller.scrollTop = 0;
-    });
-    setTimeout(() => {
-      objectDetailEl.scrollTop = 0;
-      scroller.scrollTop = 0;
-    }, 50);
-    setTimeout(() => {
-      objectDetailEl.scrollTop = 0;
-      scroller.scrollTop = 0;
-    }, 250);
-  }
-
-  forcePanelToTop();
 
 }
 
