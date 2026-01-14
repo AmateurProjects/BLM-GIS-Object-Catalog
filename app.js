@@ -1600,8 +1600,37 @@ function renderNewObjectCreateForm(prefill = {}) {
 
       const w = window.open(issueUrl, '_blank', 'noopener');
       if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
+        
     });
+    
   }
+
+  // === HARD FIX: ensure the "Submit new object" page always starts at the top ===
+  function forcePanelToTop() {
+    // objectDetailEl is your detail panel root (you already guard for it above)
+    objectDetailEl.scrollTop = 0;
+
+    // also force the nearest scroll container (some layouts scroll the parent)
+    const scroller = objectDetailEl.closest('.detail-panel') || objectDetailEl;
+    scroller.scrollTop = 0;
+
+    // if something focuses an input and the browser scrolls it, undo that too
+    requestAnimationFrame(() => {
+      objectDetailEl.scrollTop = 0;
+      scroller.scrollTop = 0;
+    });
+    setTimeout(() => {
+      objectDetailEl.scrollTop = 0;
+      scroller.scrollTop = 0;
+    }, 50);
+    setTimeout(() => {
+      objectDetailEl.scrollTop = 0;
+      scroller.scrollTop = 0;
+    }, 250);
+  }
+
+  forcePanelToTop();
+
 }
 
 
