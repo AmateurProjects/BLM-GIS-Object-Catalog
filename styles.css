@@ -1167,6 +1167,53 @@ textarea.object-edit-input {
   }
 }
 
+/* =========================================================
+   FIX: "Submit new object" first field row (Object ID) clipped
+   ========================================================= */
+
+/* Ensure the detail panel has breathing room so the first row isn't cut off */
+.detail-panel {
+  padding-top: 16px;
+}
+
+/* If any card/panel wrapper is clipping children, stop doing that */
+.detail-panel .card,
+.detail-panel .panel,
+.detail-panel .detail-card {
+  overflow: visible;
+}
+
+/* Common row wrappers in your forms: prevent fixed-height clipping */
+.detail-panel .form-row,
+.detail-panel .field-row,
+.detail-panel .row {
+  height: auto;
+  min-height: 44px;      /* matches typical input height */
+  align-items: flex-start;
+}
+
+/* IMPORTANT for flex/grid layouts: allows the input column to actually shrink/fit */
+.detail-panel .form-row > *,
+.detail-panel .field-row > *,
+.detail-panel .row > * {
+  min-width: 0;
+}
+
+/* Ensure inputs are not taller than their container and don't get visually clipped */
+.detail-panel input,
+.detail-panel select,
+.detail-panel textarea {
+  box-sizing: border-box;
+  width: 100%;
+  line-height: 1.2;
+}
+
+/* If your form uses a label/field 2-column grid, this prevents truncation */
+.detail-panel .form-grid,
+.detail-panel .edit-grid,
+.detail-panel .grid-2col {
+  grid-template-columns: 220px minmax(0, 1fr);
+}
 
 
 /* ============================
