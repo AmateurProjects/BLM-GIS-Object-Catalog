@@ -815,6 +815,24 @@ textarea.object-edit-input {
 }
 
 /* ============================
+   SCROLL CLAMP (prevents "top cut off" regressions)
+   Ensures ONLY the sidebar/detail panels scroll, not the page.
+   ============================ */
+
+body {
+  overflow: hidden; /* critical: stop the document from being the scroller */
+}
+
+main {
+  overflow: hidden; /* keep scrolling inside children only */
+}
+
+section {
+  overflow: hidden; /* prevents the flex row from expanding the page */
+}
+
+
+/* ============================
    REDUCED MOTION
    ============================ */
 
