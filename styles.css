@@ -333,9 +333,6 @@ body.fx-no-scroll {
   overflow: hidden !important;
 }
 
-.detail-panel.fx-animating {
-  overflow: hidden !important;
-}
 
 /* Re-triggerable panel transition */
 .detail-panel.fx-enter {
@@ -814,55 +811,74 @@ textarea.object-edit-input {
   }
 }
 
-/* ============================
-   HARD SCROLL CLAMP (FIXES "TOP CUT OFF")
-   Forces the ONLY scrollers to be:
-   - .sidebar
-   - #objectDetail / #attributeDetail (.detail-panel)
-   ============================ */
+/* =========================================================
+   FIX: "Submit new object" top card clipped (Object ID)
+   Root causes addressed:
+   - main height assumptions / flex min-height
+   - detail panel overflow hidden during fx
+   - first card margin + lack of scroll padding
+   ========================================================= */
 
-html,
+/* Make the overall layout robust: header auto height, main fills remainder */
+html, body {
+  height: 100%;
+}
+
 body {
-  height: 100%;
-  overflow: hidden;          /* the document must NEVER scroll */
+  /* keep your existing flex column layout */
+  overflow: hidden; /* prevents document scroll without clipping inner scrollers */
 }
 
+/* Main must NOT use a hardcoded height; let flex do the work */
 main {
-  height: 100%;
-  min-height: 0;             /* critical for nested flex scrolling */
-  overflow: hidden;          /* prevent main from becoming scroller */
-}
-
-/* Your sections are flex rows holding sidebar + detail panel */
-section,
-#objectsView,
-#attributesView {
   flex: 1 1 auto;
-  min-height: 0;             /* critical: allows children to scroll */
-  overflow: hidden;          /* prevents page scroll / layout creep */
+  min-height: 0;
+  height: auto !important; /* defensive override if anything reintroduced calc() */
+  overflow: hidden;        /* keep scrolling inside sidebar/detail */
 }
 
-/* Sidebar must be allowed to scroll */
+section {
+  flex: 1 1 auto;
+  min-height: 0;  /* CRITICAL: allows children to scroll instead of clipping */
+  overflow: hidden;
+}
+
+/* Sidebar & detail panel are the only scrollers */
 .sidebar {
   min-height: 0;
   overflow-y: auto;
 }
 
-/* Detail panels must be the scrolling container */
 .detail-panel,
 #objectDetail,
 #attributeDetail {
   flex: 1 1 auto;
-  min-height: 0;             /* critical: keeps scroll inside panel */
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  overscroll-behavior: contain;
+
+  /* This is the “never clip the first card” insurance */
+  padding-top: 20px;
+  scroll-padding-top: 20px;
 }
 
-/* Prevent the animation helper from "locking" the panel in a way that
-   leaves you visually mid-scroll on re-render */
+/* IMPORTANT: do NOT hide overflow during FX (it clips the top of the form) */
 .detail-panel.fx-animating {
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  /* Optional: avoid scrollbar flash without clipping content */
+  scrollbar-width: none;               /* Firefox */
+}
+.detail-panel.fx-animating::-webkit-scrollbar {
+  width: 0px;                          /* Chrome/Safari/Edge */
+  height: 0px;
+}
+
+/* Prevent the first card from being pushed down by default card spacing */
+.detail-panel > .card:first-child,
+.detail-panel > .detail-section:first-child {
+  margin-top: 0;
 }
 
 
