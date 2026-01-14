@@ -3,22 +3,20 @@
    ============================ */
 
 :root {
-  --bg-main: #121212; /* Deep dark background */
-  --bg-panel: #1e1e1e; /* Panel background */
-  --bg-card: #1d1d1d; /* Cards and lookup items */
-  --bg-hover: #2a2a2a; /* Hover state */
-  --border-color: #333; /* Soft borders */
-  --text-main: #e6e6e6; /* Primary text */
-  --text-muted: #a1a1a1; /* Muted text */
-  --accent: #4ea3ff; /* Soft blue accent */
-  --accent-hover: #77bdff; /* Accent hover */
+  --bg-main: #121212;
+  --bg-panel: #1e1e1e;
+  --bg-card: #1d1d1d;
+  --bg-hover: #2a2a2a;
+  --border-color: #333;
+  --text-main: #e6e6e6;
+  --text-muted: #a1a1a1;
+  --accent: #4ea3ff;
+  --accent-hover: #77bdff;
   --radius: 6px;
   --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.45);
 
-  /* Purple geometry color to match line emoji */
   --geom-purple: #c275ff;
 
-  /* Game UI-lite */
   --glow-accent: 0 0 0 1px rgba(78, 163, 255, 0.22), 0 10px 24px rgba(0, 0, 0, 0.55);
   --glow-accent-strong: 0 0 0 1px rgba(78, 163, 255, 0.35), 0 16px 38px rgba(0, 0, 0, 0.65);
   --glow-purple: 0 0 0 1px rgba(194, 117, 255, 0.22), 0 12px 28px rgba(0, 0, 0, 0.60);
@@ -31,11 +29,16 @@
 }
 
 html {
-  /* Keeps layout from shifting when scrollbars appear/disappear */
   scrollbar-gutter: stable;
+  height: 100%;
 }
 
 body {
+  height: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   margin: 0;
   background: var(--bg-main);
@@ -48,11 +51,11 @@ body {
    ============================ */
 
 header {
+  flex: 0 0 auto;
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-panel);
 
-  /* Stack title + tabs, left aligned (Change 2) */
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -102,19 +105,20 @@ nav {
    ============================ */
 
 main {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 60px);
 }
 
 section {
   flex: 1;
   display: flex;
-  min-height: 0; /* allow flex children to scroll */
+  min-height: 0;
 }
 
 /* ============================
-   SIDEBAR
+   SIDEBAR + TOOLBAR
    ============================ */
 
 .sidebar {
@@ -128,29 +132,16 @@ section {
   gap: 0.75rem;
 }
 
-.sidebar .toolbar {
-  margin-bottom: 0;
-}
-
-/* ============================
-   TOOLBAR
-   ============================ */
-
 .toolbar {
-  margin-bottom: 0.75rem;
-}
-
-/* When toolbars are stacked (search on top, action button below) */
-.sidebar .toolbar {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  margin-bottom: 0;
 }
 
-/* Container that holds the action button under the search bar */
 .toolbar-actions {
   display: flex;
-  justify-content: flex-start; /* stays left-aligned under search */
+  justify-content: flex-start;
 }
 
 input[type="search"] {
@@ -170,49 +161,9 @@ input[type="search"]:focus {
 }
 
 /* ============================
-   ITEM LIST (object/attribute)
+   LISTS (object/attribute)
    ============================ */
 
-/* Code-like styling for Database Object Name in object list */
-.list-item-primary {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--text-main);
-}
-
-/* Object list: 2-line label (DB Object Name + Name) */
-.list-item-button {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  text-align: left;
-}
-
-.list-item-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0; /* enables ellipsis in flex layouts */
-  line-height: 1.15;
-}
-
-.list-item-primary {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.list-item-secondary {
-  color: var(--text-muted);
-  font-size: 0.9em;
-  margin-top: 0.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* The JS renders <ul><li class="list-item"><button class="list-item-button">… */
 #objectList,
 #attributeList {
   margin: 0;
@@ -221,8 +172,6 @@ input[type="search"]:focus {
   border-radius: var(--radius);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-soft);
-
-  /* keep the subtle gradient but keep the card styling */
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0));
 }
 
@@ -233,6 +182,10 @@ input[type="search"]:focus {
 
 .list-item-button {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
   text-align: left;
   border-radius: var(--radius);
   border: 1px solid transparent;
@@ -245,7 +198,6 @@ input[type="search"]:focus {
   position: relative;
 }
 
-/* Accent “rail” on hover (game UI vibe) */
 .list-item-button::before {
   content: "";
   position: absolute;
@@ -270,7 +222,6 @@ input[type="search"]:focus {
   background: var(--accent);
 }
 
-/* Active/selected list item (set by JS) */
 .list-item-button.is-active {
   background: rgba(78, 163, 255, 0.10);
   border-color: rgba(78, 163, 255, 0.30);
@@ -286,25 +237,30 @@ input[type="search"]:focus {
   outline-offset: 2px;
 }
 
-.list-item-label {
-  vertical-align: middle;
+.list-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
 }
 
-/* Legacy card styles (still usable if you want card layout somewhere else) */
-.object-card,
-.attribute-card {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  margin-bottom: 0.6rem;
-  cursor: pointer;
-  transition: 0.15s background;
+.list-item-primary {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.object-card:hover,
-.attribute-card:hover {
-  background: var(--bg-hover);
+.list-item-secondary {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ============================
@@ -313,17 +269,17 @@ input[type="search"]:focus {
 
 .detail-panel {
   flex: 1;
-  padding: 1rem 1.25rem; /* aligns with header padding */
+  padding: 1rem 1.25rem;
   overflow-y: auto;
   background: radial-gradient(circle at top left, #1a1a1a 0, #101010 45%, #090909 100%);
+
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  align-items: flex-start; /* left-align children */
+  align-items: flex-start;
   text-align: left;
 }
 
-/* Children stay constrained in width but hug the left side */
 .detail-panel > * {
   max-width: 980px;
   width: 100%;
@@ -360,7 +316,7 @@ input[type="search"]:focus {
 }
 
 /* ============================
-   FX: prevent scrollbars during panel enter animation
+   FX (panel + cards)
    ============================ */
 
 html.fx-no-scroll,
@@ -368,12 +324,10 @@ body.fx-no-scroll {
   overflow: hidden !important;
 }
 
-/* Panel no-scroll while FX plays */
 .detail-panel.fx-animating {
   overflow: hidden !important;
 }
 
-/* Re-triggerable detail transition (JS toggles .fx-enter) */
 .detail-panel.fx-enter {
   animation: panelIn 320ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
@@ -384,7 +338,6 @@ body.fx-no-scroll {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Card bounce-in (staggered) */
 .detail-panel.fx-enter .card,
 .detail-panel.fx-enter .detail-section {
   animation: cardIn 420ms cubic-bezier(0.2, 0.95, 0.2, 1) both;
@@ -396,7 +349,6 @@ body.fx-no-scroll {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Stagger delay helpers (JS adds these classes) */
 .fx-d1 { animation-delay: 40ms !important; }
 .fx-d2 { animation-delay: 80ms !important; }
 .fx-d3 { animation-delay: 120ms !important; }
@@ -408,7 +360,7 @@ body.fx-no-scroll {
 .fx-d9 { animation-delay: 360ms !important; }
 
 /* ============================
-   CARD COMPONENT
+   CARD COMPONENTS
    ============================ */
 
 .card,
@@ -429,7 +381,6 @@ body.fx-no-scroll {
   box-shadow: var(--glow-accent);
 }
 
-/* Make label/value pairs line up a bit better */
 .card p strong,
 .detail-section p strong {
   display: inline-block;
@@ -437,7 +388,6 @@ body.fx-no-scroll {
   font-weight: 600;
 }
 
-/* Extra safety: headings and paragraph content inside cards */
 .card h2,
 .card h3,
 .card h4,
@@ -446,12 +396,10 @@ body.fx-no-scroll {
   text-align: left;
 }
 
-
 /* ============================
-   LINK-STYLED BUTTONS
+   LINK BUTTONS + LINKS
    ============================ */
 
-/* Used for clickable attributes / objects inside detail panels */
 .link-button {
   background: none;
   border: none;
@@ -466,10 +414,6 @@ body.fx-no-scroll {
   text-decoration: underline;
 }
 
-/* ============================
-   LINKS
-   ============================ */
-
 a {
   color: var(--accent);
   text-decoration: none;
@@ -481,7 +425,7 @@ a:hover {
 }
 
 /* ============================
-   "Suggest change" button
+   ACTIONS (suggest/export)
    ============================ */
 
 .suggest-button {
@@ -495,10 +439,6 @@ a:hover {
   color: #000;
   font-weight: 500;
   border: 1px solid var(--accent);
-  text-decoration: none;
-  font-size: 0.9rem;
-  position: relative;
-  overflow: hidden;
   box-shadow: var(--glow-accent);
   transition: transform 90ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease;
 }
@@ -506,11 +446,9 @@ a:hover {
 .suggest-button:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
-  text-decoration: none;
   box-shadow: var(--glow-accent-strong);
 }
 
-/* Action card (object + attribute pages) */
 .card-actions {
   display: flex;
   justify-content: center;
@@ -522,7 +460,6 @@ a:hover {
   margin-left: 0;
 }
 
-/* A tiny helper for the little ✕ buttons used inside attribute chips (new object page) */
 .icon-button {
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -559,7 +496,6 @@ td {
 
 th {
   background: var(--bg-panel);
-  color: var(--text-main);
   font-weight: 600;
 }
 
@@ -592,7 +528,7 @@ button:active {
 }
 
 /* ============================
-   UTILITY
+   UTILITY + TEXT
    ============================ */
 
 .hidden {
@@ -606,28 +542,19 @@ code {
   color: var(--accent-hover);
 }
 
-.conflict-warning {
-  margin-top: 1rem;
-  padding: 0.75rem 0.9rem;
-  border-left: 3px solid #f39c12;
-  border-radius: var(--radius);
-  background: #221a11;
-  font-size: 0.9rem;
-}
-
-.conflict-warning h4 {
-  margin: 0.6rem 0 0.3rem;
-  font-size: 0.95rem;
-}
-
-/* Optional helper text class used in JS ("modal-help") */
 .modal-help {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
 
+.action-help {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 /* ============================
-   TOPIC / KEYWORD PILLS
+   PILLS
    ============================ */
 
 .pill {
@@ -651,7 +578,7 @@ code {
 }
 
 .pill-topic {
-  border-color: #3fae6a; /* soft green */
+  border-color: #3fae6a;
   box-shadow: 0 0 0 1px rgba(63, 174, 106, 0.35);
 }
 
@@ -675,7 +602,6 @@ code {
   color: var(--geom-purple);
 }
 
-/* Slight extra spacing in list context */
 .geom-icon-list {
   width: 1.3rem;
   margin-right: 0.4rem;
@@ -685,7 +611,6 @@ code {
   width: 1.1rem;
 }
 
-/* Polygon icon: filled trapezoid using SVG mask, in SAME purple */
 .geom-icon.geom-poly {
   width: 1.2em;
   height: 0.85em;
@@ -718,7 +643,6 @@ code {
   min-width: 0;
 }
 
-/* Optional: make attributes column a bit narrower */
 .card-row .card-attributes {
   flex: 0 0 40%;
 }
@@ -728,51 +652,7 @@ code {
 }
 
 /* ============================
-   TOOLBAR ROW + PRIMARY BUTTON
-   ============================ */
-
-.toolbar-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.toolbar-row input[type="search"] {
-  flex: 1;
-}
-
-.primary-button,
-.secondary-button {
-  border-radius: var(--radius);
-  border: 1px solid var(--border-color);
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  box-shadow: var(--shadow-soft);
-}
-
-.primary-button {
-  background: var(--accent);
-  color: #0b0b0b;
-  border-color: transparent;
-  font-weight: 600;
-}
-
-.primary-button:hover {
-  background: var(--accent-hover);
-}
-
-.secondary-button {
-  background: var(--bg-card);
-  color: var(--text-main);
-}
-
-.secondary-button:hover {
-  background: var(--bg-hover);
-}
-
-/* ============================
-   OBJECT / ATTRIBUTE EDIT FORMS
+   EDIT / CREATE FORMS
    ============================ */
 
 .object-edit-actions {
@@ -784,20 +664,19 @@ code {
 
 .object-edit-row {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 10px;
   align-items: start;
   margin-bottom: 10px;
+  width: 100%;
 }
 
-/* Match detail panel label emphasis (like <strong>) */
 .object-edit-label {
   color: var(--text-main);
   padding-top: 6px;
   font-weight: 700;
 }
 
-/* Inputs should feel like your cards */
 .object-edit-input {
   width: 100%;
   padding: 8px 10px;
@@ -805,6 +684,7 @@ code {
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-main);
+  min-width: 0;
 }
 
 .object-edit-input:focus {
@@ -818,43 +698,13 @@ textarea.object-edit-input {
   resize: vertical;
 }
 
-/* Option A: make inputs feel like "values" inside the meta card */
 .object-edit-inline {
-  flex: 1 1 420px;     /* fill remaining row space */
-  min-width: 260px;    /* still readable when wrapping */
+  display: block;
   max-width: 100%;
-  display: block;      /* behave like a flex child */
-  margin-left: 0;      /* gap is handled by the flex row */
+  min-width: 0;
 }
 
-/* Make meta-card <p> rows align like your detail page label/value rhythm */
-.card.card-meta p {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-/* Ensure label has a consistent “left column” width */
-.card.card-meta p strong {
-  flex: 0 0 165px;
-  min-width: 165px;
-}
-
-/* Generic button helper used in edit pages */
-.btn {
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-main);
-}
-
-.btn.primary {
-  border-color: var(--accent);
-}
-
-/* ====== New Object: ID hint + warning layout ====== */
+/* Form hint / warning */
 .form-hint,
 .form-warning {
   display: block;
@@ -864,12 +714,9 @@ textarea.object-edit-input {
   margin-top: 0.35rem;
   font-size: 0.95rem;
   line-height: 1.35rem;
-}
-
-/* Align hint/warning under the value column when the row is flex */
-.card.card-meta .form-hint,
-.card.card-meta .form-warning {
-  margin-left: 165px; /* matches the strong label width above */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .form-hint {
@@ -880,15 +727,14 @@ textarea.object-edit-input {
   color: #ff6b6b;
 }
 
-
-/* IMPORTANT: .object-edit-row is a 2-column grid (label | input).
-   Without this, the hint/warning often gets placed in the left (label) column. */
+/* When hint/warning is inside a form row, keep it in the value column */
 .object-edit-row .form-hint,
 .object-edit-row .form-warning {
   grid-column: 2 / -1;
+  margin-left: 0;
 }
 
-/* Small-screen: keep edit forms usable */
+/* Small-screen: stack label + input */
 @media (max-width: 820px) {
   .sidebar {
     width: 300px;
@@ -911,393 +757,11 @@ textarea.object-edit-input {
     flex: 1 1 auto;
   }
 
-  /* Option A2: let labels shrink naturally on small screens */
-  .card.card-meta p strong {
-    flex: 0 0 auto;
+  .card p strong,
+  .detail-section p strong {
     min-width: 0;
   }
-
-  /* Optional: remove indent on small screens */
-  .card.card-meta .form-hint,
-  .card.card-meta .form-warning {
-    margin-left: 0;
-  }
 }
-
-/* ===== New Object page: editable header "Name" ===== */
-.object-title-edit {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin: 0.1rem 0 0.25rem;
-}
-
-.object-title-edit label {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.object-title-input {
-  flex: 1;
-  width: 100%;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-main);
-  font-size: 1.35rem;      /* match .detail-panel h2 */
-  font-weight: 700;
-  line-height: 1.15;
-  padding: 0.15rem 0.35rem;
-  border-radius: var(--radius);
-}
-
-.object-title-input::placeholder {
-  color: rgba(230, 230, 230, 0.35);
-}
-
-.object-title-input:hover {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.object-title-input:focus {
-  outline: none;
-  border-color: rgba(78, 163, 255, 0.35);
-  background: rgba(78, 163, 255, 0.05);
-  box-shadow: 0 0 0 2px rgba(78, 163, 255, 0.18);
-}
-
-/* Helper line inside the action card */
-.action-help {
-  margin-top: 0.5rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-/* --- New Object: header card tweaks --- */
-#newObjectHeaderCard .object-title-edit {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-#newObjectHeaderCard .object-title-label {
-  font-size: 1.1rem;      /* match heading-ish size */
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--text-main);
-}
-
-#newObjectHeaderCard .object-title-input {
-  font-size: 1.1rem;      /* same size as label */
-  font-weight: 600;
-  line-height: 1.2;
-  flex: 1;
-}
-
-/* De-emphasize Catalog ID card */
-#newObjectCatalogIdCard {
-  background: rgba(255, 255, 255, 0.02);   /* darker than other cards */
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  box-shadow: none;
-}
-
-#newObjectCatalogIdCard:hover {
-  box-shadow: none;
-  transform: none;
-}
-
-#newObjectCatalogIdCard strong {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-#newObjectCatalogIdCard .object-edit-input {
-  color: var(--text-muted);
-}
-
-/* Ensure hint/warning text is left-aligned, wraps, and stays inside the card */
-#newObjectCatalogIdCard .form-hint,
-#newObjectCatalogIdCard .form-warning {
-  display: block;
-  text-align: left;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  box-sizing: border-box;
-  max-width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-/* If your card content uses <p> with inline layout, force it to behave */
-#newObjectCatalogIdCard p {
-  margin-left: 0;
-  margin-right: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* =========================================================
-   New Object: Catalog ID card — align hint/warning to label,
-   prevent overflow, and keep the whole card "optional"
-   ========================================================= */
-
-#newObjectCatalogIdCard {
-  overflow: hidden; /* guarantees nothing visually bleeds past card edges */
-}
-
-/* Stop using the meta-card flex row layout in this card */
-#newObjectCatalogIdCard.card.card-meta p {
-  display: block;          /* overrides .card.card-meta p { display:flex } */
-  margin: 0;               /* remove default p margins */
-}
-
-/* Label on its own line, left aligned */
-#newObjectCatalogIdCard.card.card-meta p strong {
-  display: block;          /* overrides the "label column" behavior */
-  min-width: 0;            /* overrides min-width:165px */
-  flex: none;              /* defensive */
-  margin: 0 0 0.35rem 0;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-/* Input should span full width, still muted/optional */
-#newObjectCatalogIdCard .object-edit-input {
-  width: 100%;
-  color: var(--text-muted);
-}
-
-/* Hint + warning: full-width, left aligned, inside card */
-#newObjectCatalogIdCard .form-hint,
-#newObjectCatalogIdCard .form-warning {
-  margin: 0.45rem 0 0 0 !important; /* nukes the global 165px indent */
-  padding: 0;                       /* no left/right padding that can push width */
-  max-width: 100%;
-  text-align: left;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  box-sizing: border-box;
-}
-
-/* If the hint/warning lives inside a grid row somewhere, keep it full width */
-#newObjectCatalogIdCard .object-edit-row .form-hint,
-#newObjectCatalogIdCard .object-edit-row .form-warning {
-  grid-column: 1 / -1;
-}
-
-/* ============================
-   FIX: form hint/warning overflow + alignment in edit/create cards
-   (prevents trailing text beyond card + fixes odd button placement)
-   ============================ */
-
-/* 1) In form cards, DO NOT use the "165px" indent meant for <p><strong>...</strong> layouts */
-.card.card-meta .form-hint,
-.card.card-meta .form-warning,
-.card.card-attribute-meta .form-hint,
-.card.card-attribute-meta .form-warning {
-  margin-left: 0;            /* kill the paragraph-style indent */
-  width: 100%;
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  box-sizing: border-box;
-}
-
-/* 2) When hints/warnings are inside a grid row, force them into the value column */
-.object-edit-row .form-hint,
-.object-edit-row .form-warning {
-  grid-column: 2 / -1;
-  margin-left: 0;
-}
-
-/* 3) When hints/warnings are NOT wrapped in .object-edit-row (your objname warning is),
-      align them under the input column based on the grid label width (220px). */
-#newObjectMetaCard .form-hint,
-#newObjectMetaCard .form-warning,
-#newObjectCatalogIdCard .form-hint,
-#newObjectCatalogIdCard .form-warning {
-  padding-left: 220px;                 /* align under input column */
-  padding-right: 0;
-}
-
-/* If the viewport gets narrow, remove the left padding to avoid squeeze/cutoff */
-@media (max-width: 820px) {
-  #newObjectMetaCard .form-hint,
-  #newObjectMetaCard .form-warning,
-  #newObjectCatalogIdCard .form-hint,
-  #newObjectCatalogIdCard .form-warning {
-    padding-left: 0;
-  }
-}
-
-/* 4) Fix "Object ID" / inputs looking cut off: allow grid children to shrink */
-.object-edit-row {
-  width: 100%;
-}
-
-.object-edit-row > * {
-  min-width: 0;
-}
-
-.object-edit-input,
-.object-edit-inline {
-  min-width: 0;
-  max-width: 100%;
-}
-
-/* 5) If your "Open existing object" button is placed directly after the warning,
-      align it under the input column too. */
-#newObjectMetaCard .form-warning + .btn,
-#newObjectMetaCard .form-warning + button.btn {
-  margin-left: 220px;
-  margin-top: 0.35rem;
-}
-
-@media (max-width: 820px) {
-  #newObjectMetaCard .form-warning + .btn,
-  #newObjectMetaCard .form-warning + button.btn {
-    margin-left: 0;
-  }
-}
-
-/* =========================================================
-   FIX: "Submit new object" first field row (Object ID) clipped
-   ========================================================= */
-
-/* Ensure the detail panel has breathing room so the first row isn't cut off */
-.detail-panel {
-  padding-top: 16px;
-}
-
-/* If any card/panel wrapper is clipping children, stop doing that */
-.detail-panel .card,
-.detail-panel .panel,
-.detail-panel .detail-card {
-  overflow: visible;
-}
-
-/* Common row wrappers in your forms: prevent fixed-height clipping */
-.detail-panel .form-row,
-.detail-panel .field-row,
-.detail-panel .row {
-  height: auto;
-  min-height: 44px;      /* matches typical input height */
-  align-items: flex-start;
-}
-
-/* IMPORTANT for flex/grid layouts: allows the input column to actually shrink/fit */
-.detail-panel .form-row > *,
-.detail-panel .field-row > *,
-.detail-panel .row > * {
-  min-width: 0;
-}
-
-/* Ensure inputs are not taller than their container and don't get visually clipped */
-.detail-panel input,
-.detail-panel select,
-.detail-panel textarea {
-  box-sizing: border-box;
-  width: 100%;
-  line-height: 1.2;
-}
-
-/* If your form uses a label/field 2-column grid, this prevents truncation */
-.detail-panel .form-grid,
-.detail-panel .edit-grid,
-.detail-panel .grid-2col {
-  grid-template-columns: 220px minmax(0, 1fr);
-}
-
-/* =========================================================
-   FIX: top of first field/card clipped on "Submit new object"
-   Root causes:
-   - main height assumes header is 60px (it's not)
-   - detail-panel overflow hidden during fx clips content
-   ========================================================= */
-
-/* 1) Make layout robust: header auto height, main fills remaining space */
-html, body {
-  height: 100%;
-}
-
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* header stays natural height */
-header {
-  flex: 0 0 auto;
-}
-
-/* main fills the rest; DO NOT hardcode header height */
-main {
-  flex: 1 1 auto;
-  min-height: 0;
-  height: auto !important; /* overrides calc(100vh - 60px) */
-}
-
-/* sections already flex; keep them scroll-safe */
-section {
-  min-height: 0;
-}
-
-/* 2) Prevent animation from clipping content */
-.detail-panel.fx-animating {
-  overflow-y: auto !important;  /* keep vertical scroll behavior */
-  overflow-x: hidden !important;
-}
-
-/* If you still want to avoid scrollbar flash during FX, hide the bar, not content */
-.detail-panel.fx-animating::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
-}
-
-/* Add a little extra top breathing room for the first card/input */
-.detail-panel {
-  padding-top: 20px;
-  scroll-padding-top: 20px;
-}
-
-
-/* =========================================================
-   HARD FIX: New Object page - prevent any upward shifting
-   that can place the Object ID card outside the scroll range
-   ========================================================= */
-
-#objectDetail {
-  position: relative;
-  overflow-y: auto;
-}
-
-/* New Object page cards: do NOT allow transforms/offsets to shift them */
-#objectDetail #newObjectHeaderCard,
-#objectDetail #newObjectCatalogIdCard,
-#objectDetail #newObjectMetaCard {
-  position: relative !important;
-  top: 0 !important;
-  margin-top: 0 !important;
-  transform: none !important;
-}
-
-/* Ensure the first rendered block always has visible space above it */
-#objectDetail > :first-child {
-  margin-top: 0 !important;
-}
-
-#objectDetail {
-  padding-top: 22px !important;
-}
-
 
 /* ============================
    Reduced motion

@@ -285,6 +285,18 @@ const ATTRIBUTE_EDIT_FIELDS = [
     objectDetailEl && objectDetailEl.classList.add('hidden');
   }
 
+  function resetDetailScroll(panelEl) {
+    if (!panelEl) return;
+
+    // Reset the panel scroll so new content starts at the top
+    panelEl.scrollTop = 0;
+
+    // Stronger: also re-assert after layout (covers timing/animation/layout changes)
+    requestAnimationFrame(() => {
+      panelEl.scrollTop = 0;
+    });
+  }
+
   function goBackToAttributesListOrFirst() {
     showAttributesView();
     if (allAttributes && allAttributes.length) {
@@ -548,6 +560,9 @@ const ATTRIBUTE_EDIT_FIELDS = [
     objectDetailEl.innerHTML = html;
     objectDetailEl.classList.remove('hidden');
 
+    // FIX: ensure form starts at the top (prevents "Catalog ID cut off")
+    resetDetailScroll(objectDetailEl);
+
     // Animate ONLY when entering edit mode
     staggerCards(objectDetailEl);
     animatePanel(objectDetailEl);
@@ -700,6 +715,9 @@ const ATTRIBUTE_EDIT_FIELDS = [
 
     hostEl.innerHTML = html;
     hostEl.classList.remove('hidden');
+
+    // FIX: ensure create page starts at the top
+    resetDetailScroll(hostEl);
 
     // Animate ONLY when entering create page
     staggerCards(hostEl);
@@ -1133,6 +1151,9 @@ function renderNewObjectCreateForm(prefill = {}) {
   // Render
   objectDetailEl.innerHTML = html;
   objectDetailEl.classList.remove('hidden');
+
+  // FIX: ensure edit form starts at the top
+  resetDetailScroll(objectDetailEl);
 
   // Animate ONLY when entering create page
   staggerCards(objectDetailEl);
@@ -1693,6 +1714,9 @@ function renderNewObjectCreateForm(prefill = {}) {
 
     attributeDetailEl.innerHTML = html;
     attributeDetailEl.classList.remove('hidden');
+
+    // FIX: ensure edit page starts at the top
+    resetDetailScroll(attributeDetailEl);
 
     // Animate ONLY when entering edit mode
     staggerCards(attributeDetailEl);
