@@ -1215,6 +1215,59 @@ textarea.object-edit-input {
   grid-template-columns: 220px minmax(0, 1fr);
 }
 
+/* =========================================================
+   FIX: top of first field/card clipped on "Submit new object"
+   Root causes:
+   - main height assumes header is 60px (it's not)
+   - detail-panel overflow hidden during fx clips content
+   ========================================================= */
+
+/* 1) Make layout robust: header auto height, main fills remaining space */
+html, body {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* header stays natural height */
+header {
+  flex: 0 0 auto;
+}
+
+/* main fills the rest; DO NOT hardcode header height */
+main {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important; /* overrides calc(100vh - 60px) */
+}
+
+/* sections already flex; keep them scroll-safe */
+section {
+  min-height: 0;
+}
+
+/* 2) Prevent animation from clipping content */
+.detail-panel.fx-animating {
+  overflow-y: auto !important;  /* keep vertical scroll behavior */
+  overflow-x: hidden !important;
+}
+
+/* If you still want to avoid scrollbar flash during FX, hide the bar, not content */
+.detail-panel.fx-animating::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+/* Add a little extra top breathing room for the first card/input */
+.detail-panel {
+  padding-top: 20px;
+  scroll-padding-top: 20px;
+}
+
 
 /* ============================
    Reduced motion
@@ -1223,5 +1276,3 @@ textarea.object-edit-input {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
-
-/* forcing commit 7 */
