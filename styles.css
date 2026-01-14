@@ -881,6 +881,30 @@ section {
   margin-top: 0;
 }
 
+/* =========================================================
+   FIX: New Object — Catalog/Object ID label partially clipped
+   ========================================================= */
+
+#newObjectCatalogIdCard .object-edit-row {
+  align-items: center !important; /* centers label with the input */
+}
+
+#newObjectCatalogIdCard .object-edit-label {
+  padding-top: 0 !important;      /* overrides global padding-top: 6px */
+  line-height: 1.25 !important;   /* prevents “top chopped off” text */
+  font-size: 0.95rem !important;  /* puts it back to normal label size */
+  font-weight: 650 !important;
+  display: block !important;
+}
+
+/* Optional "(optional)" span — keep it from bumping line metrics weirdly */
+#newObjectCatalogIdCard .object-edit-label span {
+  line-height: 1.25 !important;
+  font-size: 0.9em !important;
+}
+
+
+
 
 /* ============================
    REDUCED MOTION
