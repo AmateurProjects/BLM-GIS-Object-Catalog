@@ -1269,6 +1269,36 @@ section {
 }
 
 
+/* =========================================================
+   HARD FIX: New Object page - prevent any upward shifting
+   that can place the Object ID card outside the scroll range
+   ========================================================= */
+
+#objectDetail {
+  position: relative;
+  overflow-y: auto;
+}
+
+/* New Object page cards: do NOT allow transforms/offsets to shift them */
+#objectDetail #newObjectHeaderCard,
+#objectDetail #newObjectCatalogIdCard,
+#objectDetail #newObjectMetaCard {
+  position: relative !important;
+  top: 0 !important;
+  margin-top: 0 !important;
+  transform: none !important;
+}
+
+/* Ensure the first rendered block always has visible space above it */
+#objectDetail > :first-child {
+  margin-top: 0 !important;
+}
+
+#objectDetail {
+  padding-top: 22px !important;
+}
+
+
 /* ============================
    Reduced motion
    ============================ */
