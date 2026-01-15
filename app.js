@@ -1076,6 +1076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ---------------------------
     // Attributes section (UNCHANGED)
     // ---------------------------
+
     const attrOptions = (allAttributes || [])
       .map((a) => {
         const id = a.id || '';
@@ -1442,6 +1443,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
     }
 
+    function syncNewAttributesFromUI() {
+      const newAttrInputs = objectDetailEl.querySelectorAll(
+        '[data-new-attr-idx][data-new-attr-key]'
+      );
+
+      newAttrInputs.forEach((el) => {
+        const idx = Number(el.getAttribute('data-new-attr-idx'));
+        const k = el.getAttribute('data-new-attr-key');
+        if (Number.isNaN(idx) || !k) return;
+        if (!draft.new_attributes || !draft.new_attributes[idx]) return;
+
+        draft.new_attributes[idx][k] = String(el.value || '');
+      });
+    }
+
     function renderNewAttributesForms() {
       if (!newAttrsHost) return;
       const arr = draft.new_attributes || [];
@@ -1527,12 +1543,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
         b.addEventListener('click', () => {
+          // ✅ Preserve all current input values first
+          syncNewAttributesFromUI();
+
           const idx = Number(b.getAttribute('data-remove-new-attr'));
           if (Number.isNaN(idx)) return;
+
           draft.new_attributes.splice(idx, 1);
           renderNewAttributesForms();
         });
       });
+
     }
 
     if (addExistingBtn) {
@@ -1553,11 +1574,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (addNewAttrBtn) {
       addNewAttrBtn.addEventListener('click', () => {
+        // ✅ Preserve any typed values before we re-render
+        syncNewAttributesFromUI();
+
         draft.new_attributes = draft.new_attributes || [];
         draft.new_attributes.push(makeNewAttrDraft());
         renderNewAttributesForms();
       });
     }
+
 
     renderSelectedAttrChips();
     renderNewAttributesForms();
