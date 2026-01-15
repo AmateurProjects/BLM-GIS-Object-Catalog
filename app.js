@@ -1396,6 +1396,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addNewAttrBtn = objectDetailEl.querySelector('button[data-new-obj-add-new-attr]');
     const newAttrsHost = objectDetailEl.querySelector('[data-new-obj-new-attrs]');
 
+    /* ===============================
+       NEW: live sync new-attribute inputs → draft
+       =============================== */
+    if (newAttrsHost && !newAttrsHost.__boundNewAttrInputSync) {
+      newAttrsHost.__boundNewAttrInputSync = true;
+
+      newAttrsHost.addEventListener('input', (e) => {
+        const el = e.target;
+        if (!el || !el.getAttribute) return;
+
+        const idxRaw = el.getAttribute('data-new-attr-idx');
+        const key = el.getAttribute('data-new-attr-key');
+        if (idxRaw === null || !key) return;
+
+        const idx = Number(idxRaw);
+        if (Number.isNaN(idx)) return;
+
+        if (!draft.new_attributes || !draft.new_attributes[idx]) return;
+        draft.new_attributes[idx][key] = String(el.value || '');
+      });
+    }
+
     const NEW_ATTR_PLACEHOLDERS =
       (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
     function attrPlaceholderFor(key, fallback = '') {
@@ -1457,6 +1479,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         draft.new_attributes[idx][k] = String(el.value || '');
       });
     }
+
+
+
+
+
+
+
+
 
     function renderNewAttributesForms() {
       if (!newAttrsHost) return;
