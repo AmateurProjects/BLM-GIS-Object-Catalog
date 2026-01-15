@@ -928,6 +928,26 @@ section {
   font-size: 0.9em !important;
 }
 
+/* Topics suggestions under the Topics input */
+.topic-suggest {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.topic-suggest-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-right: 0.25rem;
+}
+
+.topic-suggest-btn {
+  cursor: pointer;
+}
+
+
 
 
 

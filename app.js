@@ -968,7 +968,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
 
       <div class="form-warning" data-new-obj-id-warning style="display:none;">
-        ⚠️ This Catalog ID already exists in the catalog. Please suggest a change to the existing object rather than submitting a duplicate.
+        ⚠️ This Catalog ID already exists. Please suggest a change to the existing object rather than submitting a duplicate.
         <div style="margin-top:0.5rem;">
           <button type="button" class="btn" data-new-obj-open-existing-by-id>
             Open existing object
@@ -993,7 +993,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
 
     <div class="form-warning" data-new-obj-objname-warning style="display:none;">
-      ⚠️ This Database Object Name already exists in the catalog. Please suggest a change to the existing catalog object rather than submitting a duplicate.
+      ⚠️ This Database Object Name already exists. Please suggest a change to the existing object rather than submitting a duplicate.
       <div style="margin-top:0.5rem;">
         <button type="button" class="btn" data-new-obj-open-existing-by-objname>
           Open existing object
@@ -1017,16 +1017,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   `;
 
-    // Topics (editable CSV)
+    // Topics (editable CSV) + lightweight suggestions
     const topicsVal = Array.isArray(draft.topics) ? draft.topics.join(', ') : String(draft.topics || '');
     html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Topics</label>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="topics"
-        placeholder="${placeholderFor('topics', 'comma-separated topics')}"
-        value="${escapeHtml(topicsVal)}" />
-    </div>
-  `;
+  <div class="object-edit-row">
+    <label class="object-edit-label">Topics</label>
+    <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="topics"
+      placeholder="${placeholderFor('topics', 'comma-separated topics')}"
+      value="${escapeHtml(topicsVal)}" />
+    <div class="topic-suggest" data-topic-suggest></div>
+  </div>
+`;
+
 
     // Update Frequency
     html += `
@@ -1277,6 +1279,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         lastAutoId = suggested;
       }
     }
+
+    // ---------- Topics suggestions (lightweight) ----------
+    const topicsInput = objectDetailEl.querySelector('[data-new-obj-key="topics"]');
+    const topicsSuggestEl = objectDetailEl.querySelector('[data-topic-suggest]');
+
+    // Build a unique list of existing topics from the catalog
+    const existingTopics = Array.from(
+      new Set(
+        (allObjects || [])
+          .flatMap((o) => (Array.isArray(o.topics) ? o.topics : []))
+          .map((t) => String(t || '').trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+
+    function currentTopicToken(raw) {
+      const s = String(raw || '');
+      const parts = s.split(',');
+      return String(parts[parts.length - 1] || '').trim();
+    }
+
+    function setTopicsValueWithAddedTopic(topic) {
+      const list = parseCsvList(topicsInput?.value || '');
+      if (!list.includes(topic)) list.push(topic);
+      if (topicsInput) topicsInput.value = list.join(', ');
+    }
+
+    function renderTopicSuggestions() {
+      if (!topicsSuggestEl || !topicsInput) return;
+
+      const token = currentTopicToken(topicsInput.value);
+      const q = token.toLowerCase();
+
+      // Don’t show anything if they haven’t started a token
+      if (!q) {
+        topicsSuggestEl.innerHTML = '';
+        return;
+      }
+
+      // Match anywhere in topic; cap list to keep it tidy
+      const matches = existingTopics
+        .filter((t) => t.toLowerCase().includes(q))
+        .slice(0, 12);
+
+      if (!matches.length) {
+        topicsSuggestEl.innerHTML = '';
+        return;
+      }
+
+      topicsSuggestEl.innerHTML =
+        `<div class="topic-suggest-label">Existing topics:</div>` +
+        matches
+          .map(
+            (t) =>
+              `<button type="button" class="topic-suggest-btn pill pill-topic" data-topic="${escapeHtml(t)}">${escapeHtml(
+                t
+              )}</button>`
+          )
+          .join('');
+
+      topicsSuggestEl.querySelectorAll('button[data-topic]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const t = b.getAttribute('data-topic');
+          if (!t) return;
+
+          setTopicsValueWithAddedTopic(t);
+
+          // Keep typing flow nice: add trailing comma+space if they were mid-token
+          const v = String(topicsInput.value || '');
+          if (!v.endsWith(', ') && !v.endsWith(',')) topicsInput.value = v + ', ';
+
+          topicsInput.focus();
+          renderTopicSuggestions();
+        });
+      });
+    }
+
+    if (topicsInput) {
+      topicsInput.addEventListener('input', renderTopicSuggestions);
+      topicsInput.addEventListener('focus', renderTopicSuggestions);
+      topicsInput.addEventListener('blur', () => {
+        // Optional: hide suggestions when leaving the field
+        // topicsSuggestEl.innerHTML = '';
+      });
+    }
+
 
     if (idInput) {
       idInput.addEventListener('input', () => {
