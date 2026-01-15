@@ -223,20 +223,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   ];
 
   // --- Edit Fields for Suggest Attribute Change functionality ---
-const ATTRIBUTE_EDIT_FIELDS = [
-  { key: 'label', label: 'Field Name', type: 'text' }, // was "Attribute Label"
-  { key: 'definition', label: 'Definition', type: 'textarea' }, // moved up + renamed
-  { key: 'type', label: 'Attribute Type', type: 'text' }, // no change
-  { key: 'expected_value', label: 'Expected Input', type: 'text' }, // was "Example Expected Value"
+  const ATTRIBUTE_EDIT_FIELDS = [
+    { key: 'label', label: 'Field Name', type: 'text' }, // was "Attribute Label"
+    { key: 'definition', label: 'Definition', type: 'textarea' }, // moved up + renamed
+    { key: 'type', label: 'Attribute Type', type: 'text' }, // no change
+    { key: 'expected_value', label: 'Expected Input', type: 'text' }, // was "Example Expected Value"
 
-  // Enumerations
-  { key: 'values', label: 'Allowed values (JSON array) — for enumerated types', type: 'json' },
+    // Enumerations
+    { key: 'values', label: 'Allowed values (JSON array) — for enumerated types', type: 'json' },
 
-  // New fields
-  { key: 'status', label: 'Status', type: 'text' },
-  { key: 'data_standard', label: 'Data Standard', type: 'text' },
-  { key: 'notes', label: 'Notes', type: 'textarea' },
-];
+    // New fields
+    { key: 'status', label: 'Status', type: 'text' },
+    { key: 'data_standard', label: 'Data Standard', type: 'text' },
+    { key: 'notes', label: 'Notes', type: 'textarea' },
+  ];
 
   // --- Helpers (shared) ---
   function compactObject(obj) {
@@ -851,76 +851,76 @@ const ATTRIBUTE_EDIT_FIELDS = [
     }
   }
 
-// ----------------------------------------------------//
-// -- BEGIN RENDER NEW OBJECT CREATE FORM FUNCTION ----//  
-// ----------------------------------------------------//
+  // ----------------------------------------------------//
+  // -- BEGIN RENDER NEW OBJECT CREATE FORM FUNCTION ----//  
+  // ----------------------------------------------------//
 
-function renderNewObjectCreateForm(prefill = {}) {
-  if (!objectDetailEl) return;
+  function renderNewObjectCreateForm(prefill = {}) {
+    if (!objectDetailEl) return;
 
-  const NEW_OBJECT_PLACEHOLDERS =
-    (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_object) ||
-    (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) ||
-    {};
+    const NEW_OBJECT_PLACEHOLDERS =
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_object) ||
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_dataset) ||
+      {};
 
-  function placeholderFor(key, fallback = '') {
-    return escapeHtml(NEW_OBJECT_PLACEHOLDERS[key] || fallback || '');
-  }
+    function placeholderFor(key, fallback = '') {
+      return escapeHtml(NEW_OBJECT_PLACEHOLDERS[key] || fallback || '');
+    }
 
-  // --- Geometry normalization helpers (keeps dropdown values stable) ---
-  function normalizeGeometryType(raw) {
-    const g = String(raw || '').trim().toLowerCase();
-    if (!g) return '';
-    if (g === 'polygon' || g === 'area' || g === 'polygon/area') return 'polygon/area';
-    if (g === 'polyline' || g === 'line') return 'line';
-    if (g === 'point' || g === 'multipoint') return 'point';
-    if (g === 'table') return 'table';
-    return g;
-  }
+    // --- Geometry normalization helpers (keeps dropdown values stable) ---
+    function normalizeGeometryType(raw) {
+      const g = String(raw || '').trim().toLowerCase();
+      if (!g) return '';
+      if (g === 'polygon' || g === 'area' || g === 'polygon/area') return 'polygon/area';
+      if (g === 'polyline' || g === 'line') return 'line';
+      if (g === 'point' || g === 'multipoint') return 'point';
+      if (g === 'table') return 'table';
+      return g;
+    }
 
-  const draft = {
-    // required
-    id: '',
-    // object-page fields
-    title: '',
-    description: '',
-    objname: '',
-    geometry_type: '',
-    topics: [],
-    update_frequency: '',
-    // status is forced to "new" on submit new object
-    status: 'new',
-    access_level: '',
-    data_standard: '',
-    notes: '',
-    // attribute selection/creation
-    attribute_ids: [],
-    new_attributes: [],
-    ...deepClone(prefill || {}),
-  };
+    const draft = {
+      // required
+      id: '',
+      // object-page fields
+      title: '',
+      description: '',
+      objname: '',
+      geometry_type: '',
+      topics: [],
+      update_frequency: '',
+      // status is forced to "new" on submit new object
+      status: 'new',
+      access_level: '',
+      data_standard: '',
+      notes: '',
+      // attribute selection/creation
+      attribute_ids: [],
+      new_attributes: [],
+      ...deepClone(prefill || {}),
+    };
 
-  // --- Case-insensitive maps for live warnings + navigation ---
-  const objectIdToObject = new Map(
-    (allObjects || [])
-      .filter((o) => o && o.id)
-      .map((o) => [String(o.id).trim().toLowerCase(), o])
-  );
+    // --- Case-insensitive maps for live warnings + navigation ---
+    const objectIdToObject = new Map(
+      (allObjects || [])
+        .filter((o) => o && o.id)
+        .map((o) => [String(o.id).trim().toLowerCase(), o])
+    );
 
-  const dbNameToObject = new Map(
-    (allObjects || [])
-      .filter((o) => o && o.objname)
-      .map((o) => [String(o.objname).trim().toLowerCase(), o])
-  );
+    const dbNameToObject = new Map(
+      (allObjects || [])
+        .filter((o) => o && o.objname)
+        .map((o) => [String(o.objname).trim().toLowerCase(), o])
+    );
 
-  const existingObjectIds = new Set(objectIdToObject.keys());
-  const existingDbObjNames = new Set(dbNameToObject.keys());
+    const existingObjectIds = new Set(objectIdToObject.keys());
+    const existingDbObjNames = new Set(dbNameToObject.keys());
 
-  let html = '';
+    let html = '';
 
-  // =========================================================
-  // HEADER CARD: Name + Definition (boxed like other fields)
-  // =========================================================
-  html += `
+    // =========================================================
+    // HEADER CARD: Name + Definition (boxed like other fields)
+    // =========================================================
+    html += `
     <div class="card card-meta" id="newObjectHeaderCard">
       <div class="object-edit-row" style="margin-bottom:0.75rem;">
         <label class="object-edit-label" style="font-size:1.2rem; font-weight:700; margin-bottom:0.35rem;">
@@ -941,22 +941,23 @@ function renderNewObjectCreateForm(prefill = {}) {
         <label class="object-edit-label">Definition</label>
         <textarea class="object-edit-input" data-new-obj-key="description"
           placeholder="${placeholderFor('description', 'Short description of the object')}">${escapeHtml(
-            draft.description || ''
-          )}</textarea>
+      draft.description || ''
+    )}</textarea>
       </div>
     </div>
   `;
 
-  // =========================================================
-  // CATALOG ID CARD (muted / optional)
-  // =========================================================
-  html += `
+    // =========================================================
+    // CATALOG ID CARD (muted / optional)
+    // =========================================================
+    html += `
     <div class="card card-meta" id="newObjectCatalogIdCard">
       <div class="object-edit-row" style="margin-bottom:0.5rem;">
-        <label class="object-edit-label" style="opacity:0.75;">
-          Catalog ID <span style="font-weight:400; opacity:0.75;">(optional)</span>
-        </label>
-        <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="id"
+          <label class="object-edit-label" style="opacity:0.75;">
+            Catalog ID
+          </label>
+
+          <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="id"
           placeholder="${placeholderFor('id', 'auto-generated from Name (you can edit)')}"
           value="${escapeHtml(draft.id || '')}"
           style="opacity:0.82;" />
@@ -977,13 +978,13 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // =========================================================
-  // META CARD (Database objname, geometry, etc.)
-  // =========================================================
-  html += `<div class="card card-meta" id="newObjectMetaCard">`;
+    // =========================================================
+    // META CARD (Database objname, geometry, etc.)
+    // =========================================================
+    html += `<div class="card card-meta" id="newObjectMetaCard">`;
 
-  // Database Object Name
-  html += `
+    // Database Object Name
+    html += `
     <div class="object-edit-row" style="margin-bottom:0.5rem;">
       <label class="object-edit-label">Database Object Name</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="objname"
@@ -1001,9 +1002,9 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Geometry Type (validated select)
-  const geomVal = normalizeGeometryType(draft.geometry_type);
-  html += `
+    // Geometry Type (validated select)
+    const geomVal = normalizeGeometryType(draft.geometry_type);
+    html += `
     <div class="object-edit-row">
       <label class="object-edit-label">Geometry Type</label>
       <select class="object-edit-input object-edit-inline" data-new-obj-key="geometry_type">
@@ -1016,9 +1017,9 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Topics (editable CSV)
-  const topicsVal = Array.isArray(draft.topics) ? draft.topics.join(', ') : String(draft.topics || '');
-  html += `
+    // Topics (editable CSV)
+    const topicsVal = Array.isArray(draft.topics) ? draft.topics.join(', ') : String(draft.topics || '');
+    html += `
     <div class="object-edit-row">
       <label class="object-edit-label">Topics</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="topics"
@@ -1027,8 +1028,8 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Update Frequency
-  html += `
+    // Update Frequency
+    html += `
     <div class="object-edit-row">
       <label class="object-edit-label">Update Frequency</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="update_frequency"
@@ -1037,8 +1038,8 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Status (fixed)
-  html += `
+    // Status (fixed)
+    html += `
     <div class="object-edit-row">
       <label class="object-edit-label">Status</label>
       <input class="object-edit-input object-edit-inline" type="text" value="new" readonly
@@ -1046,25 +1047,23 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Access Level (validated select)
-  const accessVal = String(draft.access_level || '').trim();
-  html += `
+    // Access Level (validated select)
+    const accessVal = String(draft.access_level || '').trim();
+    html += `
     <div class="object-edit-row">
       <label class="object-edit-label">Access Level</label>
       <select class="object-edit-input object-edit-inline" data-new-obj-key="access_level">
         <option value="" ${!accessVal ? 'selected' : ''}>Select…</option>
-        <option value="Data does not contain CUI" ${
-          accessVal === 'Data does not contain CUI' ? 'selected' : ''
-        }>Data does not contain CUI</option>
-        <option value="Data may contain CUI" ${
-          accessVal === 'Data may contain CUI' ? 'selected' : ''
-        }>Data may contain CUI</option>
+        <option value="Data does not contain CUI" ${accessVal === 'Data does not contain CUI' ? 'selected' : ''
+      }>Data does not contain CUI</option>
+        <option value="Data may contain CUI" ${accessVal === 'Data may contain CUI' ? 'selected' : ''
+      }>Data may contain CUI</option>
       </select>
     </div>
   `;
 
-  // Data Standard
-  html += `
+    // Data Standard
+    html += `
     <div class="object-edit-row">
       <label class="object-edit-label">Data Standard</label>
       <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="data_standard"
@@ -1073,8 +1072,8 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Notes
-  html += `
+    // Notes
+    html += `
     <div class="object-edit-row" style="margin-bottom:0;">
       <label class="object-edit-label">Notes</label>
       <textarea class="object-edit-input" data-new-obj-key="notes"
@@ -1082,20 +1081,20 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  html += `</div>`; // end meta card
+    html += `</div>`; // end meta card
 
-  // ---------------------------
-  // Attributes section (UNCHANGED)
-  // ---------------------------
-  const attrOptions = (allAttributes || [])
-    .map((a) => {
-      const id = a.id || '';
-      const label = a.label ? ` — ${a.label}` : '';
-      return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
-    })
-    .join('');
+    // ---------------------------
+    // Attributes section (UNCHANGED)
+    // ---------------------------
+    const attrOptions = (allAttributes || [])
+      .map((a) => {
+        const id = a.id || '';
+        const label = a.label ? ` — ${a.label}` : '';
+        return `<option value="${escapeHtml(id)}">${escapeHtml(id + label)}</option>`;
+      })
+      .join('');
 
-  html += `
+    html += `
     <div class="card card-meta" id="newObjectAttributesCard">
       <h3>Attributes</h3>
       <p class="modal-help" style="margin-top:0.25rem;">
@@ -1132,10 +1131,10 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // =========================================================
-  // ACTIONS CARD (MOVED TO BOTTOM)
-  // =========================================================
-  html += `
+    // =========================================================
+    // ACTIONS CARD (MOVED TO BOTTOM)
+    // =========================================================
+    html += `
     <div class="card card-meta" id="newObjectActionsCard">
       <div class="object-edit-actions">
         <button type="button" class="btn" data-new-obj-cancel>Cancel</button>
@@ -1145,240 +1144,240 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Render
-  objectDetailEl.innerHTML = html;
-  objectDetailEl.classList.remove('hidden');
+    // Render
+    objectDetailEl.innerHTML = html;
+    objectDetailEl.classList.remove('hidden');
 
-  // === HARD FIX: always scroll the *real* scroll container to the top ===
-  function getScrollParent(el) {
-    let cur = el;
-    while (cur && cur !== document.body) {
-      const cs = window.getComputedStyle(cur);
-      const oy = cs.overflowY;
-      const canScroll = (oy === 'auto' || oy === 'scroll') && cur.scrollHeight > cur.clientHeight;
-      if (canScroll) return cur;
-      cur = cur.parentElement;
+    // === HARD FIX: always scroll the *real* scroll container to the top ===
+    function getScrollParent(el) {
+      let cur = el;
+      while (cur && cur !== document.body) {
+        const cs = window.getComputedStyle(cur);
+        const oy = cs.overflowY;
+        const canScroll = (oy === 'auto' || oy === 'scroll') && cur.scrollHeight > cur.clientHeight;
+        if (canScroll) return cur;
+        cur = cur.parentElement;
+      }
+      // fallback: the document scroller
+      return document.scrollingElement || document.documentElement;
     }
-    // fallback: the document scroller
-    return document.scrollingElement || document.documentElement;
-  }
 
-  function forcePanelToTop() {
-    const scroller = getScrollParent(objectDetailEl);
-    try { scroller.scrollTop = 0; } catch (e) {}
-    try { objectDetailEl.scrollTop = 0; } catch (e) {}
+    function forcePanelToTop() {
+      const scroller = getScrollParent(objectDetailEl);
+      try { scroller.scrollTop = 0; } catch (e) { }
+      try { objectDetailEl.scrollTop = 0; } catch (e) { }
 
-    requestAnimationFrame(() => {
-      try { scroller.scrollTop = 0; } catch (e) {}
-      try { objectDetailEl.scrollTop = 0; } catch (e) {}
-    });
+      requestAnimationFrame(() => {
+        try { scroller.scrollTop = 0; } catch (e) { }
+        try { objectDetailEl.scrollTop = 0; } catch (e) { }
+      });
 
-    setTimeout(() => {
-      try { scroller.scrollTop = 0; } catch (e) {}
-      try { objectDetailEl.scrollTop = 0; } catch (e) {}
-    }, 50);
+      setTimeout(() => {
+        try { scroller.scrollTop = 0; } catch (e) { }
+        try { objectDetailEl.scrollTop = 0; } catch (e) { }
+      }, 50);
 
-    setTimeout(() => {
-      try { scroller.scrollTop = 0; } catch (e) {}
-      try { objectDetailEl.scrollTop = 0; } catch (e) {}
-    }, 250);
-  }
+      setTimeout(() => {
+        try { scroller.scrollTop = 0; } catch (e) { }
+        try { objectDetailEl.scrollTop = 0; } catch (e) { }
+      }, 250);
+    }
 
-  // IMPORTANT: do not restore any previous scroll for this page
-  // resetDetailScroll(objectDetailEl);
+    // IMPORTANT: do not restore any previous scroll for this page
+    // resetDetailScroll(objectDetailEl);
 
-  // Force top BEFORE animations
-  forcePanelToTop();
+    // Force top BEFORE animations
+    forcePanelToTop();
 
-  // Animate ONLY when entering create page
-  staggerCards(objectDetailEl);
-  animatePanel(objectDetailEl);
+    // Animate ONLY when entering create page
+    staggerCards(objectDetailEl);
+    animatePanel(objectDetailEl);
 
-  // Force top AGAIN after animation/layout/focus side-effects
-  forcePanelToTop();
+    // Force top AGAIN after animation/layout/focus side-effects
+    forcePanelToTop();
 
 
-  // ---------- Auto-suggest Catalog ID from Name (and objname fallback) ----------
-  const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]'); // Catalog ID
-  const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]'); // Name
-  const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
-  const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
+    // ---------- Auto-suggest Catalog ID from Name (and objname fallback) ----------
+    const idInput = objectDetailEl.querySelector('[data-new-obj-key="id"]'); // Catalog ID
+    const nameInput = objectDetailEl.querySelector('[data-new-obj-key="title"]'); // Name
+    const objnameInput = objectDetailEl.querySelector('[data-new-obj-key="objname"]');
+    const descInput = objectDetailEl.querySelector('[data-new-obj-key="description"]');
 
-  const idHintEl = objectDetailEl.querySelector('[data-new-obj-id-hint]');
-  const idWarnEl = objectDetailEl.querySelector('[data-new-obj-id-warning]');
-  const objnameWarnEl = objectDetailEl.querySelector('[data-new-obj-objname-warning]');
+    const idHintEl = objectDetailEl.querySelector('[data-new-obj-id-hint]');
+    const idWarnEl = objectDetailEl.querySelector('[data-new-obj-id-warning]');
+    const objnameWarnEl = objectDetailEl.querySelector('[data-new-obj-objname-warning]');
 
-  const BASE_ID_HINT =
-    'Catalog ID is generated automatically from Name. Optionally, you may edit Catalog ID manually. This is used to maintain a unique identifier for each Catalog entry.';
+    const BASE_ID_HINT =
+      'Catalog ID is generated automatically from Name. Optionally, you may edit Catalog ID manually. This is used to maintain a unique identifier for each Catalog entry.';
 
-  function updateIdStatus() {
-    if (!idInput) return;
+    function updateIdStatus() {
+      if (!idInput) return;
 
-    const idVal = String(idInput.value || '').trim().toLowerCase();
-    const exists = idVal && existingObjectIds.has(idVal);
+      const idVal = String(idInput.value || '').trim().toLowerCase();
+      const exists = idVal && existingObjectIds.has(idVal);
 
-    if (idWarnEl) idWarnEl.style.display = exists ? '' : 'none';
-    if (idHintEl) idHintEl.textContent = BASE_ID_HINT;
+      if (idWarnEl) idWarnEl.style.display = exists ? '' : 'none';
+      if (idHintEl) idHintEl.textContent = BASE_ID_HINT;
 
-    const openBtn = objectDetailEl.querySelector('button[data-new-obj-open-existing-by-id]');
-    if (openBtn) {
-      openBtn.style.display = exists ? '' : 'none';
-      openBtn.onclick = () => {
-        const obj = objectIdToObject.get(idVal);
-        if (!obj) return;
-        showObjectsView();
-        lastSelectedObjectId = obj.id;
-        renderObjectDetail(obj.id);
+      const openBtn = objectDetailEl.querySelector('button[data-new-obj-open-existing-by-id]');
+      if (openBtn) {
+        openBtn.style.display = exists ? '' : 'none';
+        openBtn.onclick = () => {
+          const obj = objectIdToObject.get(idVal);
+          if (!obj) return;
+          showObjectsView();
+          lastSelectedObjectId = obj.id;
+          renderObjectDetail(obj.id);
+        };
+      }
+    }
+
+    function updateObjnameStatus() {
+      if (!objnameInput) return;
+
+      const v = String(objnameInput.value || '').trim().toLowerCase();
+      const exists = v && existingDbObjNames.has(v);
+
+      if (objnameWarnEl) objnameWarnEl.style.display = exists ? '' : 'none';
+
+      const openBtn = objectDetailEl.querySelector('button[data-new-obj-open-existing-by-objname]');
+      if (openBtn) {
+        openBtn.style.display = exists ? '' : 'none';
+        openBtn.onclick = () => {
+          const obj = dbNameToObject.get(v);
+          if (!obj) return;
+          showObjectsView();
+          lastSelectedObjectId = obj.id;
+          renderObjectDetail(obj.id);
+        };
+      }
+    }
+
+    let lastAutoId = '';
+
+    function computeSuggestedId() {
+      const draftNow = {
+        title: nameInput ? nameInput.value : '',
+        objname: objnameInput ? objnameInput.value : '',
+        description: descInput ? descInput.value : '',
       };
+      return suggestObjectIdFromDraft(draftNow);
     }
-  }
 
-  function updateObjnameStatus() {
-    if (!objnameInput) return;
+    function maybeSuggestId(force = false) {
+      if (!idInput) return;
+      const suggested = computeSuggestedId();
+      if (!suggested) return;
 
-    const v = String(objnameInput.value || '').trim().toLowerCase();
-    const exists = v && existingDbObjNames.has(v);
-
-    if (objnameWarnEl) objnameWarnEl.style.display = exists ? '' : 'none';
-
-    const openBtn = objectDetailEl.querySelector('button[data-new-obj-open-existing-by-objname]');
-    if (openBtn) {
-      openBtn.style.display = exists ? '' : 'none';
-      openBtn.onclick = () => {
-        const obj = dbNameToObject.get(v);
-        if (!obj) return;
-        showObjectsView();
-        lastSelectedObjectId = obj.id;
-        renderObjectDetail(obj.id);
-      };
-    }
-  }
-
-  let lastAutoId = '';
-
-  function computeSuggestedId() {
-    const draftNow = {
-      title: nameInput ? nameInput.value : '',
-      objname: objnameInput ? objnameInput.value : '',
-      description: descInput ? descInput.value : '',
-    };
-    return suggestObjectIdFromDraft(draftNow);
-  }
-
-  function maybeSuggestId(force = false) {
-    if (!idInput) return;
-    const suggested = computeSuggestedId();
-    if (!suggested) return;
-
-    const current = String(idInput.value || '').trim();
-    const canOverwrite = force || current === '' || (lastAutoId && current === lastAutoId);
-
-    if (canOverwrite) {
-      idInput.value = suggested;
-      lastAutoId = suggested;
-    }
-  }
-
-  if (idInput) {
-    idInput.addEventListener('input', () => {
       const current = String(idInput.value || '').trim();
-      if (lastAutoId && current !== lastAutoId) lastAutoId = ''; // manual mode
-      updateIdStatus();
-    });
-  }
+      const canOverwrite = force || current === '' || (lastAutoId && current === lastAutoId);
 
-  if (nameInput) {
-    nameInput.addEventListener('input', () => {
-      maybeSuggestId(false);
-      updateIdStatus();
-    });
-  }
+      if (canOverwrite) {
+        idInput.value = suggested;
+        lastAutoId = suggested;
+      }
+    }
 
-  if (objnameInput) {
-    objnameInput.addEventListener('input', () => {
-      maybeSuggestId(false);
-      updateIdStatus();
-      updateObjnameStatus();
-    });
-  }
+    if (idInput) {
+      idInput.addEventListener('input', () => {
+        const current = String(idInput.value || '').trim();
+        if (lastAutoId && current !== lastAutoId) lastAutoId = ''; // manual mode
+        updateIdStatus();
+      });
+    }
 
-  if (descInput) {
-    descInput.addEventListener('input', () => {
-      maybeSuggestId(false);
-      updateIdStatus();
-    });
-  }
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        maybeSuggestId(false);
+        updateIdStatus();
+      });
+    }
 
-  maybeSuggestId(false);
-  updateIdStatus();
-  updateObjnameStatus();
+    if (objnameInput) {
+      objnameInput.addEventListener('input', () => {
+        maybeSuggestId(false);
+        updateIdStatus();
+        updateObjnameStatus();
+      });
+    }
 
-  // ---------- Attributes UI wiring (UNCHANGED) ----------
-  const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
-  const existingAttrInput = objectDetailEl.querySelector('[data-new-obj-existing-attr-input]');
-  const addExistingBtn = objectDetailEl.querySelector('button[data-new-obj-add-existing-attr]');
-  const addNewAttrBtn = objectDetailEl.querySelector('button[data-new-obj-add-new-attr]');
-  const newAttrsHost = objectDetailEl.querySelector('[data-new-obj-new-attrs]');
+    if (descInput) {
+      descInput.addEventListener('input', () => {
+        maybeSuggestId(false);
+        updateIdStatus();
+      });
+    }
 
-  const NEW_ATTR_PLACEHOLDERS =
-    (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
-  function attrPlaceholderFor(key, fallback = '') {
-    return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
-  }
+    maybeSuggestId(false);
+    updateIdStatus();
+    updateObjnameStatus();
 
-  function renderSelectedAttrChips() {
-    if (!selectedAttrsEl) return;
-    const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
-    draft.attribute_ids = ids;
+    // ---------- Attributes UI wiring (UNCHANGED) ----------
+    const selectedAttrsEl = objectDetailEl.querySelector('[data-new-obj-selected-attrs]');
+    const existingAttrInput = objectDetailEl.querySelector('[data-new-obj-existing-attr-input]');
+    const addExistingBtn = objectDetailEl.querySelector('button[data-new-obj-add-existing-attr]');
+    const addNewAttrBtn = objectDetailEl.querySelector('button[data-new-obj-add-new-attr]');
+    const newAttrsHost = objectDetailEl.querySelector('[data-new-obj-new-attrs]');
 
-    selectedAttrsEl.innerHTML = ids.length
-      ? ids
+    const NEW_ATTR_PLACEHOLDERS =
+      (catalogData && catalogData.ui && catalogData.ui.placeholders && catalogData.ui.placeholders.new_attribute) || {};
+    function attrPlaceholderFor(key, fallback = '') {
+      return escapeHtml(NEW_ATTR_PLACEHOLDERS[key] || fallback || '');
+    }
+
+    function renderSelectedAttrChips() {
+      if (!selectedAttrsEl) return;
+      const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
+      draft.attribute_ids = ids;
+
+      selectedAttrsEl.innerHTML = ids.length
+        ? ids
           .map(
             (id) => `
               <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
                 <span>${escapeHtml(id)}</span>
                 <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(
-                  id
-                )}">✕</button>
+              id
+            )}">✕</button>
               </span>
             `
           )
           .join('')
-      : `<span style="color: var(--text-muted);">None selected yet.</span>`;
+        : `<span style="color: var(--text-muted);">None selected yet.</span>`;
 
-    selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const id = b.getAttribute('data-remove-attr-id');
-        draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
-        renderSelectedAttrChips();
+      selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const id = b.getAttribute('data-remove-attr-id');
+          draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
+          renderSelectedAttrChips();
+        });
       });
-    });
-  }
-
-  function makeNewAttrDraft() {
-    return {
-      id: '',
-      label: '',
-      type: '',
-      definition: '',
-      expected_value: '',
-      values_json: '',
-      notes: '',
-    };
-  }
-
-  function renderNewAttributesForms() {
-    if (!newAttrsHost) return;
-    const arr = draft.new_attributes || [];
-    if (!arr.length) {
-      newAttrsHost.innerHTML = '';
-      return;
     }
 
-    newAttrsHost.innerHTML = arr
-      .map((a, idx) => {
-        const safeIdx = String(idx);
-        return `
+    function makeNewAttrDraft() {
+      return {
+        id: '',
+        label: '',
+        type: '',
+        definition: '',
+        expected_value: '',
+        values_json: '',
+        notes: '',
+      };
+    }
+
+    function renderNewAttributesForms() {
+      if (!newAttrsHost) return;
+      const arr = draft.new_attributes || [];
+      if (!arr.length) {
+        newAttrsHost.innerHTML = '';
+        return;
+      }
+
+      newAttrsHost.innerHTML = arr
+        .map((a, idx) => {
+          const safeIdx = String(idx);
+          return `
           <div class="card" style="margin-top:0.75rem;" data-new-attr-card data-new-attr-idx="${safeIdx}">
             <div class="object-edit-actions" style="margin-bottom:0.75rem;">
               <strong style="align-self:center;">New attribute #${idx + 1}</strong>
@@ -1415,8 +1414,8 @@ function renderNewObjectCreateForm(prefill = {}) {
               <textarea class="object-edit-input"
                 data-new-attr-idx="${safeIdx}" data-new-attr-key="definition"
                 placeholder="${attrPlaceholderFor('definition', 'What this attribute means and how it is used')}">${escapeHtml(
-                  a.definition || ''
-                )}</textarea>
+            a.definition || ''
+          )}</textarea>
             </div>
 
             <div class="object-edit-row">
@@ -1432,9 +1431,9 @@ function renderNewObjectCreateForm(prefill = {}) {
               <textarea class="object-edit-input"
                 data-new-attr-idx="${safeIdx}" data-new-attr-key="values_json"
                 placeholder="${attrPlaceholderFor(
-                  'values',
-                  '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
-                )}">${escapeHtml(a.values_json || '')}</textarea>
+            'values',
+            '[{"code":1,"label":"Yes","description":"..."},{"code":0,"label":"No"}]'
+          )}">${escapeHtml(a.values_json || '')}</textarea>
             </div>
 
             <div class="object-edit-row">
@@ -1442,216 +1441,216 @@ function renderNewObjectCreateForm(prefill = {}) {
               <textarea class="object-edit-input"
                 data-new-attr-idx="${safeIdx}" data-new-attr-key="notes"
                 placeholder="${attrPlaceholderFor('notes', 'Any context for reviewers')}">${escapeHtml(
-                  a.notes || ''
-                )}</textarea>
+            a.notes || ''
+          )}</textarea>
             </div>
           </div>
         `;
-      })
-      .join('');
+        })
+        .join('');
 
-    newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
-      b.addEventListener('click', () => {
-        const idx = Number(b.getAttribute('data-remove-new-attr'));
-        if (Number.isNaN(idx)) return;
-        draft.new_attributes.splice(idx, 1);
+      newAttrsHost.querySelectorAll('button[data-remove-new-attr]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const idx = Number(b.getAttribute('data-remove-new-attr'));
+          if (Number.isNaN(idx)) return;
+          draft.new_attributes.splice(idx, 1);
+          renderNewAttributesForms();
+        });
+      });
+    }
+
+    if (addExistingBtn) {
+      addExistingBtn.addEventListener('click', () => {
+        const raw = String(existingAttrInput?.value || '').trim();
+        if (!raw) return;
+        const exists = Catalog.getAttributeById(raw);
+        if (!exists) {
+          alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
+          return;
+        }
+        draft.attribute_ids = draft.attribute_ids || [];
+        if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
+        if (existingAttrInput) existingAttrInput.value = '';
+        renderSelectedAttrChips();
+      });
+    }
+
+    if (addNewAttrBtn) {
+      addNewAttrBtn.addEventListener('click', () => {
+        draft.new_attributes = draft.new_attributes || [];
+        draft.new_attributes.push(makeNewAttrDraft());
         renderNewAttributesForms();
       });
-    });
-  }
+    }
 
-  if (addExistingBtn) {
-    addExistingBtn.addEventListener('click', () => {
-      const raw = String(existingAttrInput?.value || '').trim();
-      if (!raw) return;
-      const exists = Catalog.getAttributeById(raw);
-      if (!exists) {
-        alert(`Attribute "${raw}" doesn't exist yet. Use "Add new attribute" to propose it.`);
-        return;
-      }
-      draft.attribute_ids = draft.attribute_ids || [];
-      if (!draft.attribute_ids.includes(raw)) draft.attribute_ids.push(raw);
-      if (existingAttrInput) existingAttrInput.value = '';
-      renderSelectedAttrChips();
-    });
-  }
+    renderSelectedAttrChips();
+    renderNewAttributesForms();
 
-  if (addNewAttrBtn) {
-    addNewAttrBtn.addEventListener('click', () => {
-      draft.new_attributes = draft.new_attributes || [];
-      draft.new_attributes.push(makeNewAttrDraft());
-      renderNewAttributesForms();
-    });
-  }
+    // Cancel
+    const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
+    if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
 
-  renderSelectedAttrChips();
-  renderNewAttributesForms();
+    // Submit
+    const submitBtn = objectDetailEl.querySelector('button[data-new-obj-submit]');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const out = {};
 
-  // Cancel
-  const cancelBtn = objectDetailEl.querySelector('button[data-new-obj-cancel]');
-  if (cancelBtn) cancelBtn.addEventListener('click', goBackToLastObjectOrList);
+        // collect the object-page fields + required ID
+        const inputs = objectDetailEl.querySelectorAll('[data-new-obj-key]');
+        inputs.forEach((el) => {
+          const k = el.getAttribute('data-new-obj-key');
+          const raw = el.value;
 
-  // Submit
-  const submitBtn = objectDetailEl.querySelector('button[data-new-obj-submit]');
-  if (submitBtn) {
-    submitBtn.addEventListener('click', () => {
-      const out = {};
-
-      // collect the object-page fields + required ID
-      const inputs = objectDetailEl.querySelectorAll('[data-new-obj-key]');
-      inputs.forEach((el) => {
-        const k = el.getAttribute('data-new-obj-key');
-        const raw = el.value;
-
-        if (k === 'topics') {
-          out[k] = parseCsvList(raw);
-          return;
-        }
-        out[k] = String(raw || '').trim();
-      });
-
-      const id = String(out.id || '').trim();
-      if (!id) {
-        alert('Catalog ID is required.');
-        return;
-      }
-
-      // Catalog ID duplicate check (case-insensitive)
-      if (existingObjectIds.has(id.toLowerCase())) {
-        const proceed = confirm(
-          `⚠️ Catalog ID "${id}" already exists in the catalog.\n\n` +
-            `You should suggest a change to the existing object instead of submitting a duplicate.\n\n` +
-            `Open an issue anyway?`
-        );
-        if (!proceed) return;
-      }
-
-      // Database Object Name duplicate check (case-insensitive)
-      const objnameVal = String(out.objname || '').trim();
-      if (objnameVal && existingDbObjNames.has(objnameVal.toLowerCase())) {
-        const proceed = confirm(
-          `⚠️ Database Object Name "${objnameVal}" already exists in the catalog.\n\n` +
-            `You should suggest a change to the existing object instead of submitting a duplicate.\n\n` +
-            `Open an issue anyway?`
-        );
-        if (!proceed) return;
-      }
-
-      // Geometry type validation + normalization
-      const allowedGeom = new Set(['point', 'line', 'polygon/area', 'table']);
-      const geom = normalizeGeometryType(out.geometry_type);
-      if (!allowedGeom.has(geom)) {
-        alert('Geometry Type is required and must be one of: point, line, polygon/area, table.');
-        return;
-      }
-      out.geometry_type = geom;
-
-      // Access level validation
-      const allowedAccess = new Set(['Data does not contain CUI', 'Data may contain CUI']);
-      const access = String(out.access_level || '').trim();
-      if (!allowedAccess.has(access)) {
-        alert('Access Level is required and must be one of the two provided options.');
-        return;
-      }
-
-      // collect new attribute drafts from UI (UNCHANGED)
-      const newAttrInputs = objectDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
-      newAttrInputs.forEach((el) => {
-        const idx = Number(el.getAttribute('data-new-attr-idx'));
-        const k = el.getAttribute('data-new-attr-key');
-        if (Number.isNaN(idx) || !k) return;
-        if (!draft.new_attributes || !draft.new_attributes[idx]) return;
-        draft.new_attributes[idx][k] = String(el.value || '');
-      });
-
-      const newAttributesOut = [];
-      const newAttrIds = [];
-
-      for (let i = 0; i < (draft.new_attributes || []).length; i++) {
-        const a = draft.new_attributes[i];
-        const aid = String(a.id || '').trim();
-        if (!aid) {
-          alert(`New attribute #${i + 1} is missing an Attribute ID.`);
-          return;
-        }
-        if (Catalog.getAttributeById(aid)) {
-          alert(`New attribute ID "${aid}" already exists. Add it as an existing attribute instead.`);
-          return;
-        }
-
-        const type = String(a.type || '').trim();
-        let values = undefined;
-        if (type === 'enumerated') {
-          const rawVals = String(a.values_json || '').trim();
-          if (rawVals) {
-            const parsed = tryParseJson(rawVals);
-            if (parsed && parsed.__parse_error__) {
-              alert(`Allowed values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
-              return;
-            }
-            if (parsed && !Array.isArray(parsed)) {
-              alert(`Allowed values for "${aid}" must be a JSON array.`);
-              return;
-            }
-            values = parsed || [];
-          } else {
-            values = [];
+          if (k === 'topics') {
+            out[k] = parseCsvList(raw);
+            return;
           }
-        }
-
-        const attrObj = compactObject({
-          id: aid,
-          label: String(a.label || '').trim() || undefined,
-          type: type || undefined,
-          definition: String(a.definition || '').trim() || undefined,
-          expected_value: String(a.expected_value || '').trim() || undefined,
-          values,
+          out[k] = String(raw || '').trim();
         });
 
-        newAttributesOut.push(attrObj);
-        newAttrIds.push(aid);
-      }
+        const id = String(out.id || '').trim();
+        if (!id) {
+          alert('Catalog ID is required.');
+          return;
+        }
 
-      const existingIds = Array.from(
-        new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
-      );
-      const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
+        // Catalog ID duplicate check (case-insensitive)
+        if (existingObjectIds.has(id.toLowerCase())) {
+          const proceed = confirm(
+            `⚠️ Catalog ID "${id}" already exists in the catalog.\n\n` +
+            `You should suggest a change to the existing object instead of submitting a duplicate.\n\n` +
+            `Open an issue anyway?`
+          );
+          if (!proceed) return;
+        }
 
-      // Build object payload using ONLY the fields shown on the object page
-      const objectObj = compactObject({
-        id,
-        title: out.title, // Name
-        description: out.description, // Definition
-        objname: out.objname,
-        geometry_type: out.geometry_type,
-        topics: out.topics || [],
-        update_frequency: out.update_frequency,
-        status: 'new', // FORCE
-        access_level: out.access_level,
-        data_standard: out.data_standard,
-        notes: out.notes,
-        attribute_ids: combinedAttrIds.length ? combinedAttrIds : undefined,
+        // Database Object Name duplicate check (case-insensitive)
+        const objnameVal = String(out.objname || '').trim();
+        if (objnameVal && existingDbObjNames.has(objnameVal.toLowerCase())) {
+          const proceed = confirm(
+            `⚠️ Database Object Name "${objnameVal}" already exists in the catalog.\n\n` +
+            `You should suggest a change to the existing object instead of submitting a duplicate.\n\n` +
+            `Open an issue anyway?`
+          );
+          if (!proceed) return;
+        }
+
+        // Geometry type validation + normalization
+        const allowedGeom = new Set(['point', 'line', 'polygon/area', 'table']);
+        const geom = normalizeGeometryType(out.geometry_type);
+        if (!allowedGeom.has(geom)) {
+          alert('Geometry Type is required and must be one of: point, line, polygon/area, table.');
+          return;
+        }
+        out.geometry_type = geom;
+
+        // Access level validation
+        const allowedAccess = new Set(['Data does not contain CUI', 'Data may contain CUI']);
+        const access = String(out.access_level || '').trim();
+        if (!allowedAccess.has(access)) {
+          alert('Access Level is required and must be one of the two provided options.');
+          return;
+        }
+
+        // collect new attribute drafts from UI (UNCHANGED)
+        const newAttrInputs = objectDetailEl.querySelectorAll('[data-new-attr-idx][data-new-attr-key]');
+        newAttrInputs.forEach((el) => {
+          const idx = Number(el.getAttribute('data-new-attr-idx'));
+          const k = el.getAttribute('data-new-attr-key');
+          if (Number.isNaN(idx) || !k) return;
+          if (!draft.new_attributes || !draft.new_attributes[idx]) return;
+          draft.new_attributes[idx][k] = String(el.value || '');
+        });
+
+        const newAttributesOut = [];
+        const newAttrIds = [];
+
+        for (let i = 0; i < (draft.new_attributes || []).length; i++) {
+          const a = draft.new_attributes[i];
+          const aid = String(a.id || '').trim();
+          if (!aid) {
+            alert(`New attribute #${i + 1} is missing an Attribute ID.`);
+            return;
+          }
+          if (Catalog.getAttributeById(aid)) {
+            alert(`New attribute ID "${aid}" already exists. Add it as an existing attribute instead.`);
+            return;
+          }
+
+          const type = String(a.type || '').trim();
+          let values = undefined;
+          if (type === 'enumerated') {
+            const rawVals = String(a.values_json || '').trim();
+            if (rawVals) {
+              const parsed = tryParseJson(rawVals);
+              if (parsed && parsed.__parse_error__) {
+                alert(`Allowed values JSON parse error for "${aid}":\n${parsed.__parse_error__}`);
+                return;
+              }
+              if (parsed && !Array.isArray(parsed)) {
+                alert(`Allowed values for "${aid}" must be a JSON array.`);
+                return;
+              }
+              values = parsed || [];
+            } else {
+              values = [];
+            }
+          }
+
+          const attrObj = compactObject({
+            id: aid,
+            label: String(a.label || '').trim() || undefined,
+            type: type || undefined,
+            definition: String(a.definition || '').trim() || undefined,
+            expected_value: String(a.expected_value || '').trim() || undefined,
+            values,
+          });
+
+          newAttributesOut.push(attrObj);
+          newAttrIds.push(aid);
+        }
+
+        const existingIds = Array.from(
+          new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean))
+        );
+        const combinedAttrIds = Array.from(new Set([...existingIds, ...newAttrIds]));
+
+        // Build object payload using ONLY the fields shown on the object page
+        const objectObj = compactObject({
+          id,
+          title: out.title, // Name
+          description: out.description, // Definition
+          objname: out.objname,
+          geometry_type: out.geometry_type,
+          topics: out.topics || [],
+          update_frequency: out.update_frequency,
+          status: 'new', // FORCE
+          access_level: out.access_level,
+          data_standard: out.data_standard,
+          notes: out.notes,
+          attribute_ids: combinedAttrIds.length ? combinedAttrIds : undefined,
+        });
+
+        const issueUrl = buildGithubIssueUrlForNewObject(objectObj, newAttributesOut);
+
+        goBackToLastObjectOrList();
+
+        const w = window.open(issueUrl, '_blank', 'noopener');
+        if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
+
       });
 
-      const issueUrl = buildGithubIssueUrlForNewObject(objectObj, newAttributesOut);
+    }
 
-      goBackToLastObjectOrList();
 
-      const w = window.open(issueUrl, '_blank', 'noopener');
-      if (!w) alert('Popup blocked — please allow popups to open the GitHub Issue.');
-        
-    });
-    
+
   }
 
 
-
-}
-
-
-// ----------------------------------------------------//
-// --- END RENDER NEW OBJECT CREATE FORM FUNCTION -----//  
-// ----------------------------------------------------//
+  // ----------------------------------------------------//
+  // --- END RENDER NEW OBJECT CREATE FORM FUNCTION -----//  
+  // ----------------------------------------------------//
 
 
   function renderAttributeEditForm(attrId) {
@@ -1862,12 +1861,12 @@ function renderNewObjectCreateForm(prefill = {}) {
     const filtered = !ft
       ? allObjects
       : allObjects.filter((obj) => {
-          const haystack = [obj.id, obj.title, obj.description, obj.agency_owner, obj.office_owner, ...(obj.topics || [])]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-          return haystack.includes(ft);
-        });
+        const haystack = [obj.id, obj.title, obj.description, obj.agency_owner, obj.office_owner, ...(obj.topics || [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(ft);
+      });
 
     if (!filtered.length) {
       objectListEl.innerHTML = '<p>No objects found.</p>';
@@ -1919,9 +1918,9 @@ function renderNewObjectCreateForm(prefill = {}) {
     const filtered = !ft
       ? allAttributes
       : allAttributes.filter((attr) => {
-          const haystack = [attr.id, attr.label, attr.definition].filter(Boolean).join(' ').toLowerCase();
-          return haystack.includes(ft);
-        });
+        const haystack = [attr.id, attr.label, attr.definition].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(ft);
+      });
 
     if (!filtered.length) {
       attributeListEl.innerHTML = '<p>No attributes found.</p>';
@@ -1967,93 +1966,92 @@ function renderNewObjectCreateForm(prefill = {}) {
   // DETAIL RENDERERS
   // ===========================
   function renderObjectDetail(objectId) {
-  if (!objectDetailEl) return;
+    if (!objectDetailEl) return;
 
-  // Browsing existing objects should not animate.
-  objectDetailEl.classList.remove('fx-enter', 'fx-animating');
+    // Browsing existing objects should not animate.
+    objectDetailEl.classList.remove('fx-enter', 'fx-animating');
 
-  lastSelectedObjectId = objectId;
-  setActiveListButton(objectListEl, (b) => b.getAttribute('data-obj-id') === objectId);
+    lastSelectedObjectId = objectId;
+    setActiveListButton(objectListEl, (b) => b.getAttribute('data-obj-id') === objectId);
 
-  const obj = Catalog.getObjectById(objectId);
-  if (!obj) {
-    objectDetailEl.classList.remove('hidden');
-    objectDetailEl.innerHTML = `<p>Object not found: ${escapeHtml(objectId)}</p>`;
-    return;
-  }
+    const obj = Catalog.getObjectById(objectId);
+    if (!obj) {
+      objectDetailEl.classList.remove('hidden');
+      objectDetailEl.innerHTML = `<p>Object not found: ${escapeHtml(objectId)}</p>`;
+      return;
+    }
 
-  const geomIconHtml = getGeometryIconHTML(obj.geometry_type || '', 'geom-icon-inline');
-  const attrs = Catalog.getAttributesForObject(obj);
+    const geomIconHtml = getGeometryIconHTML(obj.geometry_type || '', 'geom-icon-inline');
+    const attrs = Catalog.getAttributesForObject(obj);
 
-  let html = '';
+    let html = '';
 
-  // Object page header
-  // (Keep title visible, but we now label it as "Name" in the meta card per your request.)
-  html += `<h2>${escapeHtml(obj.title || obj.id)}</h2>`;
+    // Object page header
+    // (Keep title visible, but we now label it as "Name" in the meta card per your request.)
+    html += `<h2>${escapeHtml(obj.title || obj.id)}</h2>`;
 
-  // Definition (no change)
-  if (obj.description) {
-    html += `<p><strong>Definition:</strong> ${escapeHtml(obj.description)}</p>`;
-  }
+    // Definition (no change)
+    if (obj.description) {
+      html += `<p><strong>Definition:</strong> ${escapeHtml(obj.description)}</p>`;
+    }
 
-  html += '<div class="card card-meta">';
+    html += '<div class="card card-meta">';
 
-  // ✅ Change "Title" to "Name" (and show it explicitly as a field)
-  html += `<p><strong>Name:</strong> ${escapeHtml(obj.title || obj.id)}</p>`;
+    // ✅ Change "Title" to "Name" (and show it explicitly as a field)
+    html += `<p><strong>Name:</strong> ${escapeHtml(obj.title || obj.id)}</p>`;
 
-  // No change fields
-  html += `<p><strong>Database Object Name:</strong> ${escapeHtml(obj.objname || '')}</p>`;
-  html += `<p><strong>Geometry Type:</strong> ${geomIconHtml}${escapeHtml(obj.geometry_type || '')}</p>`;
+    // No change fields
+    html += `<p><strong>Database Object Name:</strong> ${escapeHtml(obj.objname || '')}</p>`;
+    html += `<p><strong>Geometry Type:</strong> ${geomIconHtml}${escapeHtml(obj.geometry_type || '')}</p>`;
 
-  // ❌ Removed per your table:
-  // - Agency Owner
-  // - Office Owner
-  // - Contact Email
+    // ❌ Removed per your table:
+    // - Agency Owner
+    // - Office Owner
+    // - Contact Email
 
-  html += `<p><strong>Topics:</strong> ${
-    Array.isArray(obj.topics)
+    html += `<p><strong>Topics:</strong> ${Array.isArray(obj.topics)
       ? obj.topics.map((t) => `<span class="pill pill-topic">${escapeHtml(t)}</span>`).join(' ')
       : ''
-  }</p>`;
+      }</p>`;
 
-  html += `<p><strong>Update Frequency:</strong> ${escapeHtml(obj.update_frequency || '')}</p>`;
-  html += `<p><strong>Status:</strong> ${escapeHtml(obj.status || '')}</p>`;
-  html += `<p><strong>Access Level:</strong> ${escapeHtml(obj.access_level || '')}</p>`;
+    html += `<p><strong>Update Frequency:</strong> ${escapeHtml(obj.update_frequency || '')}</p>`;
+    html += `<p><strong>Status:</strong> ${escapeHtml(obj.status || '')}</p>`;
+    html += `<p><strong>Access Level:</strong> ${escapeHtml(obj.access_level || '')}</p>`;
 
-  // Keep Data Standard (no change)
-  if (obj.data_standard) {
-    html += `<p><strong>Data Standard:</strong> <a href="${obj.data_standard}" target="_blank" rel="noopener">${escapeHtml(
-      obj.data_standard
-    )}</a></p>`;
-  }
+    // Keep Data Standard (no change)
+    if (obj.data_standard) {
+      html += `<p><strong>Data Standard:</strong> <a href="${obj.data_standard}" target="_blank" rel="noopener">${escapeHtml(
+        obj.data_standard
+      )}</a></p>`;
+    }
 
-  if (obj.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(obj.notes)}</p>`;
+    if (obj.notes) html += `<p><strong>Notes:</strong> ${escapeHtml(obj.notes)}</p>`;
 
-  html += '</div>';
+    html += '</div>';
 
-  // Attributes section (unchanged)
-  html += `
+    // Attributes section (unchanged)
+    html += `
     <div class="card-row">
       <div class="card card-attributes">
         <h3>Attributes</h3>
   `;
 
-  if (!attrs.length) {
-    html += '<p>No attributes defined for this object.</p>';
-  } else {
-    html += '<ul>';
-    attrs.forEach((attr) => {
-      html += `
+    if (!attrs.length) {
+      html += '<p>No attributes defined for this object.</p>';
+    } else {
+      html += '<ul>';
+      attrs.forEach((attr) => {
+        html += `
         <li>
           <button type="button" class="link-button" data-attr-id="${escapeHtml(attr.id)}">
             ${escapeHtml(attr.id)} – ${escapeHtml(attr.label || '')}
           </button>
         </li>`;
-    });
-    html += '</ul>';
-  }
+      });
+      html += '</ul>';
+    }
 
-  html += `
+    html += `
       </div>
       <div class="card card-inline-attribute" id="inlineAttributeDetail">
         <h3>Attribute details</h3>
@@ -2062,8 +2060,8 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  // Actions (unchanged)
-  html += `
+    // Actions (unchanged)
+    html += `
     <div class="card card-actions">
       <button type="button" class="suggest-button" data-edit-object="${escapeHtml(obj.id)}">
         Suggest a change to this object
@@ -2074,37 +2072,37 @@ function renderNewObjectCreateForm(prefill = {}) {
     </div>
   `;
 
-  objectDetailEl.innerHTML = html;
-  objectDetailEl.classList.remove('hidden');
+    objectDetailEl.innerHTML = html;
+    objectDetailEl.classList.remove('hidden');
 
-  const editBtn = objectDetailEl.querySelector('button[data-edit-object]');
-  if (editBtn) {
-    editBtn.addEventListener('click', () => {
-      const objId = editBtn.getAttribute('data-edit-object');
-      renderObjectEditForm(objId);
+    const editBtn = objectDetailEl.querySelector('button[data-edit-object]');
+    if (editBtn) {
+      editBtn.addEventListener('click', () => {
+        const objId = editBtn.getAttribute('data-edit-object');
+        renderObjectEditForm(objId);
+      });
+    }
+
+    const attrButtons = objectDetailEl.querySelectorAll('button[data-attr-id]');
+    attrButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const attrId = btn.getAttribute('data-attr-id');
+        renderInlineAttributeDetail(attrId);
+      });
     });
+
+    const exportBtn = objectDetailEl.querySelector('button[data-export-schema]');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const objId = exportBtn.getAttribute('data-export-schema');
+        const o = Catalog.getObjectById(objId);
+        if (!o) return;
+        const attrsForObj = Catalog.getAttributesForObject(o);
+        const script = buildArcGisSchemaPython(o, attrsForObj);
+        downloadTextFile(script, `${o.id}_schema_arcpy.py`);
+      });
+    }
   }
-
-  const attrButtons = objectDetailEl.querySelectorAll('button[data-attr-id]');
-  attrButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const attrId = btn.getAttribute('data-attr-id');
-      renderInlineAttributeDetail(attrId);
-    });
-  });
-
-  const exportBtn = objectDetailEl.querySelector('button[data-export-schema]');
-  if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-      const objId = exportBtn.getAttribute('data-export-schema');
-      const o = Catalog.getObjectById(objId);
-      if (!o) return;
-      const attrsForObj = Catalog.getAttributesForObject(o);
-      const script = buildArcGisSchemaPython(o, attrsForObj);
-      downloadTextFile(script, `${o.id}_schema_arcpy.py`);
-    });
-  }
-}
 
 
   function renderInlineAttributeDetail(attrId) {
@@ -2132,14 +2130,14 @@ function renderNewObjectCreateForm(prefill = {}) {
     html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition || '')}</p>`;
     html += `<p><strong>Field Name:</strong> ${escapeHtml(attribute.label || '')}</p>`;
     html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`;
-    
+
     if (attribute.expected_value !== undefined) {
       html += `<p><strong>Expected Input:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
     }
 
     if (attribute.status) {
       html += `<p><strong>Status:</strong> ${escapeHtml(attribute.status)}</p>`;
-    } 
+    }
 
     if (attribute.data_standard) {
       html += `<p><strong>Data Standard:</strong> <a href="${attribute.data_standard}" target="_blank" rel="noopener">${escapeHtml(
@@ -2228,88 +2226,88 @@ function renderNewObjectCreateForm(prefill = {}) {
   }
 
   function renderAttributeDetail(attrId) {
-  if (!attributeDetailEl) return;
+    if (!attributeDetailEl) return;
 
-  // Browsing existing attributes should not animate.
-  attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
+    // Browsing existing attributes should not animate.
+    attributeDetailEl.classList.remove('fx-enter', 'fx-animating');
 
-  lastSelectedAttributeId = attrId;
-  setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
+    lastSelectedAttributeId = attrId;
+    setActiveListButton(attributeListEl, (b) => b.getAttribute('data-attr-id') === attrId);
 
-  const attribute = Catalog.getAttributeById(attrId);
-  if (!attribute) {
-    attributeDetailEl.classList.remove('hidden');
-    attributeDetailEl.innerHTML = `<p>Attribute not found: ${escapeHtml(attrId)}</p>`;
-    return;
-  }
+    const attribute = Catalog.getAttributeById(attrId);
+    if (!attribute) {
+      attributeDetailEl.classList.remove('hidden');
+      attributeDetailEl.innerHTML = `<p>Attribute not found: ${escapeHtml(attrId)}</p>`;
+      return;
+    }
 
-  const objects = Catalog.getObjectsForAttribute(attrId);
+    const objects = Catalog.getObjectsForAttribute(attrId);
 
-  let html = '';
+    let html = '';
 
-  // Header
-  html += `<h2>${escapeHtml(attribute.id)}</h2>`;
+    // Header
+    html += `<h2>${escapeHtml(attribute.id)}</h2>`;
 
-  if (attribute.definition) {
-  html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition)}</p>`;
-  }
+    if (attribute.definition) {
+      html += `<p><strong>Definition:</strong> ${escapeHtml(attribute.definition)}</p>`;
+    }
 
-  // Meta card (updated field names + order)
-  html += '<div class="card card-attribute-meta">';
+    // Meta card (updated field names + order)
+    html += '<div class="card card-attribute-meta">';
 
-  html += `<p><strong>Name:</strong> ${escapeHtml(attribute.id)}</p>`; // was Attribute Name
-  html += `<p><strong>Field Name:</strong> ${escapeHtml(attribute.label || '')}</p>`; // was Attribute Label
-  html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`; // no change
+    html += `<p><strong>Name:</strong> ${escapeHtml(attribute.id)}</p>`; // was Attribute Name
+    html += `<p><strong>Field Name:</strong> ${escapeHtml(attribute.label || '')}</p>`; // was Attribute Label
+    html += `<p><strong>Attribute Type:</strong> ${escapeHtml(attribute.type || '')}</p>`; // no change
 
-  if (attribute.expected_value !== undefined) {
-    html += `<p><strong>Expected Input:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
-  }
+    if (attribute.expected_value !== undefined) {
+      html += `<p><strong>Expected Input:</strong> ${escapeHtml(String(attribute.expected_value))}</p>`;
+    }
 
-  if (attribute.status) {
-    html += `<p><strong>Status:</strong> ${escapeHtml(attribute.status)}</p>`;
-  }
+    if (attribute.status) {
+      html += `<p><strong>Status:</strong> ${escapeHtml(attribute.status)}</p>`;
+    }
 
-  if (attribute.data_standard) {
-    html += `<p><strong>Data Standard:</strong> <a href="${attribute.data_standard}" target="_blank" rel="noopener">${escapeHtml(
-      attribute.data_standard
-    )}</a></p>`;
-  }
+    if (attribute.data_standard) {
+      html += `<p><strong>Data Standard:</strong> <a href="${attribute.data_standard}" target="_blank" rel="noopener">${escapeHtml(
+        attribute.data_standard
+      )}</a></p>`;
+    }
 
-  if (attribute.notes) {
-    html += `<p><strong>Notes:</strong> ${escapeHtml(attribute.notes)}</p>`;
-  }
+    if (attribute.notes) {
+      html += `<p><strong>Notes:</strong> ${escapeHtml(attribute.notes)}</p>`;
+    }
 
-  html += '</div>';
+    html += '</div>';
 
-  // Enumerated values (unchanged)
-  if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
-    html += '<div class="card card-enumerated">';
-    html += '<h3>Allowed values</h3>';
-    html += `
+    // Enumerated values (unchanged)
+    if (attribute.type === 'enumerated' && Array.isArray(attribute.values) && attribute.values.length) {
+      html += '<div class="card card-enumerated">';
+      html += '<h3>Allowed values</h3>';
+      html += `
       <table>
         <thead>
           <tr><th>Code</th><th>Label</th><th>Description</th></tr>
         </thead>
         <tbody>
     `;
-    attribute.values.forEach((v) => {
-      const code = v.code !== undefined ? String(v.code) : '';
-      const label = v.label || '';
-      const desc = v.description || '';
-      html += `
+      attribute.values.forEach((v) => {
+        const code = v.code !== undefined ? String(v.code) : '';
+        const label = v.label || '';
+        const desc = v.description || '';
+        html += `
         <tr>
           <td>${escapeHtml(code)}</td>
           <td>${escapeHtml(label)}</td>
           <td>${escapeHtml(desc)}</td>
         </tr>
       `;
-    });
-    html += `
+      });
+      html += `
         </tbody>
       </table>
     `;
-    html += '</div>';
-  }
+      html += '</div>';
+    }
 
     html += '<div class="card card-attribute-objects">';
     html += '<h3>Objects using this attribute</h3>';
