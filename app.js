@@ -852,7 +852,7 @@ const ATTRIBUTE_EDIT_FIELDS = [
   }
 
 // ----------------------------------------------------//
-// ----- BEGIN SUBMIT NEW OBJECT FORM FUNCTION --------//  
+// -- BEGIN RENDER NEW OBJECT CREATE FORM FUNCTION ----//  
 // ----------------------------------------------------//
 
 function renderNewObjectCreateForm(prefill = {}) {
@@ -935,9 +935,6 @@ function renderNewObjectCreateForm(prefill = {}) {
           value="${escapeHtml(draft.title || '')}"
         />
 
-        <div class="form-hint" style="margin-top:0.35rem;">
-          Human-friendly object title
-        </div>
       </div>
 
       <div class="object-edit-row" style="margin-bottom:0;">
@@ -1653,7 +1650,7 @@ function renderNewObjectCreateForm(prefill = {}) {
 
 
 // ----------------------------------------------------//
-// ----- END SUBMIT NEW OBJECT FORM FUNCTION --------//  
+// --- END RENDER NEW OBJECT CREATE FORM FUNCTION -----//  
 // ----------------------------------------------------//
 
 
