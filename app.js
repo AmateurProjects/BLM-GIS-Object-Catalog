@@ -209,7 +209,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     { key: 'contact_email', label: 'Contact Email', type: 'text' },
 
     { key: 'geometry_type', label: 'Geometry Type', type: 'text' },
-    { key: 'update_frequency', label: 'Update Frequency', type: 'text' },
 
     { key: 'status', label: 'Status', type: 'text' },
     { key: 'access_level', label: 'Access Level', type: 'text' },
@@ -887,7 +886,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       objname: '',
       geometry_type: '',
       topics: [],
-      update_frequency: '',
       // status is forced to "new" on submit new object
       status: 'new',
       access_level: '',
@@ -1029,16 +1027,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
 `;
 
-
-    // Update Frequency
-    html += `
-    <div class="object-edit-row">
-      <label class="object-edit-label">Update Frequency</label>
-      <input class="object-edit-input object-edit-inline" type="text" data-new-obj-key="update_frequency"
-        placeholder="${placeholderFor('update_frequency', '')}"
-        value="${escapeHtml(draft.update_frequency || '')}" />
-    </div>
-  `;
 
     // Status (fixed)
     html += `
@@ -1712,7 +1700,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           objname: out.objname,
           geometry_type: out.geometry_type,
           topics: out.topics || [],
-          update_frequency: out.update_frequency,
           status: 'new', // FORCE
           access_level: out.access_level,
           data_standard: out.data_standard,
@@ -2102,7 +2089,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       : ''
       }</p>`;
 
-    html += `<p><strong>Update Frequency:</strong> ${escapeHtml(obj.update_frequency || '')}</p>`;
     html += `<p><strong>Status:</strong> ${escapeHtml(obj.status || '')}</p>`;
     html += `<p><strong>Access Level:</strong> ${escapeHtml(obj.access_level || '')}</p>`;
 

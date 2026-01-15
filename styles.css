@@ -947,6 +947,28 @@ section {
   cursor: pointer;
 }
 
+/* --- Topics suggestions: keep them aligned with the input column --- */
+.object-edit-row .topic-suggest {
+  /* If .object-edit-row is a 2-col grid, force suggestions into column 2 (the input column) */
+  grid-column: 2 / -1;
+
+  margin-top: 0.35rem;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Make the "Existing topics:" label sit inline with the pills */
+.object-edit-row .topic-suggest-label {
+  display: inline-block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
+  white-space: nowrap;
+}
 
 
 
