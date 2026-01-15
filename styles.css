@@ -752,8 +752,33 @@ textarea.object-edit-input {
   background: rgba(255, 255, 255, 0.02);
   border: 1px dashed rgba(255, 255, 255, 0.15);
   box-shadow: none;
-  overflow: hidden;
+
+  /* FIX: prevent the card’s inner content (row + hint/warning) from being clipped */
+  overflow: visible;
+
+  /* Extra safety: ensure the card participates normally in layout */
+  display: block;
 }
+
+/* Keep spacing consistent inside this special card */
+#newObjectCatalogIdCard .object-edit-row {
+  margin-bottom: 0.6rem;
+}
+
+/* Don’t “dim” the whole input box (it can look like it disappeared) */
+#newObjectCatalogIdCard input.object-edit-input {
+  opacity: 1 !important;
+}
+
+/* Make the hint/warning breathe a bit and stay inside the card visually */
+#newObjectCatalogIdCard .form-hint {
+  margin-top: 0.25rem;
+}
+
+#newObjectCatalogIdCard .form-warning {
+  margin-top: 0.6rem;
+}
+
 
 #newObjectCatalogIdCard:hover {
   transform: none;
