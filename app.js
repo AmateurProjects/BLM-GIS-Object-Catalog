@@ -1133,7 +1133,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div class="object-edit-row">
         <label class="object-edit-label">Selected attributes</label>
         <div data-new-obj-selected-attrs style="display:flex; flex-wrap:wrap; gap:0.5rem;"></div>
+
+        <!-- NEW: compact info preview (appears only when user clicks ⓘ) -->
+        <div data-new-obj-attr-preview style="margin-top:0.5rem; display:none;"></div>
       </div>
+
 
       <div class="object-edit-row">
         <label class="object-edit-label">Create new attribute</label>
@@ -1450,32 +1454,113 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderSelectedAttrChips() {
       if (!selectedAttrsEl) return;
+
+      const previewEl = objectDetailEl.querySelector('[data-new-obj-attr-preview]');
+
       const ids = Array.from(new Set((draft.attribute_ids || []).map((x) => String(x || '').trim()).filter(Boolean)));
       draft.attribute_ids = ids;
 
       selectedAttrsEl.innerHTML = ids.length
         ? ids
-          .map(
-            (id) => `
-              <span class="pill pill-keyword" style="display:inline-flex; gap:0.4rem; align-items:center;">
-                <span>${escapeHtml(id)}</span>
-                <button type="button" class="icon-button" style="padding:0.15rem 0.35rem;" data-remove-attr-id="${escapeHtml(
-              id
-            )}">✕</button>
-              </span>
-            `
-          )
+          .map((id) => {
+            const a = Catalog.getAttributeById(id);
+            const label = a?.label ? String(a.label) : '';
+            const type = a?.type ? String(a.type) : '';
+            const def = a?.definition ? String(a.definition) : '';
+
+            // tooltip-ish summary without taking space
+            const title = [
+              label ? `Label: ${label}` : null,
+              type ? `Type: ${type}` : null,
+              def ? `Definition: ${def}` : null,
+            ]
+              .filter(Boolean)
+              .join('\n');
+
+            return `
+            <span class="pill pill-keyword" title="${escapeHtml(title)}"
+              style="display:inline-flex; gap:0.35rem; align-items:center;">
+              <span>${escapeHtml(id)}</span>
+
+              <button type="button" class="icon-button"
+                style="padding:0.15rem 0.35rem;"
+                data-attr-info-id="${escapeHtml(id)}"
+                aria-label="Show attribute info">ⓘ</button>
+
+              <button type="button" class="icon-button"
+                style="padding:0.15rem 0.35rem;"
+                data-remove-attr-id="${escapeHtml(id)}"
+                aria-label="Remove attribute">✕</button>
+            </span>
+          `;
+          })
           .join('')
         : `<span style="color: var(--text-muted);">None selected yet.</span>`;
 
+      // Remove handler
       selectedAttrsEl.querySelectorAll('button[data-remove-attr-id]').forEach((b) => {
         b.addEventListener('click', () => {
           const id = b.getAttribute('data-remove-attr-id');
           draft.attribute_ids = (draft.attribute_ids || []).filter((x) => x !== id);
+
+          // if preview is showing this attribute, hide it
+          if (previewEl && previewEl.getAttribute('data-preview-id') === id) {
+            previewEl.style.display = 'none';
+            previewEl.innerHTML = '';
+            previewEl.removeAttribute('data-preview-id');
+          }
+
           renderSelectedAttrChips();
         });
       });
+
+      // Info handler (compact preview below chips)
+      selectedAttrsEl.querySelectorAll('button[data-attr-info-id]').forEach((b) => {
+        b.addEventListener('click', () => {
+          if (!previewEl) return;
+
+          const id = b.getAttribute('data-attr-info-id');
+          const a = Catalog.getAttributeById(id);
+          if (!a) return;
+
+          const label = a.label ? String(a.label) : '';
+          const type = a.type ? String(a.type) : '';
+          const def = a.definition ? String(a.definition) : '';
+
+          // keep it compact: one line header + short definition
+          const defShort = def.length > 180 ? def.slice(0, 180).trim() + '…' : def;
+
+          previewEl.setAttribute('data-preview-id', id);
+          previewEl.style.display = '';
+          previewEl.innerHTML = `
+        <div class="card" style="padding:0.6rem 0.75rem;">
+          <div style="display:flex; gap:0.75rem; align-items:center; justify-content:space-between;">
+            <div>
+              <strong>${escapeHtml(id)}</strong>
+              ${label ? ` <span style="color: var(--text-muted);">— ${escapeHtml(label)}</span>` : ''}
+              ${type ? ` <span class="pill" style="margin-left:0.4rem; opacity:0.9;">${escapeHtml(type)}</span>` : ''}
+            </div>
+            <button type="button" class="btn" data-preview-close style="padding:0.25rem 0.5rem;">Close</button>
+          </div>
+
+          ${defShort ? `<div style="margin-top:0.35rem; color: var(--text-muted); line-height:1.35;">
+            ${escapeHtml(defShort)}
+          </div>` : `<div style="margin-top:0.35rem; color: var(--text-muted);">No definition provided.</div>`}
+        </div>
+      `;
+
+          const closeBtn = previewEl.querySelector('[data-preview-close]');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+              previewEl.style.display = 'none';
+              previewEl.innerHTML = '';
+              previewEl.removeAttribute('data-preview-id');
+            });
+          }
+        });
+      });
     }
+
 
     function makeNewAttrDraft() {
       return {
