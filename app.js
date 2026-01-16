@@ -915,6 +915,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let html = '';
 
+    // --- Existing objects datalist (for Name field suggestions) ---
+    const existingObjectNameOptions = (allObjects || [])
+      .filter((o) => o && (o.title || o.objname || o.id))
+      .map((o) => {
+        // Match the left-nav feel: primary = objname (or id), secondary = title (or id)
+        const primary = String(o.objname || o.id || '').trim();
+        const secondary = String(o.title || o.id || '').trim();
+
+        // The value is what gets inserted into the Name field if chosen
+        const value = secondary || primary;
+
+        // The visible option text gives extra context
+        const label = `${primary}${secondary && secondary !== primary ? ` — ${secondary}` : ''} (${o.id})`;
+
+        return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+      })
+      .join('');
+
+
     // =========================================================
     // HEADER CARD: Name + Definition (boxed like other fields)
     // =========================================================
@@ -925,13 +944,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           Name:
         </label>
 
-        <input
-          class="object-edit-input"
-          type="text"
-          data-new-obj-key="title"
-          placeholder="${placeholderFor('title', 'Human-friendly object title')}"
-          value="${escapeHtml(draft.title || '')}"
-        />
+    <input
+      class="object-edit-input"
+      type="text"
+      data-new-obj-key="title"
+      list="existingObjectsDatalist"
+      placeholder="${placeholderFor('title', 'Human-friendly object title')}"
+      value="${escapeHtml(draft.title || '')}"
+    />
+    <datalist id="existingObjectsDatalist">
+      ${existingObjectNameOptions}
+    </datalist>
+
 
       </div>
 
